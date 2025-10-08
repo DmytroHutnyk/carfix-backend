@@ -1,6 +1,32 @@
 spring:
   application:
     name: carfix-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/carfix
+    username: backend
+    password: carfix
+
+  profiles:
+    active: dev
+---
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: false
+---
+  config:
+    activate:
+      on-profile: staging
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+---
 
 management:
   endpoints:
