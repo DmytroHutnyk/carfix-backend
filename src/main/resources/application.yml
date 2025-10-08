@@ -54,4 +54,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: "health,info"
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  info:
+    env:
+      enabled: true #does not work for some reason
+    java:
+      enabled: true
+    build:
+      enabled: true
+    git:
+      enabled: true #does not work
