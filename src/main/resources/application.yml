@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: carfix-backend
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
