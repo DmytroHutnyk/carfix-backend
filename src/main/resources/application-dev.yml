@@ -17,6 +17,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    properties:
+      hibernate:
+        cache:
+          use_second_level_cache: false
 
 management:
   endpoints:
