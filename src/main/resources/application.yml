@@ -1,22 +1,24 @@
+#debug: true
+
 spring:
   application:
     name: carfix-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/carfix
-    username: backend
-    password: carfix
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     properties:
-      hibernate.default_schema: carfix
+      hibernate.default_schema: ${DB_DEFAULT_SCHEMA}
 
   flyway:
-    locations: classpath:db/migration
-    schemas: carfix
-    default-schema: carfix
-    table: flyway_schema_history
-    baseline-version: 0
+    schemas: ${DB_DEFAULT_SCHEMA}
+    default-schema: ${DB_DEFAULT_SCHEMA}
+#    locations: classpath:db/migration
+#    table: flyway_schema_history
+#    baseline-version: 0
 
   profiles:
     active: dev
@@ -27,7 +29,7 @@ spring:
       on-profile: dev
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
   flyway:
     enabled: true
     baseline-on-migrate: true
