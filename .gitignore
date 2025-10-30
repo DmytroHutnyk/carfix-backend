@@ -5,10 +5,11 @@ target/
 !**/src/test/**/target/
 .env.prod
 .env.dev
+CarFix_v3-2025-10-23_22-06.png
 
 ### STS ###
 .apt_generated
-.classpath
+.classpat
 .factorypath
 .project
 .settings
