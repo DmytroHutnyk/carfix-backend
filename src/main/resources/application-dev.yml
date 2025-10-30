@@ -1,0 +1,48 @@
+#debug: true
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+
+      max-lifetime: 1800000
+      data-source-properties:
+        ApplicationName: carfix-backend
+      idle-timeout:  600000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        cache:
+          use_second_level_cache: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+      cors:
+        allowed-origins: "http://localhost:5173"
+        allowed-methods: "GET,OPTIONS"
+        allowed-headers: "*"
+        max-age: 3600
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  info:
+    env:
+      enabled: true #does not work for some reason
+    java:
+      enabled: true
+    build:
+      enabled: true
+    git:
+      enabled: true #does not work
+

@@ -3,67 +3,42 @@ spring:
     name: carfix-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/carfix
-    username: backend
-    password: carfix
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      data-source-properties:
+        ApplicationName: carfix-backend
 
-  jpa:
-    properties:
-      hibernate.default_schema: carfix
-
-  flyway:
-    locations: classpath:db/migration
-    schemas: carfix
-    default-schema: carfix
-    table: flyway_schema_history
-    baseline-version: 0
-
-  profiles:
-    active: dev
----
-spring:
-  config:
-    activate:
-      on-profile: dev
-  jpa:
-    hibernate:
-      ddl-auto: update
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    baseline-version: 0
-    validate-on-migrate: true
-
----
-spring:
-  config:
-    activate:
-      on-profile: staging
   jpa:
     hibernate:
       ddl-auto: validate
+    properties:
+      hibernate.default_schema: ${DB_DEFAULT_SCHEMA}
+
   flyway:
     enabled: true
-    baseline-on-migrate: true
-    baseline-version: 0
+    schemas: ${DB_DEFAULT_SCHEMA}
+    default-schema: ${DB_DEFAULT_SCHEMA}
     validate-on-migrate: true
-
----
+    baseline-on-migrate: true
+#    baseline-version: 0
+#    locations: classpath:db/migration
+#    table: flyway_schema_history
 
 management:
   endpoints:
     web:
       exposure:
         include: "health,info"
-      cors:
-        allowed-origins: "http://localhost:5173"
-        allowed-methods: "GET,OPTIONS"
-        allowed-headers: "*"
-        max-age: 3600
+
   endpoint:
     health:
-      show-details: always
-      show-components: always
+      show-details: when_authorized
   info:
     env:
       enabled: true #does not work for some reason
