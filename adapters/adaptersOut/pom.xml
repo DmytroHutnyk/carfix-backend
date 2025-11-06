@@ -24,11 +24,11 @@
             <artifactId>ports</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.hutnyk.carfix</groupId>
-            <artifactId>domain</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.hutnyk.carfix</groupId>-->
+<!--            <artifactId>domain</artifactId>-->
+<!--            <version>${project.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.hutnyk.carfix</groupId>
             <artifactId>common</artifactId>
