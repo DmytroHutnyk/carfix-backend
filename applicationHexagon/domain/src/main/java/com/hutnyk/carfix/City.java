@@ -1,0 +1,33 @@
+package com.hutnyk.carfix;
+
+import com.hutnyk.carfix.util.Validator;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+
+//@With
+@Getter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class City {
+
+    @EqualsAndHashCode.Include
+    private final Integer id;
+    private final String name;
+    private final Integer regionId;
+
+    @Builder
+    private City(Integer id, String name, Integer regionId) {
+        this.id = Validator.notNull(id);
+        this.name = Validator.notEmpty(name);
+        this.regionId = Validator.notNull(regionId);
+    }
+
+    public static City of(Integer id, String name, Integer regionId){
+        return City.builder()
+                .id(id)
+                .name(name)
+                .regionId(regionId)
+                .build();
+    }
+
+}
