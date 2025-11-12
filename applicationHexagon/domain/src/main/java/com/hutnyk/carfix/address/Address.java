@@ -1,5 +1,6 @@
-package com.hutnyk.carfix;
+package com.hutnyk.carfix.address;
 
+import com.hutnyk.carfix.InvalidDomainObjectError;
 import com.hutnyk.carfix.util.Validator;
 import lombok.*;
 
@@ -17,7 +18,12 @@ public class Address {
     private final Integer postalCodeId;
 
     @Builder
-    private Address(Integer id, String buildingNumber, String flatNumber, Long streetId, Integer postalCodeId) {
+    private Address(
+            Integer id,
+            String buildingNumber,
+            String flatNumber,
+            Long streetId,
+            Integer postalCodeId) {
         this.id = Validator.notNull(id);
         this.buildingNumber = Validator.notEmpty(buildingNumber);
         this.flatNumber = validFlatNumber(flatNumber);
@@ -25,7 +31,12 @@ public class Address {
         this.postalCodeId = Validator.notNull(postalCodeId);
     }
 
-    public Address of(Integer id, String buildingNumber, String flatNumber, Long streetId, Integer postalCodeId){
+    public Address of(
+            Integer id,
+            String buildingNumber,
+            String flatNumber,
+            Long streetId,
+            Integer postalCodeId){
         return Address.builder()
                 .id(id)
                 .buildingNumber(buildingNumber)

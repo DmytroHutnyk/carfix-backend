@@ -1,4 +1,4 @@
-package com.hutnyk.carfix;
+package com.hutnyk.carfix.carProfile;
 
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
@@ -8,26 +8,22 @@ import lombok.Getter;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class City {
+public final class CarBrand {
 
     @EqualsAndHashCode.Include
     private final Integer id;
     private final String name;
-    private final Integer regionId;
 
     @Builder
-    private City(Integer id, String name, Integer regionId) {
+    private CarBrand(Integer id, String name) {
         this.id = Validator.notNull(id);
         this.name = Validator.notEmpty(name);
-        this.regionId = Validator.notNull(regionId);
     }
 
-    public static City of(Integer id, String name, Integer regionId){
-        return City.builder()
+    public static CarBrand of(Integer id, String name){
+        return CarBrand.builder()
                 .id(id)
                 .name(name)
-                .regionId(regionId)
                 .build();
     }
-
 }

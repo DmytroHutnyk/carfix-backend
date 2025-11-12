@@ -1,30 +1,30 @@
-package com.hutnyk.carfix;
+package com.hutnyk.carfix.address;
 
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-//@With
+
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Street {
+public class PostalCode {
 
     @EqualsAndHashCode.Include
-    private final Long id;
-    private final String name;
+    private final Integer id;
+    private final String code;
     private final Integer cityId;
 
     @Builder
-    private Street(Long id, String name, Integer cityId) {
+    private PostalCode(Integer id, String code, Integer cityId) {
         this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
+        this.code = Validator.notEmpty(code); //TODO add regex validation per country
         this.cityId = Validator.notNull(cityId);
     }
 
-    public static Street of(Long id, String name, Integer cityId){
-        return Street.builder()
+    public static PostalCode of(Integer id, String code, Integer cityId){
+        return PostalCode.builder()
                 .id(id)
-                .name(name)
+                .code(code)
                 .cityId(cityId)
                 .build();
     }

@@ -1,4 +1,4 @@
-package com.hutnyk.carfix;
+package com.hutnyk.carfix.address;
 
 import com.hutnyk.carfix.util.IsoValidator;
 import com.hutnyk.carfix.util.Validator;

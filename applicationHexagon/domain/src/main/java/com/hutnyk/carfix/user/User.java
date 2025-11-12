@@ -8,7 +8,7 @@ import java.time.LocalDate;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class User {
+public final class User {
 
     @EqualsAndHashCode.Include
     private final UserId id;
@@ -28,7 +28,15 @@ public class User {
     private final Integer addressId;
 
     @Builder
-    public User(UserId id, String name, String surname, PhoneNumber phoneNumber, String email, PasswordHash passwordHash, LocalDate dateOfBirth, Integer addressId) {
+    public User(
+            UserId id,
+            String name,
+            String surname,
+            PhoneNumber phoneNumber,
+            String email,
+            PasswordHash passwordHash,
+            LocalDate dateOfBirth,
+            Integer addressId) {
         this.id = Validator.notNull(id);
         this.name = Validator.notEmpty(name);
         this.surname = Validator.notEmpty(surname);
@@ -39,7 +47,15 @@ public class User {
         this.addressId = addressId;
     }
 
-    public static User of(UserId id, String name, String surname, PhoneNumber phoneNumber, String email, PasswordHash passwordHash, LocalDate dateOfBirth, Integer addressId){
+    public static User of(
+            UserId id,
+            String name,
+            String surname,
+            PhoneNumber phoneNumber,
+            String email,
+            PasswordHash passwordHash,
+            LocalDate dateOfBirth,
+            Integer addressId){
         return User.builder()
                 .id(id)
                 .name(name)
