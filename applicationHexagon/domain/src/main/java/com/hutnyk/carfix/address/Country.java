@@ -8,7 +8,7 @@ import lombok.Getter;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Country {
+public final class Country {
 
     @EqualsAndHashCode.Include
     private final String countryIso;
@@ -16,8 +16,8 @@ public class Country {
 
     @Builder
     private Country(String countryIso, String name) {
-        this.countryIso = IsoValidator.validateCountryIso(countryIso);
-        this.name = Validator.notEmpty(name);
+        this.countryIso = IsoValidator.validateCountryIso(countryIso, "countryIso");
+        this.name = Validator.notEmpty(name, "name");
     }
 
     public static Country of(String countryIso, String name){

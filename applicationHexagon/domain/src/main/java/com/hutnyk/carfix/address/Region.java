@@ -8,7 +8,7 @@ import lombok.Getter;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Region {
+public final class Region {
 
     @EqualsAndHashCode.Include
     private final Integer id;
@@ -17,9 +17,9 @@ public class Region {
 
     @Builder
     private Region(Integer id, String name, String countryIso) {
-        this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
-        this.countryIso = Validator.notEmpty(countryIso);
+        this.id = Validator.notNull(id, "id");
+        this.name = Validator.notEmpty(name, "name");
+        this.countryIso = Validator.notEmpty(countryIso, "countryIso");
     }
 
     public static Region of(Integer id, String name, String countryIso){

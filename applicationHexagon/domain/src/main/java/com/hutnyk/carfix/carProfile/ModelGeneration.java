@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.carProfile;
 
-import com.hutnyk.carfix.InvalidDomainObjectError;
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -30,10 +31,10 @@ public final class ModelGeneration {
             LocalDate endProductionDate,
             Integer carModelId) {
         this.id = id;
-        this.name = Validator.notEmpty(name);
-        this.startProductionDate = validateStartProductionDate(startProductionDate);
-        this.endProductionDate = validateEndProductionDate(endProductionDate);
-        this.carModelId = Validator.notNull(carModelId);
+        this.name = Validator.notEmpty(name, "name");
+        this.startProductionDate = validateStartProductionDate(startProductionDate, "startProductionDate");
+        this.endProductionDate = validateEndProductionDate(endProductionDate, "endProductionDate");
+        this.carModelId = Validator.notNull(carModelId, "carModelId");
     }
 
     public static ModelGeneration of(
@@ -51,23 +52,23 @@ public final class ModelGeneration {
                 .build();
     }
 
-    private static LocalDate validateStartProductionDate(LocalDate date){
-        Validator.notNull(date);
+    private static LocalDate validateStartProductionDate(LocalDate date, String fieldName){
+        Validator.notNull(date, fieldName);
 
         if(date.isBefore(LocalDate.now().minusYears(100))){
-            throw new InvalidDomainObjectError("Start production date can not be older than 100 years");
+            throw new DomainObjectValidationException(ValidationErrorType.DATE_TOO_OLD, fieldName, date);
         }
 
         return date;
     }
 
-    private static LocalDate validateEndProductionDate(LocalDate date){
+    private static LocalDate validateEndProductionDate(LocalDate date, String fieldName){
         if(date == null){
             return null;
         }
 
-        if(date.isBefore(LocalDate.now().plusYears(20))){
-            throw new InvalidDomainObjectError("End production date can not be more than 2 years into future");
+        if(date.isAfter(LocalDate.now().plusYears(2))){
+            throw new DomainObjectValidationException(ValidationErrorType.DATE_TOO_FAR_IN_FUTURE, fieldName, date);
         }
 
         return date;

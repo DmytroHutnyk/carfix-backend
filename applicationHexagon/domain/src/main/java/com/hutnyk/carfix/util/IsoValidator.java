@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.util;
 
-import com.hutnyk.carfix.InvalidDomainObjectError;
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 
 import java.util.Set;
 
@@ -12,11 +13,11 @@ public class IsoValidator {
             "CN", "KR", "IN", "BR", "AR", "MX", "ZA", "EG", "IL", "SA", "AE"
     );
 
-    public static String validateCountryIso(String iso){
-        Validator.notEmpty(iso);
+    public static String validateCountryIso(String iso, String fieldName) {
+        Validator.notEmpty(iso, fieldName);
 
-        if(!COUNTRY_CODES.contains(iso)){
-            throw new InvalidDomainObjectError("Iso code is not valid");
+        if (!COUNTRY_CODES.contains(iso)) {
+            throw new DomainObjectValidationException(ValidationErrorType.INVALID_ISO_CODE, fieldName, iso);
         }
 
         return iso;

@@ -8,7 +8,7 @@ import lombok.Getter;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class City {
+public final class City {
 
     @EqualsAndHashCode.Include
     private final Integer id;
@@ -17,9 +17,9 @@ public class City {
 
     @Builder
     private City(Integer id, String name, Integer regionId) {
-        this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
-        this.regionId = Validator.notNull(regionId);
+        this.id = Validator.notNull(id, "id");
+        this.name = Validator.notEmpty(name, "name");
+        this.regionId = Validator.notNull(regionId, "regionId");
     }
 
     public static City of(Integer id, String name, Integer regionId){

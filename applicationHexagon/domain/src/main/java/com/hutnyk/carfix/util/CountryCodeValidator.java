@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.util;
 
-import com.hutnyk.carfix.InvalidDomainObjectError;
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 
 import java.util.Set;
 //TODO temporary solution
@@ -30,11 +31,11 @@ public class CountryCodeValidator {
             "+992", "+993", "+994", "+995", "+996", "+998"
     );
 
-    public static void validateCountryCode(String countryCode){
-        Validator.notEmpty(countryCode);
+    public static void validateCountryCode(String countryCode, String fieldName){
+        Validator.notEmpty(countryCode, fieldName);
 
         if(!ALLOWED_COUNTRY_CODES.contains(countryCode)){
-            throw new InvalidDomainObjectError("Invalid country code");
+            throw new DomainObjectValidationException(ValidationErrorType.INVALID_COUNTRY_CODE, fieldName, countryCode);
         }
     }
 }

@@ -18,8 +18,8 @@ public final class Customer {
 
     @Builder
     private Customer(User user, CustomerStatus status) {
-        this.user = Validator.notNull(user);
-        this.status = Validator.notNull(status);
+        this.user = Validator.notNull(user, "user");
+        this.status = Validator.notNull(status, "status");
     }
 
     public static Customer of(User user, CustomerStatus status){
