@@ -43,7 +43,7 @@ public final class User {
         this.surname = Validator.notEmpty(surname, "surname");
         this.phoneNumber = Validator.notNull(phoneNumber, "phoneNumber");
         this.email = Validator.validateEmail(email, "email");
-        this.passwordHash = Validator.notNull(passwordHash, "passwordHash"); //TODO add proper password validation
+        this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
     }

@@ -1,0 +1,37 @@
+package com.hutnyk.carfix.exception;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+/**
+ * {@code ValidationErrorType} enum is used to supply {@link com.hutnyk.carfix.exception.DomainObjectValidationException} with default exception message.
+ */
+@Getter
+@AllArgsConstructor
+public enum ValidationErrorType {
+    NULL_VALUE("NULL_VALUE", "Value cannot be null"),
+    EMPTY_STRING("EMPTY_STRING", "String cannot be empty or blank"),
+    
+    INVALID_EMAIL_FORMAT("INVALID_EMAIL_FORMAT", "Email format is not valid"),
+    INVALID_PHONE_FORMAT("INVALID_PHONE_FORMAT", "Phone number format is not valid"),
+    INVALID_COUNTRY_CODE("INVALID_COUNTRY_CODE", "Country code is not valid"),
+    INVALID_ISO_CODE("INVALID_ISO_CODE", "ISO code is not valid"),
+    INVALID_VIN_FORMAT("INVALID_VIN_FORMAT", "VIN format is not valid"),
+    INVALID_PLATES_FORMAT("INVALID_PLATES_FORMAT", "License plates format is not valid"),
+    
+    DATE_IN_FUTURE("DATE_IN_FUTURE", "Date cannot be in the future"),
+    DATE_TOO_FAR_IN_FUTURE("DATE_TOO_FAR_IN_FUTURE", "Date cannot be in the fat future"),
+    DATE_TOO_OLD("DATE_TOO_OLD", "Date is too old"),
+    EXPIRATION_DATE_TOO_OLD("EXPIRATION_DATE_TOO_OLD", "Expiration date cannot be more than 20 years old"),
+    
+
+    INVALID_FLAT_NUMBER("INVALID_FLAT_NUMBER", "Flat number cannot be empty or blank"),
+
+    INVALID_PASSWORD_FORMAT("INVALID_PASSWORD_FORMAT", "Password format is not valid"),
+    VALUE_OUT_OF_RANGE("VALUE_OUT_OF_RANGE", "Value is out of allowed range"),
+    VALIDATION_FAILED("VALIDATION_FAILED", "Validation failed");
+
+    private final String code;
+    private final String defaultMessage;
+}
+

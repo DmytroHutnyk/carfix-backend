@@ -53,23 +53,6 @@ public class DomainObjectValidationException extends InvalidDomainObjectExceptio
 
 
     /**
-     * Validation exception constructor with errorType, fieldName and custom message provided.
-     * Without rejectedValue, rejectedValue = null.
-     * @param errorType
-     * @param fieldName
-     * @param customMessage
-     */
-    public DomainObjectValidationException(ValidationErrorType errorType,
-                                           String fieldName,
-                                           String customMessage) {
-        super(customMessage);
-        this.errorType = errorType;
-        this.fieldName = fieldName;
-        this.rejectedValue = null;
-    }
-
-
-    /**
      * Builds a message from parameters passed as arguments, matching class fields.
      * @param errorType
      * @param fieldName
