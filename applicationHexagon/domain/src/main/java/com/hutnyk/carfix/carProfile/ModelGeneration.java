@@ -31,7 +31,7 @@ public final class ModelGeneration {
             LocalDate endProductionDate,
             Integer carModelId) {
         this.id = id;
-        this.name = Validator.notEmpty(name, "name");
+        this.name = Validator.notBlank(name, "name");
         this.startProductionDate = validateStartProductionDate(startProductionDate, "startProductionDate");
         this.endProductionDate = validateEndProductionDate(endProductionDate, "endProductionDate");
         this.carModelId = Validator.notNull(carModelId, "carModelId");

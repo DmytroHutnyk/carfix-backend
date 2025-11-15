@@ -17,7 +17,7 @@ public final class Country {
     @Builder
     private Country(String countryIso, String name) {
         this.countryIso = IsoValidator.validateCountryIso(countryIso, "countryIso");
-        this.name = Validator.notEmpty(name, "name");
+        this.name = Validator.notBlank(name, "name");
     }
 
     public static Country of(String countryIso, String name){

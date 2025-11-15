@@ -20,7 +20,7 @@ public final class PasswordHash {
     }
 
     private static String validate(String value) {
-        Validator.notEmpty(value, "value");
+        Validator.notBlank(value, "value");
         return value;
     }
 }

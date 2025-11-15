@@ -39,8 +39,8 @@ public final class User {
             LocalDate dateOfBirth,
             Integer addressId) {
         this.id = Validator.notNull(id, "id");
-        this.name = Validator.notEmpty(name, "name");
-        this.surname = Validator.notEmpty(surname, "surname");
+        this.name = Validator.notBlank(name, "name");
+        this.surname = Validator.notBlank(surname, "surname");
         this.phoneNumber = Validator.notNull(phoneNumber, "phoneNumber");
         this.email = Validator.validateEmail(email, "email");
         this.passwordHash = Validator.notNull(passwordHash, "passwordHash");

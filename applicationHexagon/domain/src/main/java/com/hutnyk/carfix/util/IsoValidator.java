@@ -31,7 +31,7 @@ public class IsoValidator {
      * @throws DomainObjectValidationException if the ISO code is invalid
      */
     public static String validateCountryIso(String iso, String fieldName) {
-        Validator.notEmpty(iso, fieldName);
+        Validator.notBlank(iso, fieldName);
         
         String normalizedIso = iso.toUpperCase().trim();
         

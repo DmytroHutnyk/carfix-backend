@@ -17,7 +17,7 @@ public final class PostalCode {
     @Builder
     private PostalCode(Integer id, String code, Integer cityId) {
         this.id = Validator.notNull(id, "id");
-        this.code = Validator.notEmpty(code, "code"); //TODO add regex validation per country
+        this.code = Validator.notBlank(code, "code"); //TODO add regex validation per country
         this.cityId = Validator.notNull(cityId, "cityId");
     }
 

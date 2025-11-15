@@ -56,7 +56,7 @@ public class CountryCodeValidator {
      * @return trimmed input string if validation succeeded
      */
     public static String validateCountryCode(String countryCode, String fieldName) {
-        Validator.notEmpty(countryCode, fieldName);
+        Validator.notBlank(countryCode, fieldName);
 
         String trimmedCountryCode = countryCode.trim();
 

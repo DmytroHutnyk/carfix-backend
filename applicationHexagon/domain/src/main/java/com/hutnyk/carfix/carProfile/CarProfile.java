@@ -1,7 +1,6 @@
 package com.hutnyk.carfix.carProfile;
 
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
-import com.hutnyk.carfix.exception.InvalidDomainObjectException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.user.UserId;
 import com.hutnyk.carfix.util.Validator;
@@ -50,7 +49,7 @@ public final class CarProfile {
             Integer fileId,
             Integer modelGenerationId) {
         this.id = Validator.notNull(id, "id");
-        this.name = Validator.notEmpty(name, "name");
+        this.name = Validator.notBlank(name, "name");
         this.vin = validateVin(vin);
         this.plates = validatePlates(plates);
         this.serviceCertificateValidUpTo = validateDate(serviceCertificateValidUpTo, "serviceCertificateValidUpTo");

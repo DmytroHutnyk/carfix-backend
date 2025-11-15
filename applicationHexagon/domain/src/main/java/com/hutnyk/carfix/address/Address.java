@@ -26,13 +26,13 @@ public final class Address {
             Long streetId,
             Integer postalCodeId) {
         this.id = Validator.notNull(id, "id");
-        this.buildingNumber = Validator.notEmpty(buildingNumber, "buildingNumber");
-        this.flatNumber = validFlatNumber(flatNumber);
+        this.buildingNumber = Validator.notBlank(buildingNumber, "buildingNumber");
+        this.flatNumber = validateFlatNumber(flatNumber);
         this.streetId = Validator.notNull(streetId, "streetId");
         this.postalCodeId = Validator.notNull(postalCodeId, "postalCodeId");
     }
 
-    public Address of(
+    public static Address of(
             Integer id,
             String buildingNumber,
             String flatNumber,
@@ -47,7 +47,7 @@ public final class Address {
                 .build();
     }
 
-    private static String validFlatNumber(String flatNumber){
+    private static String validateFlatNumber(String flatNumber){
         if(flatNumber == null){
             return null;
         }

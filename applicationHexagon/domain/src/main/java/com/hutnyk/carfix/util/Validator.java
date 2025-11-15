@@ -28,7 +28,7 @@ public class Validator {
      * @return the validated string
      * @throws DomainObjectValidationException if value is null or blank
      */
-    public static String notEmpty(String value, String fieldName){
+    public static String notBlank(String value, String fieldName){
         notNull(value, fieldName);
 
         if(value.isBlank()){
@@ -42,7 +42,7 @@ public class Validator {
      * Validates email format.
      */
     public static String validateEmail(String email, String fieldName) {
-        notEmpty(email, fieldName);
+        notBlank(email, fieldName);
 
         if (!email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             throw new DomainObjectValidationException(ValidationErrorType.INVALID_EMAIL_FORMAT, fieldName, email
@@ -55,7 +55,7 @@ public class Validator {
      * Validates phone number format.
      */
     public static String validatePhoneNumber(String phoneNumber, String fieldName) {
-        notEmpty(phoneNumber, fieldName);
+        notBlank(phoneNumber, fieldName);
 
         if (!phoneNumber.matches("^[0-9]{5,15}$")) {
             throw new DomainObjectValidationException(ValidationErrorType.INVALID_PHONE_FORMAT, fieldName, phoneNumber);

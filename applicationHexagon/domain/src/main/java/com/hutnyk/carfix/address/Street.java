@@ -17,7 +17,7 @@ public final class Street {
     @Builder
     private Street(Long id, String name, Integer cityId) {
         this.id = Validator.notNull(id, "id");
-        this.name = Validator.notEmpty(name, "name");
+        this.name = Validator.notBlank(name, "name");
         this.cityId = Validator.notNull(cityId, "cityId");
     }
 

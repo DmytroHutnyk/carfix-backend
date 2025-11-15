@@ -18,8 +18,8 @@ public final class Region {
     @Builder
     private Region(Integer id, String name, String countryIso) {
         this.id = Validator.notNull(id, "id");
-        this.name = Validator.notEmpty(name, "name");
-        this.countryIso = Validator.notEmpty(countryIso, "countryIso");
+        this.name = Validator.notBlank(name, "name");
+        this.countryIso = Validator.notBlank(countryIso, "countryIso");
     }
 
     public static Region of(Integer id, String name, String countryIso){
