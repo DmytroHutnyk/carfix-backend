@@ -9,103 +9,103 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.time.LocalDate;
+import java.time.Year;
 
 public class ModelGenerationTest {
 
     @ParameterizedTest
     @ValueSource(ints = {10, 100})
-    public void test_validateStartProductionDate_valid_date_and_fieldName(int yearsAgo) {
+    public void test_validateStartProduction_valid_year_and_fieldName(int yearsAgo) {
         //given
         Integer id = 1;
         String name = "Test Generation";
-        LocalDate startProductionDate = LocalDate.now().minusYears(yearsAgo);
-        LocalDate endProductionDate = null;
+        Short startProduction = (short) (Year.now().getValue() - yearsAgo);
+        Short endProduction = null;
         Integer carModelId = 1;
 
         //when
-        ModelGeneration result = ModelGeneration.of(id, name, startProductionDate, endProductionDate, carModelId);
+        ModelGeneration result = ModelGeneration.of(id, name, startProduction, endProduction, carModelId);
 
         //then
-        assertThat(result.getStartProductionDate()).isEqualTo(startProductionDate);
+        assertThat(result.getStartProduction()).isEqualTo(startProduction);
     }
 
     @Test
-    public void test_validateStartProductionDate_throws_when_date_is_null() {
+    public void test_validateStartProduction_throws_when_year_is_null() {
         //given
         Integer id = 1;
         String name = "Test Generation";
-        LocalDate startProductionDate = null;
-        LocalDate endProductionDate = null;
+        Short startProduction = null;
+        Short endProduction = null;
         Integer carModelId = 1;
 
         //when + then
-        assertThatThrownBy(() -> ModelGeneration.of(id, name, startProductionDate, endProductionDate, carModelId))
+        assertThatThrownBy(() -> ModelGeneration.of(id, name, startProduction, endProduction, carModelId))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.NULL_VALUE);
     }
 
     @Test
-    public void test_validateStartProductionDate_throws_when_date_too_old() {
+    public void test_validateStartProduction_throws_when_year_too_old() {
         //given
         Integer id = 1;
         String name = "Test Generation";
-        LocalDate startProductionDate = LocalDate.now().minusYears(101);
-        LocalDate endProductionDate = null;
+        Short startProduction = (short) (Year.now().getValue() - 101);
+        Short endProduction = null;
         Integer carModelId = 1;
 
         //when + then
-        assertThatThrownBy(() -> ModelGeneration.of(id, name, startProductionDate, endProductionDate, carModelId))
+        assertThatThrownBy(() -> ModelGeneration.of(id, name, startProduction, endProduction, carModelId))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.DATE_TOO_OLD);
     }
 
     @Test
-    public void test_validateEndProductionDate_valid_date_exactly_2_years_in_future() {
+    public void test_validateEndProduction_valid_year_exactly_2_years_in_future() {
         //given
         Integer id = 1;
         String name = "Test Generation";
-        LocalDate startProductionDate = LocalDate.now().minusYears(10);
-        LocalDate endProductionDate = LocalDate.now().plusYears(2);
+        Short startProduction = (short) (Year.now().getValue() - 10);
+        Short endProduction = (short) (Year.now().getValue() + 2);
         Integer carModelId = 1;
 
         //when
-        ModelGeneration result = ModelGeneration.of(id, name, startProductionDate, endProductionDate, carModelId);
+        ModelGeneration result = ModelGeneration.of(id, name, startProduction, endProduction, carModelId);
 
         //then
-        assertThat(result.getEndProductionDate()).isEqualTo(endProductionDate);
+        assertThat(result.getEndProduction()).isEqualTo(endProduction);
     }
 
     @Test
-    public void test_validateEndProductionDate_returns_null_when_date_is_null() {
+    public void test_validateEndProduction_returns_null_when_year_is_null() {
         //given
         Integer id = 1;
         String name = "Test Generation";
-        LocalDate startProductionDate = LocalDate.now().minusYears(10);
-        LocalDate endProductionDate = null;
+        Short startProduction = (short) (Year.now().getValue() - 10);
+        Short endProduction = null;
         Integer carModelId = 1;
 
         //when
-        ModelGeneration result = ModelGeneration.of(id, name, startProductionDate, endProductionDate, carModelId);
+        ModelGeneration result = ModelGeneration.of(id, name, startProduction, endProduction, carModelId);
 
         //then
-        assertThat(result.getEndProductionDate()).isNull();
+        assertThat(result.getEndProduction()).isNull();
     }
 
     @ParameterizedTest
     @ValueSource(ints = {3, 10})
-    public void test_validateEndProductionDate_throws_when_date_too_far_in_future(int yearsInFuture) {
+    public void test_validateEndProduction_throws_when_year_too_far_in_future(int yearsInFuture) {
         //given
         Integer id = 1;
         String name = "Test Generation";
-        LocalDate startProductionDate = LocalDate.now().minusYears(10);
-        LocalDate endProductionDate = LocalDate.now().plusYears(yearsInFuture);
+        Short startProduction = (short) (Year.now().getValue() - 10);
+        Short endProduction = (short) (Year.now().getValue() + yearsInFuture);
         Integer carModelId = 1;
 
         //when + then
-        assertThatThrownBy(() -> ModelGeneration.of(id, name, startProductionDate, endProductionDate, carModelId))
+        assertThatThrownBy(() -> ModelGeneration.of(id, name, startProduction, endProduction, carModelId))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.DATE_TOO_FAR_IN_FUTURE);
