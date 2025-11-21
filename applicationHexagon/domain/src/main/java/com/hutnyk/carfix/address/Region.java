@@ -8,21 +8,21 @@ import lombok.Getter;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Region {
+public final class Region {
 
     @EqualsAndHashCode.Include
     private final Integer id;
     private final String name;
-    private final String countryIso;
+    private final CountryIso countryIso;
 
     @Builder
-    private Region(Integer id, String name, String countryIso) {
-        this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
-        this.countryIso = Validator.notEmpty(countryIso);
+    private Region(Integer id, String name, CountryIso countryIso) {
+        this.id = Validator.notNull(id, "id");
+        this.name = Validator.notBlank(name, "name");
+        this.countryIso = Validator.notNull(countryIso, "countryIso");
     }
 
-    public static Region of(Integer id, String name, String countryIso){
+    public static Region of(Integer id, String name, CountryIso countryIso){
         return Region.builder()
                 .id(id)
                 .name(name)

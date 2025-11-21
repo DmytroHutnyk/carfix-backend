@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.carProfile;
 
-import com.hutnyk.carfix.InvalidDomainObjectError;
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.user.UserId;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
@@ -47,15 +48,15 @@ public final class CarProfile {
             UserId customerId,
             Integer fileId,
             Integer modelGenerationId) {
-        this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
+        this.id = Validator.notNull(id, "id");
+        this.name = Validator.notBlank(name, "name");
         this.vin = validateVin(vin);
         this.plates = validatePlates(plates);
-        this.serviceCertificateValidUpTo = validateDate(serviceCertificateValidUpTo);
-        this.insuranceValidUpTo = validateDate(insuranceValidUpTo);
-        this.customerId = Validator.notNull(customerId);
+        this.serviceCertificateValidUpTo = validateDate(serviceCertificateValidUpTo, "serviceCertificateValidUpTo");
+        this.insuranceValidUpTo = validateDate(insuranceValidUpTo, "insuranceValidUpTo");
+        this.customerId = Validator.notNull(customerId, "customerId");
         this.fileId = fileId;
-        this.modelGenerationId = Validator.notNull(modelGenerationId);
+        this.modelGenerationId = Validator.notNull(modelGenerationId, "modelGenerationId");
     }
 
     public static CarProfile of(
@@ -87,7 +88,7 @@ public final class CarProfile {
         }
 
         if(!Pattern.matches("^[A-HJ-NPR-Z0-9]{17}$", value)){
-            throw new InvalidDomainObjectError("Vin is not valid");
+            throw new DomainObjectValidationException(ValidationErrorType.INVALID_VIN_FORMAT, "vin", value);
         }
         return value;
     }
@@ -98,18 +99,18 @@ public final class CarProfile {
         }
 
         if(!Pattern.matches("^(?=.{5,10}$)(?=.*[A-Z])(?=.*\\d)[A-Z0-9](?:[ -]?[A-Z0-9])+$", value)){
-            throw new InvalidDomainObjectError("Plates is not valid");
+            throw new DomainObjectValidationException(ValidationErrorType.INVALID_PLATES_FORMAT, "plates", value);
         }
         return value;
     }
 
-    private static LocalDate validateDate(LocalDate date){
+    private static LocalDate validateDate(LocalDate date, String fieldName){
         if(date == null){
             return null;
         }
 
         if(date.isBefore(LocalDate.now().minusYears(20))){
-            throw new InvalidDomainObjectError("Insurance or Service certificate can not be expired for more than 20 years");
+            throw new DomainObjectValidationException(ValidationErrorType.EXPIRATION_DATE_TOO_OLD, fieldName, date);
         }
 
         return date;

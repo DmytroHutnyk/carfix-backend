@@ -16,8 +16,8 @@ public final class CarBrand {
 
     @Builder
     private CarBrand(Integer id, String name) {
-        this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
+        this.id = Validator.notNull(id, "id");
+        this.name = Validator.notBlank(name, "name");
     }
 
     public static CarBrand of(Integer id, String name){

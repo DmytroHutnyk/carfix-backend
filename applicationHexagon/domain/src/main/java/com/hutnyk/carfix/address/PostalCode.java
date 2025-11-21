@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class PostalCode {
+public final class PostalCode {
 
     @EqualsAndHashCode.Include
     private final Integer id;
@@ -16,9 +16,9 @@ public class PostalCode {
 
     @Builder
     private PostalCode(Integer id, String code, Integer cityId) {
-        this.id = Validator.notNull(id);
-        this.code = Validator.notEmpty(code); //TODO add regex validation per country
-        this.cityId = Validator.notNull(cityId);
+        this.id = Validator.notNull(id, "id");
+        this.code = Validator.notBlank(code, "code"); //TODO add regex validation per country
+        this.cityId = Validator.notNull(cityId, "cityId");
     }
 
     public static PostalCode of(Integer id, String code, Integer cityId){

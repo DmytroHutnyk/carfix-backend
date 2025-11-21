@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record UserId(UUID id) {
     public UserId{
-        Validator.notNull(id);
+        Validator.notNull(id, "id");
     }
 
     public static UserId of(UUID id){

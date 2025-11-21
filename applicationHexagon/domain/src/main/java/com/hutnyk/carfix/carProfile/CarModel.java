@@ -18,9 +18,9 @@ public final class CarModel {
 
     @Builder
     private CarModel(Integer id, String name, Integer carBrandId) {
-        this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
-        this.carBrandId = Validator.notNull(carBrandId);
+        this.id = Validator.notNull(id, "id");
+        this.name = Validator.notBlank(name, "name");
+        this.carBrandId = Validator.notNull(carBrandId, "carBrandId");
     }
 
     public static CarModel of(Integer id, String name, Integer carBrandId) {

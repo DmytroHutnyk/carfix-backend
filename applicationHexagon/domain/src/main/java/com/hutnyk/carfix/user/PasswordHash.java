@@ -20,8 +20,7 @@ public final class PasswordHash {
     }
 
     private static String validate(String value) {
-        Validator.notEmpty(value);
-        //TODO validation for known encodings e.g. startsWith("$argon2")
+        Validator.notBlank(value, "value");
         return value;
     }
 }

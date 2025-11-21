@@ -1,12 +1,11 @@
 package com.hutnyk.carfix.carProfile;
 
-import com.hutnyk.carfix.InvalidDomainObjectError;
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-
-import java.time.LocalDate;
 
 //@With
 @Getter
@@ -16,60 +15,62 @@ public final class ModelGeneration {
     @EqualsAndHashCode.Include
     private final Integer id;
     private final String name;
-    private final LocalDate startProductionDate;
+    private final Short startProduction;
 
     //Nullable
-    private final LocalDate endProductionDate;
+    private final Short endProduction;
     private final Integer carModelId;
 
     @Builder
     private ModelGeneration(
             Integer id,
             String name,
-            LocalDate startProductionDate,
-            LocalDate endProductionDate,
+            Short startProduction,
+            Short endProduction,
             Integer carModelId) {
         this.id = id;
-        this.name = Validator.notEmpty(name);
-        this.startProductionDate = validateStartProductionDate(startProductionDate);
-        this.endProductionDate = validateEndProductionDate(endProductionDate);
-        this.carModelId = Validator.notNull(carModelId);
+        this.name = Validator.notBlank(name, "name");
+        this.startProduction = validateStartProduction(startProduction, "startProduction");
+        this.endProduction = validateEndProduction(endProduction, "endProduction");
+        this.carModelId = Validator.notNull(carModelId, "carModelId");
     }
 
     public static ModelGeneration of(
             Integer id,
             String name,
-            LocalDate startProductionDate,
-            LocalDate endProductionDate,
+            Short startProduction,
+            Short endProduction,
             Integer carModelId) {
         return ModelGeneration.builder()
                 .id(id)
                 .name(name)
-                .startProductionDate(startProductionDate)
-                .endProductionDate(endProductionDate)
+                .startProduction(startProduction)
+                .endProduction(endProduction)
                 .carModelId(carModelId)
                 .build();
     }
 
-    private static LocalDate validateStartProductionDate(LocalDate date){
-        Validator.notNull(date);
+    private static Short validateStartProduction(Short year, String fieldName){
+        Validator.notNull(year, fieldName);
 
-        if(date.isBefore(LocalDate.now().minusYears(100))){
-            throw new InvalidDomainObjectError("Start production date can not be older than 100 years");
+        int currentYear = java.time.Year.now().getValue();
+        if(year < currentYear - 100){
+            throw new DomainObjectValidationException(ValidationErrorType.DATE_TOO_OLD, fieldName, year);
         }
 
-        return date;
+        return year;
     }
 
-    private static LocalDate validateEndProductionDate(LocalDate date){
-        if(date == null){
+    private static Short validateEndProduction(Short year, String fieldName){
+        if(year == null){
             return null;
         }
 
-        if(date.isBefore(LocalDate.now().plusYears(20))){
-            throw new InvalidDomainObjectError("End production date can not be more than 2 years into future");
+        int currentYear = java.time.Year.now().getValue();
+        if(year > currentYear + 2){
+            throw new DomainObjectValidationException(ValidationErrorType.DATE_TOO_FAR_IN_FUTURE, fieldName, year);
         }
 
-        return date;
+        return year;
     }
 }

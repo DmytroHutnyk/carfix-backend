@@ -1,6 +1,5 @@
 package com.hutnyk.carfix.address;
 
-import com.hutnyk.carfix.util.IsoValidator;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -8,19 +7,19 @@ import lombok.Getter;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Country {
+public final class Country {
 
     @EqualsAndHashCode.Include
-    private final String countryIso;
+    private final CountryIso countryIso;
     private final String name;
 
     @Builder
-    private Country(String countryIso, String name) {
-        this.countryIso = IsoValidator.validateCountryIso(countryIso);
-        this.name = Validator.notEmpty(name);
+    private Country(CountryIso countryIso, String name) {
+        this.countryIso = Validator.notNull(countryIso, "countryIso");
+        this.name = Validator.notBlank(name, "name");
     }
 
-    public static Country of(String countryIso, String name){
+    public static Country of(CountryIso countryIso, String name){
         return Country.builder()
                 .countryIso(countryIso)
                 .name(name)

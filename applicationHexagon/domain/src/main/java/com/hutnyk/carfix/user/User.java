@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.user;
 
-import com.hutnyk.carfix.InvalidDomainObjectError;
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.util.Validator;
 import lombok.*;
 import java.time.LocalDate;
@@ -37,12 +38,12 @@ public final class User {
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
             Integer addressId) {
-        this.id = Validator.notNull(id);
-        this.name = Validator.notEmpty(name);
-        this.surname = Validator.notEmpty(surname);
-        this.phoneNumber = Validator.notNull(phoneNumber);
-        this.email = validateEmail(email);
-        this.passwordHash = Validator.notNull(passwordHash); //TODO add proper password validation
+        this.id = Validator.notNull(id, "id");
+        this.name = Validator.notBlank(name, "name");
+        this.surname = Validator.notBlank(surname, "surname");
+        this.phoneNumber = Validator.notNull(phoneNumber, "phoneNumber");
+        this.email = Validator.validateEmail(email, "email");
+        this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
     }
@@ -68,26 +69,17 @@ public final class User {
                 .build();
     }
 
-    private static String validateEmail(String email){
-       Validator.notEmpty(email);
-
-       if(!email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")){
-           throw new InvalidDomainObjectError("Email is not valid");
-       }
-       return email;
-    }
-
     private static LocalDate validateBirthDate(LocalDate date){
         if(date == null){
             return null;
         }
 
         if(date.isAfter(LocalDate.now())){
-            throw new InvalidDomainObjectError("Date can not be in future");
+            throw new DomainObjectValidationException(ValidationErrorType.DATE_IN_FUTURE, "dateOfBirth", date);
         }
 
         if(date.isBefore(LocalDate.of(1900, 1, 1))){
-            throw new InvalidDomainObjectError("Date can not be smaller than 1900.01.01");
+            throw new DomainObjectValidationException(ValidationErrorType.DATE_TOO_OLD, "dateOfBirth", date);
         }
 
         return date;
