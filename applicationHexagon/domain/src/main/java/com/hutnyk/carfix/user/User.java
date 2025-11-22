@@ -5,6 +5,7 @@ import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.util.Validator;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.Set;
 
 //@With
 @Getter
@@ -17,6 +18,7 @@ public final class User {
     private final String surname;
     private final PhoneNumber phoneNumber;
     private final String email;
+    private final UserRole role;
 
     @ToString.Exclude
     @Getter(AccessLevel.NONE)
@@ -35,6 +37,7 @@ public final class User {
             String surname,
             PhoneNumber phoneNumber,
             String email,
+            UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
             Integer addressId) {
@@ -43,6 +46,7 @@ public final class User {
         this.surname = Validator.notBlank(surname, "surname");
         this.phoneNumber = Validator.notNull(phoneNumber, "phoneNumber");
         this.email = Validator.validateEmail(email, "email");
+        this.role =  Validator.notNull(role, "role");
         this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
@@ -54,6 +58,7 @@ public final class User {
             String surname,
             PhoneNumber phoneNumber,
             String email,
+            UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
             Integer addressId){
@@ -63,6 +68,7 @@ public final class User {
                 .surname(surname)
                 .phoneNumber(phoneNumber)
                 .email(email)
+                .role(role)
                 .passwordHash(passwordHash)
                 .dateOfBirth(dateOfBirth)
                 .addressId(addressId)

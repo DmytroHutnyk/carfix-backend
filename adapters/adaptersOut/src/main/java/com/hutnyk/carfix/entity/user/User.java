@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.entity.user;
 
 import com.hutnyk.carfix.entity.address.Address;
+import com.hutnyk.carfix.user.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,6 +38,10 @@ public class User {
 
     @Column(name = "password", nullable = false)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserRole role;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;

@@ -8,10 +8,19 @@ CREATE TABLE users (
                        ph_country_code varchar(4)  NOT NULL,
                        email varchar(30)  NOT NULL,
                        password text  NOT NULL,
+                        role text NOT NULL ,
                        date_of_birth date  NULL,
                        address_id int  NULL,
+
+                        CONSTRAINT check_users_role
+                            CHECK (role IN (
+                                'CUSTOMER',
+                                'OWNER',
+                                'ADMIN',
+                                'EMPLOYEE'
+                                )),
 --TODO Temporary solution
-                       CONSTRAINT check_uses_ph_country_code
+                       CONSTRAINT check_users_ph_country_code
                             CHECK (ph_country_code IN (
                            '+1',
                             '+7',
