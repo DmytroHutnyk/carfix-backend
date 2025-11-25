@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.entity.address;
+package com.hutnyk.carfix.address;
 
 import com.hutnyk.carfix.address.CountryIso;
 import jakarta.persistence.*;

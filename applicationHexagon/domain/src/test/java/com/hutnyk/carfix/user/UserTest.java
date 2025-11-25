@@ -18,6 +18,7 @@ public class UserTest {
                 "Doe",
                 new PhoneNumber("+1", "1234567890"),
                 "john.doe@example.com",
+                UserRole.CUSTOMER,
                 PasswordHash.of("hashedPassword123"),
                 dateOfBirth,
                 null

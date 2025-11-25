@@ -1,4 +1,5 @@
-package com.hutnyk.carfix.entity.address;
+package com.hutnyk.carfix.address;
+
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,25 +10,20 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "cities")
-public class City {
-
+@Table(name = "regions")
+public class Region {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "city_id")
+    @Column(name = "region_id")
     private Integer id;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "region_id", nullable = false)
-    private Region region;
+    @JoinColumn(name = "countries_iso")
+    private Country country;
 
-    @OneToMany(mappedBy = "city")
-    private Set<Street> streets;
-
-    @OneToMany(mappedBy = "city")
-    private Set<PostalCode> postalCodes;
-
+    @OneToMany(mappedBy = "region")
+    private Set<City>  cities;
 }

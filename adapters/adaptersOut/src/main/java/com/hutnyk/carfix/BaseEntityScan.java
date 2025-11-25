@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.entity;
+package com.hutnyk.carfix;
 
 public interface BaseEntityScan {
 }
