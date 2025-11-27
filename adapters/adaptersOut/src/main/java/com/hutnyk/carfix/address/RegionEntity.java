@@ -11,7 +11,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(name = "regions")
-public class Region {
+public class RegionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "region_id")
@@ -22,8 +22,8 @@ public class Region {
 
     @ManyToOne
     @JoinColumn(name = "countries_iso")
-    private Country country;
+    private CountryEntity countryEntity;
 
-    @OneToMany(mappedBy = "region")
-    private Set<City>  cities;
+    @OneToMany(mappedBy = "regionEntity")
+    private Set<CityEntity>  cities;
 }

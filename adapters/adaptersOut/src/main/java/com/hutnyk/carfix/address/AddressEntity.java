@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.address;
 
-import com.hutnyk.carfix.user.User;
+import com.hutnyk.carfix.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Entity(name = "addresses")
-public class Address {
+public class AddressEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,14 +23,14 @@ public class Address {
     @Column(name = "flat_number", length = 10)
     private String flatNumber;
 
-    @OneToOne(mappedBy = "address")
-    private User user;
+    @OneToOne(mappedBy = "addressEntity")
+    private UserEntity userEntity;
 
     @ManyToOne
     @JoinColumn(name = "street_id", nullable = false)
-    private Street street;
+    private StreetEntity streetEntity;
 
     @ManyToOne
     @JoinColumn(name = "postal_code_id", nullable = false)
-    private PostalCode postalCode;
+    private PostalCodeEntity postalCodeEntity;
 }

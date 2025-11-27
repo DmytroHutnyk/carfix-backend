@@ -2,15 +2,17 @@ package com.hutnyk.carfix.address;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 @Entity
 @Table(name = "cities")
-public class City {
+public class CityEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,12 +24,12 @@ public class City {
 
     @ManyToOne
     @JoinColumn(name = "region_id", nullable = false)
-    private Region region;
+    private RegionEntity regionEntity;
 
-    @OneToMany(mappedBy = "city")
-    private Set<Street> streets;
+    @OneToMany(mappedBy = "cityEntity")
+    private Set<StreetEntity> streetEntities;
 
-    @OneToMany(mappedBy = "city")
-    private Set<PostalCode> postalCodes;
+    @OneToMany(mappedBy = "cityEntity")
+    private Set<PostalCodeEntity> postalCodeEntities;
 
 }

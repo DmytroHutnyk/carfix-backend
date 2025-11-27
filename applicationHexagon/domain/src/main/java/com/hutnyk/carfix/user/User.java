@@ -31,7 +31,7 @@ public final class User {
     private final Integer addressId;
 
     @Builder
-    public User(
+    private User(
             UserId id,
             String name,
             String surname,

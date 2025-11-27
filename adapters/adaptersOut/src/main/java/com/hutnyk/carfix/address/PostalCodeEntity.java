@@ -10,7 +10,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(name = "postal_codes")
-public class PostalCode {
+public class PostalCodeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "postal_code_id")
@@ -21,8 +21,8 @@ public class PostalCode {
 
     @ManyToOne
     @JoinColumn(name = "city_id", nullable = false)
-    private City city;
+    private CityEntity cityEntity;
 
-    @OneToMany(mappedBy = "postalCode")
-    private Set<Address> addresses;
+    @OneToMany(mappedBy = "postalCodeEntity")
+    private Set<AddressEntity> addressEntities;
 }

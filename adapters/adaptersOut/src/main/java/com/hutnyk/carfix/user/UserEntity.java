@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.user;
 
-import com.hutnyk.carfix.address.Address;
+import com.hutnyk.carfix.address.AddressEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.util.UUID;
 @Data
 @Table(name = "users")
 @Entity
-public class User {
+public class UserEntity {
 
     @Id
     @Column(name = "user_id", nullable = false)
@@ -47,8 +47,8 @@ public class User {
 
     @OneToOne
     @JoinColumn(name = "address_id")
-    private Address address;
+    private AddressEntity addressEntity;
 
-    @OneToOne(mappedBy = "user")
-    private Customer customer;
+    @OneToOne(mappedBy = "userEntity")
+    private CustomerEntity customerEntity;
 }

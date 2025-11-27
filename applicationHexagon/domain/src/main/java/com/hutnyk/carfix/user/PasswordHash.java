@@ -22,7 +22,7 @@ public final class PasswordHash {
     }
 
     private static String validate(String value) {
-        Validator.notBlank(value, "value");
+        Validator.notBlank(value, "value"); //TODO
         return value;
     }
 }

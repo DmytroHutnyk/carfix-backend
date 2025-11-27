@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.customer.CustomerStatus;
-import com.hutnyk.carfix.carProfile.CarProfile;
+import com.hutnyk.carfix.carProfile.CarProfileEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,21 +14,21 @@ import java.util.UUID;
 @AllArgsConstructor
 @Data
 @Entity(name = "customers")
-public class Customer {
+public class CustomerEntity {
 
     @Id
     @Column(name = "user_id", nullable = false)
     private UUID id;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @MapsId
     @JoinColumn(name = "user_id")
-    private User user;
+    private UserEntity userEntity;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private CustomerStatus customerStatus;
 
-    @OneToMany(mappedBy = "customer")
-    private Set<CarProfile> carProfiles;
+    @OneToMany(mappedBy = "customerEntity")
+    private Set<CarProfileEntity> carProfileEntities;
 }

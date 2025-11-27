@@ -9,7 +9,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(name = "streets")
-public class Street {
+public class StreetEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,12 +20,12 @@ public class Street {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @OneToMany(mappedBy = "street")
-    private Set<Address> addresses;
+    @OneToMany(mappedBy = "streetEntity")
+    private Set<AddressEntity> addressEntities;
 
     @ManyToOne
     @JoinColumn(name = "city_id", nullable = false)
-    private City city;
+    private CityEntity cityEntity;
 
 
 }

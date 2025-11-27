@@ -11,7 +11,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "model_generations")
-public class ModelGeneration {
+public class ModelGenerationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,8 +29,8 @@ public class ModelGeneration {
 
     @ManyToOne
     @JoinColumn(name = "car_model_id", nullable = false)
-    private CarModel carModel;
+    private CarModelEntity carModelEntity;
 
-    @OneToMany(mappedBy = "modelGeneration")
-    private Set<CarProfile> carProfiles;
+    @OneToMany(mappedBy = "modelGenerationEntity")
+    private Set<CarProfileEntity> carProfileEntities;
 }

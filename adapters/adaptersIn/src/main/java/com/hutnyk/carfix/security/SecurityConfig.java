@@ -4,11 +4,13 @@ import lombok.SneakyThrows;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -22,17 +24,21 @@ public class SecurityConfig {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/customer/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin
-                        .loginPage("/api/auth/login")
-                        .loginProcessingUrl("/api/auth/login")
+                        .loginPage("/api/customer/auth/login")
+                        .loginProcessingUrl("/api/customer/auth/login")
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessUrl("/api/auth/login?logout")
+                        .logoutUrl("/api/customer/auth/logout")
+                        .logoutSuccessUrl("/api/customer/auth/login?logout")
                         .permitAll()
+                ).csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**")
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 );
 
         return http.build();
@@ -50,5 +56,18 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**")
+                        .allowedOrigins("http://localhost:5173")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE")
+                        .allowCredentials(true);
+            }
+        };
     }
 }

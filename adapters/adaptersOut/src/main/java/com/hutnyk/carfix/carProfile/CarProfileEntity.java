@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.carProfile;
 
-import com.hutnyk.carfix.user.Customer;
+import com.hutnyk.carfix.user.CustomerEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "car_profiles")
-public class CarProfile {
+public class CarProfileEntity {
 
     @Id
     @Column(name = "car_profile_id", nullable = false)
@@ -36,14 +36,14 @@ public class CarProfile {
 
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private CustomerEntity customerEntity;
 
 //    @Column(name = "file_id")
 //    private Integer fileId;
 
     @ManyToOne
     @JoinColumn(name = "model_generation_id", nullable = false)
-    private ModelGeneration modelGeneration;
+    private ModelGenerationEntity modelGenerationEntity;
 
 
 }

@@ -1,11 +1,12 @@
 package com.hutnyk.carfix.dto.request;
 
+import com.hutnyk.carfix.validation.Password;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-public record RegisterCustomerRequest(
+public record RegisterUserRequest(
         @NotBlank
         @Size(max = 50)
         String name,
@@ -17,11 +18,11 @@ public record RegisterCustomerRequest(
         @NotBlank
         @Size(max = 4)
         @Pattern(regexp = "\\+[0-9]{1,3}")
-        String phCountryCode,
+        String phoneCountryCode,
 
         @NotBlank
         @Size(max = 15)
-        @Pattern(regexp = "\\+[0-9]+")
+        @Pattern(regexp = "^[0-9]{5,15}$")
         String phoneNumber,
 
         @NotBlank
@@ -29,9 +30,7 @@ public record RegisterCustomerRequest(
         @Size(max = 30)
         String email,
 
-        @NotBlank
-        @Size(min = 8, max = 100)
+        @Password
         String password
 ) {
-
 }

@@ -1,6 +1,5 @@
 package com.hutnyk.carfix.address;
 
-import com.hutnyk.carfix.address.CountryIso;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -9,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "countries")
-public class Country {
+public class CountryEntity {
 
     @Id
     @Enumerated(EnumType.STRING)

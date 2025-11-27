@@ -1,0 +1,57 @@
+package com.hutnyk.carfix.mapper;
+
+import com.hutnyk.carfix.address.AddressEntity;
+import com.hutnyk.carfix.user.*;
+
+public class UserMapper {
+
+
+    public static UserEntity toEntity(User user, AddressEntity addressEntity, CustomerEntity customerEntity) {
+        if (user == null) {
+            return null;
+        }
+
+        return new UserEntity(
+                user.getId().id(),
+                user.getName(),
+                user.getSurname(),
+                user.getPhoneNumber().phoneNumber(),
+                user.getPhoneNumber().countryCode(),
+                user.getEmail(),
+                user.getPasswordHash().getValue(),
+                user.getRole(),
+                user.getDateOfBirth(),
+                addressEntity,
+                customerEntity
+        );
+    }
+
+
+    public static User toDomain(UserEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        UserId userId = UserId.of(entity.getId());
+        PhoneNumber phoneNumber = new PhoneNumber(
+                entity.getPhoneCountryCode(),
+                entity.getPhoneNumber()
+        );
+        PasswordHash passwordHash = PasswordHash.of(entity.getPassword());
+        Integer addressId = entity.getAddressEntity() != null 
+                ? entity.getAddressEntity().getId() 
+                : null;
+
+        return User.builder()
+                .id(userId)
+                .name(entity.getName())
+                .surname(entity.getSurname())
+                .phoneNumber(phoneNumber)
+                .email(entity.getEmail())
+                .role(entity.getRole())
+                .passwordHash(passwordHash)
+                .dateOfBirth(entity.getDateOfBirth())
+                .addressId(addressId)
+                .build();
+    }
+}

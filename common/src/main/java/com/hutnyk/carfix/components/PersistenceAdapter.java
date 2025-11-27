@@ -1,4 +1,4 @@
-package com.hutnyk.carfix;
+package com.hutnyk.carfix.components;
 
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.stereotype.Component;
