@@ -1,15 +1,11 @@
 package com.hutnyk.carfix.adapter;
 
 import com.hutnyk.carfix.components.PersistenceAdapter;
-import com.hutnyk.carfix.customer.Customer;
-import com.hutnyk.carfix.mapper.CustomerMapper;
 import com.hutnyk.carfix.mapper.UserMapper;
 import com.hutnyk.carfix.out.UserPortOut;
 import com.hutnyk.carfix.repository.UserRepository;
-import com.hutnyk.carfix.user.CustomerEntity;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
-import com.hutnyk.carfix.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;

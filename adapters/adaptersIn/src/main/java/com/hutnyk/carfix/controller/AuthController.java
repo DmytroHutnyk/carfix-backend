@@ -9,6 +9,8 @@ import com.hutnyk.carfix.mapper.CustomerToResponseMapper;
 import com.hutnyk.carfix.mapper.RegisterUserCommandMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,13 +26,13 @@ public class AuthController {
     private final RegisterUserCommandMapper registerUserCommandMapper;
 
     @PostMapping("/register")
-    public RegisterCustomerResponse registerCustomer(@Valid @RequestBody RegisterUserRequest request) {
+    public ResponseEntity<RegisterCustomerResponse> registerCustomer(@Valid @RequestBody RegisterUserRequest request) {
 
         RegisterUserCommand command = registerUserCommandMapper.toCommand(request);
 
         //even though User command is passed, customer is created as User is the only thing we need
         Customer registeredUser = customerPortIn.registerCustomer(command);
-        
-        return CustomerToResponseMapper.toResponse(registeredUser);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(CustomerToResponseMapper.toResponse(registeredUser));
     }
 }

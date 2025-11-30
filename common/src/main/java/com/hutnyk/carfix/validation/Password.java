@@ -8,7 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Custom validation annotation for validating phone number, validated by {@link PasswordValidator}
+ * Custom validation annotation for validating password, validated by {@link PasswordValidator}
  */
 
 @Constraint(validatedBy = PasswordValidator.class)
@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Password {
 
-    String message() default "Phone number validation exception";
+    String message() default "Password validation exception";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

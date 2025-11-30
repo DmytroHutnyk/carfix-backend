@@ -1,5 +1,6 @@
-package com.hutnyk.carfix.address;
+package com.hutnyk.carfix.entity.address;
 
+import com.hutnyk.carfix.address.CountryIso;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;

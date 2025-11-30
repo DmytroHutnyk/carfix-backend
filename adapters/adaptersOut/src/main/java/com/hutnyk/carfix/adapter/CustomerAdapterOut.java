@@ -5,10 +5,8 @@ import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.mapper.CustomerMapper;
 import com.hutnyk.carfix.mapper.UserMapper;
 import com.hutnyk.carfix.out.CustomerPortOut;
-import com.hutnyk.carfix.repository.CustomerRepository;
-import com.hutnyk.carfix.user.CustomerEntity;
-import com.hutnyk.carfix.user.User;
-import com.hutnyk.carfix.user.UserEntity;
+import com.hutnyk.carfix.entity.user.CustomerEntity;
+import com.hutnyk.carfix.entity.user.UserEntity;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 

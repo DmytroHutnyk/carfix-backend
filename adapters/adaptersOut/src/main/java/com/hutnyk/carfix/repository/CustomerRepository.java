@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.repository;
 
-import com.hutnyk.carfix.user.CustomerEntity;
+import com.hutnyk.carfix.entity.user.CustomerEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;

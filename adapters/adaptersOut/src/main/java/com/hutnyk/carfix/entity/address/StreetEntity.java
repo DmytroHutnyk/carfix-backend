@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.address;
+package com.hutnyk.carfix.entity.address;
 
 import jakarta.persistence.*;
 import lombok.NoArgsConstructor;

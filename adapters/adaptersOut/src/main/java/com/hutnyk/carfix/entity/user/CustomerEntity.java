@@ -1,7 +1,7 @@
-package com.hutnyk.carfix.user;
+package com.hutnyk.carfix.entity.user;
 
 import com.hutnyk.carfix.customer.CustomerStatus;
-import com.hutnyk.carfix.carProfile.CarProfileEntity;
+import com.hutnyk.carfix.entity.carProfile.CarProfileEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
