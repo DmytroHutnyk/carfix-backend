@@ -2,11 +2,13 @@ package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.util.Validator;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
 
 
 @EqualsAndHashCode
 @ToString(exclude = "value")
+@Getter
 public final class PasswordHash {
 
     private final String value;
