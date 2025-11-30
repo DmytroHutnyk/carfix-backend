@@ -19,8 +19,13 @@ import java.util.Map;
 @ControllerAdvice
 public class ExceptionController{
 
-
-
+    /**
+     * Handles exceptions thrown by {@link jakarta.validation.constraints} validation annotations or custom validation annotations.
+     * <p>
+     * Primary those, that are thrown in DTOs.
+     * @param ex
+     * @return {@code ResponseEntity<ProblemDetail>} with all the details why the exception occurred
+     */
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler
     public ResponseEntity<ProblemDetail> handleDtoValidation(MethodArgumentNotValidException ex){
@@ -42,6 +47,14 @@ public class ExceptionController{
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
+
+    /**
+     * Handles exceptions of type <code>UserAlreadyExistsException</code> when user with such email or phone number already exists.
+     *
+     * @param ex
+     * @return {@code ResponseEntity<ProblemDetail>} with all the details why the exception occurred
+     */
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler
     public ResponseEntity<ProblemDetail> handleUserExistsException(UserAlreadyExistsException ex){
         ProblemDetail problemDetail = null;
@@ -60,12 +73,13 @@ public class ExceptionController{
             errors.put("phoneNumber", phoneNumber.phoneNumber());
 
         }else{
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         problemDetail.setProperty("errors", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
+
 
 
 }

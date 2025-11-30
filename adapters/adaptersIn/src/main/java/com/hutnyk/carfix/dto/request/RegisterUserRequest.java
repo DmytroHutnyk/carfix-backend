@@ -1,5 +1,6 @@
 package com.hutnyk.carfix.dto.request;
 
+import com.hutnyk.carfix.validation.NotCommonPassword;
 import com.hutnyk.carfix.validation.Password;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -34,6 +35,7 @@ public record RegisterUserRequest(
         String email,
 
         @Password(message = "Password must be 8–20 characters long and include an uppercase letter, a lowercase letter, a digit and a special character")
+        @NotCommonPassword(message = "Password is too common")
         String password
 ) {
 }
