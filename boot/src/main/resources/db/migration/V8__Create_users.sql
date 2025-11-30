@@ -19,6 +19,10 @@ CREATE TABLE users (
                                 'ADMIN',
                                 'EMPLOYEE'
                                 )),
+                        CONSTRAINT unique_email
+                            UNIQUE (email),
+                        CONSTRAINT unique_ph_country_code_phone_number
+                            unique (ph_country_code, phone_number),
 --TODO Temporary solution
                        CONSTRAINT check_users_ph_country_code
                             CHECK (ph_country_code IN (
