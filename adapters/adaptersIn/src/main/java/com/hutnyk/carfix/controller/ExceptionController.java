@@ -1,5 +1,7 @@
 package com.hutnyk.carfix.controller;
 
+import com.hutnyk.carfix.customer.Customer;
+import com.hutnyk.carfix.exception.CustomerNotFoundException;
 import com.hutnyk.carfix.exceptions.EmailAlreadyTakenException;
 import com.hutnyk.carfix.exceptions.PhoneNumberAlreadyTakenException;
 import com.hutnyk.carfix.exceptions.UserAlreadyExistsException;
@@ -7,6 +9,7 @@ import com.hutnyk.carfix.user.PhoneNumber;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -80,6 +83,22 @@ public class ExceptionController{
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleLoginFailure(BadCredentialsException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Wrong email or password");
+        problemDetail.setTitle("Authorization failed");
 
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleLoginFailure(CustomerNotFoundException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "User with such email does not exist");
+        problemDetail.setTitle("Authorization failed");
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
 
 }

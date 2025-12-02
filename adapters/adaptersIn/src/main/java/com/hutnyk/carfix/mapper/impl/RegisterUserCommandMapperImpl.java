@@ -1,7 +1,8 @@
-package com.hutnyk.carfix.mapper;
+package com.hutnyk.carfix.mapper.impl;
 
 import com.hutnyk.carfix.in.commands.RegisterUserCommand;
 import com.hutnyk.carfix.dto.request.RegisterUserRequest;
+import com.hutnyk.carfix.mapper.interfaces.RegisterUserCommandMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.mapper;
+package com.hutnyk.carfix.mapper.interfaces;
 
 import com.hutnyk.carfix.in.commands.RegisterUserCommand;
 import com.hutnyk.carfix.dto.request.RegisterUserRequest;
