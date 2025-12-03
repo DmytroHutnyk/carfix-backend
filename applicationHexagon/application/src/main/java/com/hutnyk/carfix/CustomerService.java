@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class CustomerService implements CustomerPortIn {
@@ -53,6 +55,11 @@ public class CustomerService implements CustomerPortIn {
         Customer customer = Customer.of(user, CustomerStatus.ACTIVE);
         
         return customerPortOut.saveUserAndCustomer(customer);
+    }
+
+    @Override
+    public Optional<Customer> loadByCustomerUsername(String email){
+        return Optional.ofNullable(customerPortOut.loadCustomerByUsername(email));
     }
 }
 

@@ -7,6 +7,8 @@ import com.hutnyk.carfix.mapper.UserMapper;
 import com.hutnyk.carfix.out.CustomerPortOut;
 import com.hutnyk.carfix.entity.user.CustomerEntity;
 import com.hutnyk.carfix.entity.user.UserEntity;
+import com.hutnyk.carfix.repository.CustomerRepository;
+import com.hutnyk.carfix.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
@@ -15,7 +17,10 @@ import lombok.RequiredArgsConstructor;
 public class CustomerAdapterOut implements CustomerPortOut {
 
     private final EntityManager entityManager;
+    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
 
+    @Override
     public Customer saveUserAndCustomer(Customer customer){
 
         UserEntity userEntity = UserMapper.toEntity(customer.getUser(), null, null);
@@ -27,5 +32,11 @@ public class CustomerAdapterOut implements CustomerPortOut {
         Customer mappedReturnedEntity = CustomerMapper.toDomain(customerEntity, UserMapper.toDomain(customerEntity.getUserEntity()));
 
         return mappedReturnedEntity;
+    }
+
+    @Override
+    public Customer loadCustomerByUsername(String email){
+        CustomerEntity customerEntity = customerRepository.getCustomerEntityByUserEntity(userRepository.getUserByEmail(email));
+        return CustomerMapper.toDomain(customerEntity, UserMapper.toDomain(customerEntity.getUserEntity()));
     }
 }
