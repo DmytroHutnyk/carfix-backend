@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -45,16 +47,32 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
         http
                 .securityMatcher("/api/**")
+
                 .authenticationProvider(authenticationProvider())
-                .securityContext(context -> context.securityContextRepository(securityContextRepository()))
-                .requestCache(RequestCacheConfigurer::disable) //disabling the request cache will prevent sessions from being created on failed authentication attempts
+
+                .securityContext(context ->
+                        context.securityContextRepository(securityContextRepository())
+                )
+
+                .requestCache(RequestCacheConfigurer::disable)                                                          //disabling the request cache will prevent sessions from being created on failed authentication attempts
+
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/**")
+
+                .csrf(csrf ->
+                        csrf.ignoringRequestMatchers("/api/**")
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                )   .authorizeHttpRequests(authorize -> authorize
+                )
+
+                .exceptionHandling(e ->
+                        e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))                   // return 401 instead of default 403 when user is not authorized
+                )
+
+                .authorizeHttpRequests(authorize ->
+                        authorize.requestMatchers("/api/customer/auth/me").authenticated()                            // so the session validity is checked automatically by spring security
                         .requestMatchers("/api/customer/auth/**").permitAll()
                         .anyRequest().authenticated()
                 );
