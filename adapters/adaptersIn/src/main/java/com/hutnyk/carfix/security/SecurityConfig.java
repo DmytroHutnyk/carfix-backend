@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,13 +18,19 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.List;
 
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -40,16 +47,32 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
         http
                 .securityMatcher("/api/**")
-                .authenticationProvider(authenticationProvider())
-                .securityContext(context -> context.securityContextRepository(securityContextRepository()))
-                .requestCache(RequestCacheConfigurer::disable) //disabling the request cache will prevent sessions from being created on failed authentication attempts
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/**")
+                .authenticationProvider(authenticationProvider())
+
+                .securityContext(context ->
+                        context.securityContextRepository(securityContextRepository())
+                )
+
+                .requestCache(RequestCacheConfigurer::disable)                                                          //disabling the request cache will prevent sessions from being created on failed authentication attempts
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                .csrf(csrf ->
+                        csrf.ignoringRequestMatchers("/api/**")
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                )   .authorizeHttpRequests(authorize -> authorize
+                )
+
+                .exceptionHandling(e ->
+                        e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))                   // return 401 instead of default 403 when user is not authorized
+                )
+
+                .authorizeHttpRequests(authorize ->
+                        authorize.requestMatchers("/api/customer/auth/me").authenticated()                            // so the session validity is checked automatically by spring security
                         .requestMatchers("/api/customer/auth/**").permitAll()
                         .anyRequest().authenticated()
                 );
@@ -58,14 +81,14 @@ public class SecurityConfig {
     }
 
     /**
-     * Permits all to actuator endpoints, and denies all endpoints that are not listed in first <code>securityFilterChain</code>.
+     * Permits all to actuator amd swagger endpoints, and denies all endpoints that are not listed in first <code>securityFilterChain</code>.
      */
     @Bean
     @SneakyThrows
     public SecurityFilterChain defaultFilterChain(HttpSecurity http){
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/actuator/health", "/actuator/info")
+                        .requestMatchers("/actuator/health", "/actuator/info", "/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll()
                         .anyRequest()
                         .denyAll()
@@ -75,16 +98,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:5173")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE")
-                        .allowCredentials(true);
-            }
-        };
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
     }
 
     @SneakyThrows

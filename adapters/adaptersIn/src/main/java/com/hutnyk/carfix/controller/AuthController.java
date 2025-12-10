@@ -20,15 +20,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.Optional;
 
 
@@ -91,6 +91,23 @@ public class AuthController {
         ));
 
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
+    }
 
+    /**
+     * Method for validation of JSESSIONID sent by browser, if session is still valid returns 200 OK and freshly fetched user.
+     * <p>Otherwise 401
+     * @param userDetails
+     * @return
+     */
+
+    @GetMapping("/me")
+    public ResponseEntity<LoginUserResponse> validateCookie(@AuthenticationPrincipal UserDetails userDetails){
+        Optional<Customer> customer = customerPortIn.loadByCustomerUsername(userDetails.getUsername());
+
+        LoginUserResponse responseData = loginUserMapper.customerToLoginUserResponse(customer.orElseThrow(
+                () -> new CustomerNotFoundException("Customer with such email does not exist: " + userDetails.getUsername())
+        ));
+
+        return ResponseEntity.status(HttpStatus.OK).body(responseData);
     }
 }
