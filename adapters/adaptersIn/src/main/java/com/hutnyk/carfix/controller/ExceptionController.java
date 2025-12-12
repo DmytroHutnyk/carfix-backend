@@ -65,20 +65,20 @@ public class ExceptionController{
 
         if(ex instanceof EmailAlreadyTakenException){
             problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-            problemDetail.setTitle("Email is already taken");
-            errors.put("email", ex.getRejectedValue().toString());
+            errors.put("email", "User with " + ex.getRejectedValue().toString() + " already exists");
 
         }else if(ex instanceof PhoneNumberAlreadyTakenException){
             problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-            problemDetail.setTitle("Phone number is already taken");
             PhoneNumber phoneNumber = (PhoneNumber) ex.getRejectedValue();
-            errors.put("phoneCountryCode", phoneNumber.countryCode());
-            errors.put("phoneNumber", phoneNumber.phoneNumber());
+            errors.put("phoneCountryCodeAndPhoneNumber",
+                    "User with " + phoneNumber.phoneNumber() + " already exists");
 
         }else{
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
+        problemDetail.setTitle("User creation failed");
+        problemDetail.setDetail("User creation failed");
         problemDetail.setProperty("errors", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
@@ -86,8 +86,10 @@ public class ExceptionController{
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler
     public ResponseEntity<ProblemDetail> handleLoginFailure(BadCredentialsException ex){
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Wrong email or password");
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authorization failed");
         problemDetail.setTitle("Authorization failed");
+
+        problemDetail.setProperty("authorization", "Wrong email or password");
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
@@ -95,8 +97,9 @@ public class ExceptionController{
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler
     public ResponseEntity<ProblemDetail> handleLoginFailure(CustomerNotFoundException ex){
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "User with such email does not exist");
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Authorization failed");
         problemDetail.setTitle("Authorization failed");
+        problemDetail.setProperty("authorization", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
