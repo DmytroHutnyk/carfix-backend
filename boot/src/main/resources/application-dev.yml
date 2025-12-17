@@ -1,4 +1,4 @@
-#debug: true
+debug: true
 spring:
   config:
     activate:
@@ -23,11 +23,11 @@ spring:
           use_second_level_cache: false
         format_sql: true
         highlight_sql: true
-        show_sql: true
+#        show_sql: true
         use_sql_comments: true
         type:
           trace: true
-    show-sql: true
+#    show-sql: true
 
 management:
   endpoints:
@@ -54,7 +54,9 @@ management:
       enabled: true #does not work
 logging:
   level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.hibernate.orm.jdbc.extract: TRACE
+#    org.hibernate.SQL: DEBUG
+#    org.hibernate.orm.jdbc.bind: TRACE
+    org.springframework.security: TRACE
+    root: info
+#    org.hibernate.orm.jdbc.extract: TRACE
 

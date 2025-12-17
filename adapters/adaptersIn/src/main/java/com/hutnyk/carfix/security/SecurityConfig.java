@@ -19,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -27,8 +28,6 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
@@ -47,6 +46,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
         http
                 .securityMatcher("/api/**")
+
+                .addFilterBefore(httpLoggingFilter(), SecurityContextHolderFilter.class)
 
                 .authenticationProvider(authenticationProvider())
 
@@ -84,9 +85,10 @@ public class SecurityConfig {
      * Permits all to actuator amd swagger endpoints, and denies all endpoints that are not listed in first <code>securityFilterChain</code>.
      */
     @Bean
+    @Order(2)
     @SneakyThrows
     public SecurityFilterChain defaultFilterChain(HttpSecurity http){
-        http
+        http.securityMatcher("/**")
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/info", "/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll()
@@ -149,5 +151,10 @@ public class SecurityConfig {
     @Bean
     public SessionAuthenticationStrategy sessionAuthenticationStrategy(){
         return new SessionFixationProtectionStrategy();
+    }
+
+    @Bean
+    HttpLoggingFilter httpLoggingFilter() {
+        return new HttpLoggingFilter();
     }
 }
