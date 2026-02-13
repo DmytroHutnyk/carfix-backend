@@ -27,9 +27,5 @@ public class CityEntity {
     private RegionEntity regionEntity;
 
     @OneToMany(mappedBy = "cityEntity")
-    private Set<StreetEntity> streetEntities;
-
-    @OneToMany(mappedBy = "cityEntity")
-    private Set<PostalCodeEntity> postalCodeEntities;
-
+    private Set<AddressEntity> addressEntity;
 }
