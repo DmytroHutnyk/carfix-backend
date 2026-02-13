@@ -1,11 +1,8 @@
 SET search_path TO carfix;
 
-ALTER TABLE addresses ADD CONSTRAINT fk_addresses_streets FOREIGN KEY (street_id) REFERENCES streets (street_id);
-ALTER TABLE addresses ADD CONSTRAINT fk_addresses_postal_codes FOREIGN KEY (postal_code_id) REFERENCES postal_codes (postal_code_id);
-ALTER TABLE streets ADD CONSTRAINT fk_streets_cities FOREIGN KEY (city_id) REFERENCES cities (city_id);
+ALTER TABLE addresses ADD CONSTRAINT fk_addresses_cities FOREIGN KEY (city_id) REFERENCES cities (city_id);
 ALTER TABLE cities ADD CONSTRAINT fk_cities_regions FOREIGN KEY (region_id) REFERENCES regions (region_id);
 ALTER TABLE regions ADD CONSTRAINT fk_regions_countries FOREIGN KEY (countries_iso) REFERENCES countries (iso);
-ALTER TABLE postal_codes ADD CONSTRAINT fk_postal_codes_cities FOREIGN KEY (city_id) REFERENCES cities (city_id);
 ALTER TABLE users ADD CONSTRAINT fk_users_address FOREIGN KEY (address_id) REFERENCES addresses (address_id);
 ALTER TABLE customers ADD CONSTRAINT fk_customers_users FOREIGN KEY (user_id) REFERENCES users (user_id);
 ALTER TABLE owners ADD CONSTRAINT fk_owners_users FOREIGN KEY (user_id) REFERENCES users (user_id);
