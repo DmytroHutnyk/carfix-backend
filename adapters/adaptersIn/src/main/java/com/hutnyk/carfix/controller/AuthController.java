@@ -48,12 +48,24 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterCustomerResponse> registerCustomer(@Valid @RequestBody RegisterUserRequest request) {
-
-        RegisterUserCommand command = registerUserCommandMapper.toCommand(request);
+    public ResponseEntity<RegisterCustomerResponse> registerCustomer(@Valid @RequestBody RegisterUserRequest requestData,
+                                                                     HttpServletRequest request, HttpServletResponse response) {
+        RegisterUserCommand command = registerUserCommandMapper.toCommand(requestData);
 
         //even though User command is passed, customer is created as User is the only thing we need
         Customer registeredUser = customerPortIn.registerCustomer(command);
+
+        //login user
+        UsernamePasswordAuthenticationToken passwordAuthenticationToken =
+                new UsernamePasswordAuthenticationToken(requestData.email(), requestData.password());
+        Authentication authenticatedToken = authenticationManager.authenticate(passwordAuthenticationToken);
+
+        authenticationStrategy.onAuthentication(authenticatedToken, request, response);
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authenticatedToken);
+        securityContextHolderStrategy.setContext(context);
+        securityContextRepository.saveContext(context, request, response);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(CustomerToResponseMapper.toResponse(registeredUser));
     }
@@ -64,18 +76,18 @@ public class AuthController {
      * <p>Manually enables {@link SessionAuthenticationStrategy} to protect against session fixation attack.
      * <p><code>SecurityContext</code> manually persisted to <code>SecurityContextRepository</code>.
      *
-     * @param loginUserRequest
+     * @param requestData
      * @param request
      * @param response
      * @return Information about user if authentication succeeded
      */
 
     @PostMapping("/login")
-    public ResponseEntity<LoginUserResponse> loginUser(@Valid @RequestBody LoginUserRequest loginUserRequest,
+    public ResponseEntity<LoginUserResponse> loginUser(@Valid @RequestBody LoginUserRequest requestData, //TODO, make it return cookie and maybe some min info
                                                        HttpServletRequest request, HttpServletResponse response){
 
         UsernamePasswordAuthenticationToken passwordAuthenticationToken =
-                new UsernamePasswordAuthenticationToken(loginUserRequest.email(), loginUserRequest.password());
+                new UsernamePasswordAuthenticationToken(requestData.email(), requestData.password());
         Authentication authenticatedToken = authenticationManager.authenticate(passwordAuthenticationToken);
 
         authenticationStrategy.onAuthentication(authenticatedToken, request, response);
@@ -85,9 +97,9 @@ public class AuthController {
         securityContextHolderStrategy.setContext(context);
         securityContextRepository.saveContext(context, request, response);
 
-        Optional<Customer> customer = customerPortIn.loadByCustomerUsername(loginUserRequest.email());
+        Optional<Customer> customer = customerPortIn.loadByCustomerUsername(requestData.email());
         LoginUserResponse responseData = loginUserMapper.customerToLoginUserResponse(customer.orElseThrow(
-                () -> new CustomerNotFoundException("Customer with such email does not exist: " + loginUserRequest.email())
+                () -> new CustomerNotFoundException("Customer with such email does not exist: " + requestData.email())
         ));
 
         return ResponseEntity.status(HttpStatus.OK).body(responseData);

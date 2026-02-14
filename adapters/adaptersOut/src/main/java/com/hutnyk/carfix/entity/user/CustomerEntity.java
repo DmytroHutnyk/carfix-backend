@@ -13,7 +13,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@Entity(name = "customers")
+@Table(name = "customers")
+@Entity
 public class CustomerEntity {
 
     @Id

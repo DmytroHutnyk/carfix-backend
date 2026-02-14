@@ -1,6 +1,5 @@
 package com.hutnyk.carfix.controller;
 
-import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.exception.CustomerNotFoundException;
 import com.hutnyk.carfix.exceptions.EmailAlreadyTakenException;
 import com.hutnyk.carfix.exceptions.PhoneNumberAlreadyTakenException;
@@ -65,13 +64,13 @@ public class ExceptionController{
 
         if(ex instanceof EmailAlreadyTakenException){
             problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-            errors.put("email", "User with " + ex.getRejectedValue().toString() + " already exists");
+            errors.put("email", "User with " + ex.getRejectedValue().toString() + " email already exists");
 
         }else if(ex instanceof PhoneNumberAlreadyTakenException){
             problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
             PhoneNumber phoneNumber = (PhoneNumber) ex.getRejectedValue();
             errors.put("phoneCountryCodeAndPhoneNumber",
-                    "User with " + phoneNumber.phoneNumber() + " already exists");
+                    "User with " + phoneNumber.phoneNumber() + " phone number already exists");
 
         }else{
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

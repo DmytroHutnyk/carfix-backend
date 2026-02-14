@@ -14,9 +14,10 @@ public class AddressTest {
     private Address createAddressWithFlatNumber(String flatNumber) {
         return Address.of(
                 1,
+                "Main Street",
                 "10",
                 flatNumber,
-                1L,
+                "00-001",
                 1
         );
     }
