@@ -13,6 +13,7 @@ import com.hutnyk.carfix.mapper.interfaces.LoginUserMapper;
 import com.hutnyk.carfix.mapper.interfaces.RegisterUserCommandMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -103,6 +104,18 @@ public class AuthController {
         ));
 
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logoutUser(HttpServletRequest request) {
+        securityContextHolderStrategy.clearContext();
+
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
+        return ResponseEntity.ok().build();
     }
 
     /**
