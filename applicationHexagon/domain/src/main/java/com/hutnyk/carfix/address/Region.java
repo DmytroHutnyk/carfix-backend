@@ -17,7 +17,7 @@ public final class Region {
 
     @Builder
     private Region(Integer id, String name, CountryIso countryIso) {
-        this.id = Validator.notNull(id, "id");
+        this.id = id;
         this.name = Validator.notBlank(name, "name");
         this.countryIso = Validator.notNull(countryIso, "countryIso");
     }

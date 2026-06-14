@@ -28,7 +28,7 @@ public final class Address {
             String flatNumber,
             String postalCode,
             Integer cityId) {
-        this.id = Validator.notNull(id, "id");
+        this.id = id;
         this.streetName = Validator.notBlank(streetName, "streetName");
         this.buildingNumber = Validator.notBlank(buildingNumber, "buildingNumber");
         this.flatNumber = validateFlatNumber(flatNumber);

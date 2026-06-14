@@ -48,7 +48,7 @@ public final class CarProfile {
             UserId customerId,
             Integer fileId,
             Integer modelGenerationId) {
-        this.id = Validator.notNull(id, "id");
+        this.id = id;
         this.name = Validator.notBlank(name, "name");
         this.vin = validateVin(vin);
         this.plates = validatePlates(plates);

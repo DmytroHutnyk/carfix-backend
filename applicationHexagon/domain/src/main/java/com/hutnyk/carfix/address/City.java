@@ -17,7 +17,7 @@ public final class City {
 
     @Builder
     private City(Integer id, String name, Integer regionId) {
-        this.id = Validator.notNull(id, "id");
+        this.id = id;
         this.name = Validator.notBlank(name, "name");
         this.regionId = Validator.notNull(regionId, "regionId");
     }
