@@ -1,0 +1,39 @@
+package com.hutnyk.carfix.controller;
+
+import com.hutnyk.carfix.dto.request.UpdateUserRequest;
+import com.hutnyk.carfix.dto.response.UserResponse;
+import com.hutnyk.carfix.in.UserPortIn;
+import com.hutnyk.carfix.in.commands.UpdateUserCommand;
+import com.hutnyk.carfix.mapper.UpdateUserCommandMapper;
+import com.hutnyk.carfix.mapper.UserToResponseMapper;
+import com.hutnyk.carfix.user.User;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/api/user")
+public class UserController {
+
+    private final UserPortIn userPortIn;
+
+    /**
+     * Partially updates the currently authenticated user's profile.
+     */
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse> updateCurrentUser(@Valid @RequestBody UpdateUserRequest request,
+                                                          @AuthenticationPrincipal UserDetails userDetails) {
+        UpdateUserCommand command = UpdateUserCommandMapper.toCommand(request);
+        User updatedUser = userPortIn.updateUser(userDetails.getUsername(), command);
+
+        return ResponseEntity.status(HttpStatus.OK).body(UserToResponseMapper.toResponse(updatedUser));
+    }
+}

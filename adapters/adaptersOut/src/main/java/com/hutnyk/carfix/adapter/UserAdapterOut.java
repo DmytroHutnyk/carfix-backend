@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.adapter;
 
 import com.hutnyk.carfix.components.PersistenceAdapter;
+import com.hutnyk.carfix.entity.user.UserEntity;
 import com.hutnyk.carfix.mapper.UserMapper;
 import com.hutnyk.carfix.out.UserPortOut;
 import com.hutnyk.carfix.repository.UserRepository;
@@ -29,5 +30,17 @@ public class UserAdapterOut implements UserPortOut {
     @Override
     public boolean existsByPhoneNumber(PhoneNumber phoneNumber){
         return userRepository.existsByPhoneCountryCodeAndPhoneNumber(phoneNumber.countryCode(), phoneNumber.phoneNumber());
+    }
+
+    @Override
+    public User update(User user){
+        UserEntity entity = userRepository.findById(user.getId().id())
+                .orElseThrow(() -> new IllegalStateException("User not found: " + user.getId().id()));
+
+        entity.setName(user.getName());
+        entity.setSurname(user.getSurname());
+        entity.setDateOfBirth(user.getDateOfBirth());
+
+        return UserMapper.toDomain(userRepository.save(entity));
     }
 }

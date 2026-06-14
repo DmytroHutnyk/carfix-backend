@@ -10,10 +10,10 @@ test:
 
 # Package without running tests
 build:
-    mvn clean package -DskipTests
+    mvn clean install -DskipTests
 
 # Full build + test, then start
 ci-dev:
-    mvn clean verify && cd boot && mvn spring-boot:run -Dspring-boot.run.profiles=dev
+    mvn clean install && cd boot && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 

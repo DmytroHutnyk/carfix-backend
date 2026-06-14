@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.Set;
 
-//@With
+@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class User {

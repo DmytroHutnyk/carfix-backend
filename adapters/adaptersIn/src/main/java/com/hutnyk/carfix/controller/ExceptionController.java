@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.controller;
 
 import com.hutnyk.carfix.exception.CustomerNotFoundException;
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exceptions.EmailAlreadyTakenException;
 import com.hutnyk.carfix.exceptions.PhoneNumberAlreadyTakenException;
 import com.hutnyk.carfix.exceptions.UserAlreadyExistsException;
@@ -79,6 +80,27 @@ public class ExceptionController{
         problemDetail.setTitle("User creation failed");
         problemDetail.setDetail("User creation failed");
         problemDetail.setProperty("errors", errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    /**
+     * Handles {@link DomainObjectValidationException} thrown when a domain object's invariants are violated
+     * (e.g. a value that passes DTO bean-validation but is still rejected by the domain). Maps to 400 with
+     * the offending field under the {@code errors} property.
+     *
+     * @param ex
+     * @return {@code ResponseEntity<ProblemDetail>} with the field that failed domain validation
+     */
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleDomainValidation(DomainObjectValidationException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Domain validation failed");
+        problemDetail.setTitle("Validation error");
+
+        Map<String, String> errors = new HashMap<>();
+        errors.put(ex.getFieldName(), ex.getMessage());
+        problemDetail.setProperty("errors", errors);
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 

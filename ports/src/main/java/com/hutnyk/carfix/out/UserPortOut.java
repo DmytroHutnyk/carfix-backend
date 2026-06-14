@@ -9,4 +9,5 @@ public interface UserPortOut {
     Optional<User> loadUserByEmail(String email);
     boolean existsByEmail(String email);
     boolean existsByPhoneNumber(PhoneNumber phoneNumber);
+    User update(User user);
 }
