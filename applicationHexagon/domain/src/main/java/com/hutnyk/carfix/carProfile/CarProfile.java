@@ -27,10 +27,10 @@ public final class CarProfile {
     private final String plates;
 
     //Nullable
-    private final LocalDate serviceCertificateValidUpTo;
+    private final LocalDate serviceCertificateDate;
 
     //Nullable
-    private final LocalDate insuranceValidUpTo;
+    private final LocalDate insuranceDate;
     private final UserId customerId;
 
     //Nullable
@@ -43,8 +43,8 @@ public final class CarProfile {
             String name,
             String vin,
             String plates,
-            LocalDate serviceCertificateValidUpTo,
-            LocalDate insuranceValidUpTo,
+            LocalDate serviceCertificateDate,
+            LocalDate insuranceDate,
             UserId customerId,
             Integer fileId,
             Integer modelGenerationId) {
@@ -52,8 +52,8 @@ public final class CarProfile {
         this.name = Validator.notBlank(name, "name");
         this.vin = validateVin(vin);
         this.plates = validatePlates(plates);
-        this.serviceCertificateValidUpTo = validateDate(serviceCertificateValidUpTo, "serviceCertificateValidUpTo");
-        this.insuranceValidUpTo = validateDate(insuranceValidUpTo, "insuranceValidUpTo");
+        this.serviceCertificateDate = validateDate(serviceCertificateDate, "serviceCertificateDate");
+        this.insuranceDate = validateDate(insuranceDate, "insuranceDate");
         this.customerId = Validator.notNull(customerId, "customerId");
         this.fileId = fileId;
         this.modelGenerationId = Validator.notNull(modelGenerationId, "modelGenerationId");
@@ -64,8 +64,8 @@ public final class CarProfile {
             String name,
             String vin,
             String plates,
-            LocalDate serviceCertificateValidUpTo,
-            LocalDate insuranceValidUpTo,
+            LocalDate serviceCertificateDate,
+            LocalDate insuranceDate,
             UserId customerId,
             Integer fileId,
             Integer modelGenerationId) {
@@ -74,8 +74,8 @@ public final class CarProfile {
                 .name(name)
                 .vin(vin)
                 .plates(plates)
-                .serviceCertificateValidUpTo(serviceCertificateValidUpTo)
-                .insuranceValidUpTo(insuranceValidUpTo)
+                .serviceCertificateDate(serviceCertificateDate)
+                .insuranceDate(insuranceDate)
                 .customerId(customerId)
                 .fileId(fileId)
                 .modelGenerationId(modelGenerationId)

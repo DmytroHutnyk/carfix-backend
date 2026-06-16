@@ -173,7 +173,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithServiceDate(serviceDate);
 
         //then
-        assertThat(result.getServiceCertificateValidUpTo()).isEqualTo(serviceDate);
+        assertThat(result.getServiceCertificateDate()).isEqualTo(serviceDate);
     }
 
     @Test
@@ -185,7 +185,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithInsuranceDate(insuranceDate);
 
         //then
-        assertThat(result.getInsuranceValidUpTo()).isEqualTo(insuranceDate);
+        assertThat(result.getInsuranceDate()).isEqualTo(insuranceDate);
     }
 
     @Test
@@ -197,7 +197,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithServiceDate(serviceDate);
 
         //then
-        assertThat(result.getServiceCertificateValidUpTo()).isEqualTo(serviceDate);
+        assertThat(result.getServiceCertificateDate()).isEqualTo(serviceDate);
     }
 
     @Test
@@ -206,7 +206,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithServiceDate(null);
 
         //then
-        assertThat(result.getServiceCertificateValidUpTo()).isNull();
+        assertThat(result.getServiceCertificateDate()).isNull();
     }
 
     @Test
@@ -215,7 +215,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithInsuranceDate(null);
 
         //then
-        assertThat(result.getInsuranceValidUpTo()).isNull();
+        assertThat(result.getInsuranceDate()).isNull();
     }
 
     @Test
