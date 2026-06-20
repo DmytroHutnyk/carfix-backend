@@ -7,11 +7,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.time.LocalDate;
-import java.time.OffsetTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 
-import static com.hutnyk.carfix.util.Validator.futureOrPresent;
-import static com.hutnyk.carfix.util.Validator.notNull;
-import static com.hutnyk.carfix.util.Validator.validTimeRange;
+import static com.hutnyk.carfix.util.Validator.*;
 
 //@With
 @Getter
@@ -22,8 +21,8 @@ public final class Booking {
     private final BookingId id;
     private final LocalDate date;
     private final BookingStatus status;
-    private final OffsetTime startTime;
-    private final OffsetTime endTime;
+    private final LocalTime startTime;
+    private final LocalTime endTime;
     private final BranchId branchId;
     private final CarProfileId carProfileId;
 
@@ -32,12 +31,12 @@ public final class Booking {
             BookingId id,
             LocalDate date,
             BookingStatus status,
-            OffsetTime startTime,
-            OffsetTime endTime,
+            LocalTime startTime,
+            LocalTime endTime,
             BranchId branchId,
             CarProfileId carProfileId) {
         this.id = notNull(id, "id");
-        this.date = futureOrPresent(date, "date");
+        this.date = notNull(date, "date");
         this.status = notNull(status, "status");
         validTimeRange(startTime, endTime, "time");
         this.startTime = startTime;
@@ -46,18 +45,44 @@ public final class Booking {
         this.carProfileId = notNull(carProfileId, "carProfileId");
     }
 
+    /**
+     * Assembles an existing booking from persistence (no creation-time checks).
+     */
     public static Booking of(
             BookingId id,
             LocalDate date,
             BookingStatus status,
-            OffsetTime startTime,
-            OffsetTime endTime,
+            LocalTime startTime,
+            LocalTime endTime,
             BranchId branchId,
             CarProfileId carProfileId) {
         return Booking.builder()
                 .id(id)
                 .date(date)
                 .status(status)
+                .startTime(startTime)
+                .endTime(endTime)
+                .branchId(branchId)
+                .carProfileId(carProfileId)
+                .build();
+    }
+
+    /**
+     * Creates a brand-new booking (validates the slot is not in the past, in the branch's zone).
+     */
+    public static Booking schedule(
+            BookingId id,
+            LocalDate date,
+            LocalTime startTime,
+            LocalTime endTime,
+            BranchId branchId,
+            CarProfileId carProfileId,
+            ZoneId branchZone) {
+        notInPast(date, startTime, branchZone, "date");
+        return Booking.builder()
+                .id(id)
+                .date(date)
+                .status(BookingStatus.SCHEDULED)
                 .startTime(startTime)
                 .endTime(endTime)
                 .branchId(branchId)

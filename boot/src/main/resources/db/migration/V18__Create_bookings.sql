@@ -4,8 +4,8 @@ CREATE TABLE bookings (
                           booking_id uuid  DEFAULT gen_random_uuid() PRIMARY KEY,
                           date date  NOT NULL,
                           status text  NOT NULL,
-                          start_time timetz  NOT NULL,
-                          end_time timetz  NOT NULL,
+                          start_time time  NOT NULL,
+                          end_time time  NOT NULL,
                           branch_id uuid  NOT NULL,
                           car_profile_id uuid  NOT NULL
 
