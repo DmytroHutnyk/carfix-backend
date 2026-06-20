@@ -52,13 +52,17 @@ public final class CarProfile {
         this.name = Validator.notBlank(name, "name");
         this.vin = validateVin(vin);
         this.plates = validatePlates(plates);
-        this.serviceCertificateDate = validateDate(serviceCertificateDate, "serviceCertificateDate");
-        this.insuranceDate = validateDate(insuranceDate, "insuranceDate");
+        this.serviceCertificateDate = serviceCertificateDate;
+        this.insuranceDate = insuranceDate;
         this.customerId = Validator.notNull(customerId, "customerId");
         this.fileId = fileId;
         this.modelGenerationId = Validator.notNull(modelGenerationId, "modelGenerationId");
     }
 
+    /**
+     * Assembles an existing car profile from persistence (only null checks; trusts stored data).
+     * Does not validate the dates.
+     */
     public static CarProfile of(
             CarProfileId id,
             String name,
@@ -76,6 +80,33 @@ public final class CarProfile {
                 .plates(plates)
                 .serviceCertificateDate(serviceCertificateDate)
                 .insuranceDate(insuranceDate)
+                .customerId(customerId)
+                .fileId(fileId)
+                .modelGenerationId(modelGenerationId)
+                .build();
+    }
+
+    /**
+     * Creates a brand-new car profile (validates VIN, plates and dates).
+     * Validates the dates.
+     */
+    public static CarProfile create(
+            CarProfileId id,
+            String name,
+            String vin,
+            String plates,
+            LocalDate serviceCertificateDate,
+            LocalDate insuranceDate,
+            UserId customerId,
+            Integer fileId,
+            Integer modelGenerationId) {
+        return CarProfile.builder()
+                .id(id)
+                .name(name)
+                .vin(vin)
+                .plates(plates)
+                .serviceCertificateDate(validateDate(serviceCertificateDate, "serviceCertificateDate"))
+                .insuranceDate(validateDate(insuranceDate, "insuranceDate"))
                 .customerId(customerId)
                 .fileId(fileId)
                 .modelGenerationId(modelGenerationId)
