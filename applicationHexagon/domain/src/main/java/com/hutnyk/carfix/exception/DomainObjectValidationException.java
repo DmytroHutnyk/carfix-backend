@@ -5,7 +5,7 @@ import lombok.Getter;
  *  {@code DomainObjectValidationException} used for validation exceptions.
  */
 @Getter
-public class DomainObjectValidationException extends InvalidDomainObjectException {
+public class DomainObjectValidationException extends DomainObjectException {
     private final ValidationErrorType errorType;
     private final String fieldName;
     private final Object rejectedValue;

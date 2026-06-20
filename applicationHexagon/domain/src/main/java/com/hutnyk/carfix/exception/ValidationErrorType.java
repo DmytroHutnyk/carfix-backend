@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * {@code ValidationErrorType} enum is used to supply {@link com.hutnyk.carfix.exception.DomainObjectValidationException} with default exception message.
+ * {@code ValidationErrorType} enum is used to supply Exception classes with default exception message.
  */
 @Getter
 @AllArgsConstructor
@@ -20,10 +20,13 @@ public enum ValidationErrorType {
     INVALID_PLATES_FORMAT("INVALID_PLATES_FORMAT", "License plates format is not valid"),
     
     DATE_IN_FUTURE("DATE_IN_FUTURE", "Date cannot be in the future"),
+    DATE_IN_PAST("DATE_IN_PAST", "Date cannot be in the past"),
     DATE_TOO_FAR_IN_FUTURE("DATE_TOO_FAR_IN_FUTURE", "Date cannot be in the fat future"),
     DATE_TOO_OLD("DATE_TOO_OLD", "Date is too old"),
     EXPIRATION_DATE_TOO_OLD("EXPIRATION_DATE_TOO_OLD", "Expiration date cannot be more than 20 years old"),
-    
+
+    INVALID_TIME_RANGE("INVALID_TIME_RANGE", "Time range lower bound must be before upper bound"),
+
 
     INVALID_FLAT_NUMBER("INVALID_FLAT_NUMBER", "Flat number cannot be empty or blank"),
 
