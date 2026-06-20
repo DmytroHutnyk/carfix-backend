@@ -16,7 +16,7 @@ public class CarProfileTest {
 
     private CarProfile createCarProfileWithVin(String vin) {
         return CarProfile.of(
-                1,
+                CarProfileId.genId(),
                 "Test Car",
                 vin,
                 null,
@@ -30,7 +30,7 @@ public class CarProfileTest {
 
     private CarProfile createCarProfileWithPlates(String plates) {
         return CarProfile.of(
-                1,
+                CarProfileId.genId(),
                 "Test Car",
                 null,
                 plates,
@@ -44,7 +44,7 @@ public class CarProfileTest {
 
     private CarProfile createCarProfileWithServiceDate(LocalDate serviceDate) {
         return CarProfile.of(
-                1,
+                CarProfileId.genId(),
                 "Test Car",
                 null,
                 null,
@@ -58,7 +58,7 @@ public class CarProfileTest {
 
     private CarProfile createCarProfileWithInsuranceDate(LocalDate insuranceDate) {
         return CarProfile.of(
-                1,
+                CarProfileId.genId(),
                 "Test Car",
                 null,
                 null,

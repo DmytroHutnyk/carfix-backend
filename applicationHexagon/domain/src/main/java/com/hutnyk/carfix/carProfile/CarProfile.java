@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public final class CarProfile {
 
     @EqualsAndHashCode.Include
-    private final Integer id;
+    private final CarProfileId id;
     private final String name;
 
     //Nullable
@@ -39,7 +39,7 @@ public final class CarProfile {
 
     @Builder
     private CarProfile(
-            Integer id,
+            CarProfileId id,
             String name,
             String vin,
             String plates,
@@ -60,7 +60,7 @@ public final class CarProfile {
     }
 
     public static CarProfile of(
-            Integer id,
+            CarProfileId id,
             String name,
             String vin,
             String plates,
