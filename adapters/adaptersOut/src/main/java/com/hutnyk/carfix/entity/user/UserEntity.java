@@ -55,7 +55,4 @@ public class UserEntity {
     @OneToOne
     @JoinColumn(name = "address_id")
     private AddressEntity addressEntity;
-
-    @OneToOne(mappedBy = "userEntity")
-    private CustomerEntity customerEntity;
 }

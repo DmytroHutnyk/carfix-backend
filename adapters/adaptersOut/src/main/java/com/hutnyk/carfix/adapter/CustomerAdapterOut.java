@@ -23,7 +23,7 @@ public class CustomerAdapterOut implements CustomerPortOut {
     @Override
     public Customer saveUserAndCustomer(Customer customer){
 
-        UserEntity userEntity = UserMapper.toEntity(customer.getUser(), null, null);
+        UserEntity userEntity = UserMapper.toEntity(customer.getUser(), null);
         CustomerEntity customerEntity = CustomerMapper.toEntity(customer, userEntity, null);
 
         entityManager.persist(customerEntity);

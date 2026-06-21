@@ -1,7 +1,6 @@
 package com.hutnyk.carfix.entity.address;
 
 import com.hutnyk.carfix.address.City;
-import com.hutnyk.carfix.entity.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,9 +34,7 @@ public class AddressEntity {
     @Column(name = "postal_code", nullable = false, length = 10)
     private String postalCode;
 
-    @OneToOne(mappedBy = "addressEntity")
-    private UserEntity userEntity;
-
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "city_id", nullable = false)
     private CityEntity cityEntity;

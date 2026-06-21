@@ -1,14 +1,13 @@
 package com.hutnyk.carfix.mapper;
 
 import com.hutnyk.carfix.entity.address.AddressEntity;
-import com.hutnyk.carfix.entity.user.CustomerEntity;
 import com.hutnyk.carfix.entity.user.UserEntity;
 import com.hutnyk.carfix.user.*;
 
 public class UserMapper {
 
 
-    public static UserEntity toEntity(User user, AddressEntity addressEntity, CustomerEntity customerEntity) {
+    public static UserEntity toEntity(User user, AddressEntity addressEntity) {
         if (user == null) {
             return null;
         }
@@ -23,8 +22,7 @@ public class UserMapper {
                 user.getPasswordHash().getValue(),
                 user.getRole(),
                 user.getDateOfBirth(),
-                addressEntity,
-                customerEntity
+                addressEntity
         );
     }
 
