@@ -266,16 +266,18 @@ public class CarProfileTest {
                 .isEqualTo(ValidationErrorType.EXPIRATION_DATE_TOO_OLD);
     }
 
-    // of() reconstitutes from DB and skips creation-time validation (only null checks)
+    // of() reconstitutes from DB but still enforces structural invariants (VIN/plates format),
+    // Only creation-time business rules (dates) are skipped.
     @Test
-    public void test_of_skips_vin_format_validation() {
-        //given an invalid VIN that create() would reject
-        CarProfile result = CarProfile.of(
+    public void test_of_validates_vin_format() {
+        //given an invalid VIN that must be rejected even when loaded from persistence
+        //when + then
+        assertThatThrownBy(() -> CarProfile.of(
                 CarProfileId.genId(), "Test Car", "not-a-valid-vin", null,
-                null, null, UserId.genId(), null, 1);
-
-        //then
-        assertThat(result.getVin()).isEqualTo("not-a-valid-vin");
+                null, null, UserId.genId(), null, 1))
+                .isInstanceOf(DomainObjectValidationException.class)
+                .extracting("errorType")
+                .isEqualTo(ValidationErrorType.INVALID_VIN_FORMAT);
     }
 
     @Test
