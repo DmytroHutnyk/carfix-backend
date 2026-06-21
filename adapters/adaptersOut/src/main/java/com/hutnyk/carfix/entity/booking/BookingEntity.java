@@ -6,7 +6,9 @@ import com.hutnyk.carfix.entity.carProfile.CarProfileEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,11 +17,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "bookings")
 @Entity
 public class BookingEntity {
 
     @Id
+    @EqualsAndHashCode.Include
     @Column(name = "booking_id", nullable = false)
     private UUID id;
 
@@ -36,10 +40,12 @@ public class BookingEntity {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "branch_id", nullable = false)
     private BranchEntity branchEntity;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "car_profile_id", nullable = false)
     private CarProfileEntity carProfileEntity;

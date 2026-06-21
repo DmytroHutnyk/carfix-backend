@@ -5,7 +5,9 @@ import com.hutnyk.carfix.entity.carProfile.CarProfileEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.Set;
 import java.util.UUID;
@@ -13,14 +15,17 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "customers")
 @Entity
 public class CustomerEntity {
 
     @Id
+    @EqualsAndHashCode.Include
     @Column(name = "user_id", nullable = false)
     private UUID id;
 
+    @ToString.Exclude
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @MapsId
     @JoinColumn(name = "user_id")
@@ -30,6 +35,7 @@ public class CustomerEntity {
     @Column(name = "status", nullable = false)
     private CustomerStatus customerStatus;
 
+    @ToString.Exclude
     @OneToMany(mappedBy = "customerEntity")
     private Set<CarProfileEntity> carProfileEntities;
 }

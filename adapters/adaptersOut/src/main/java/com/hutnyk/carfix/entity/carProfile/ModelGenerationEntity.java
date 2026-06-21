@@ -3,15 +3,19 @@ package com.hutnyk.carfix.entity.carProfile;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity(name = "model_generations")
 public class ModelGenerationEntity {
 
     @Id
+    @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "model_generation_id", nullable = false)
     private Integer id;
@@ -25,6 +29,7 @@ public class ModelGenerationEntity {
     @Column(name = "end_production")
     private Short endProduction;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "car_model_id", nullable = false)
     private CarModelEntity carModelEntity;

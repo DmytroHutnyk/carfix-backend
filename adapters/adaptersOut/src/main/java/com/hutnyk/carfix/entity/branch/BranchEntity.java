@@ -7,7 +7,9 @@ import com.hutnyk.carfix.entity.openingHours.OpeningHoursExceptionEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.Set;
 import java.util.UUID;
@@ -15,11 +17,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "branches")
 @Entity
 public class BranchEntity {
 
     @Id
+    @EqualsAndHashCode.Include
     @Column(name = "branch_id", nullable = false)
     private UUID id;
 
@@ -39,6 +43,7 @@ public class BranchEntity {
     @Column(name = "tz", nullable = false)
     private String tz;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "address_id", nullable = false)
     private AddressEntity addressEntity;
@@ -47,9 +52,11 @@ public class BranchEntity {
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
+    @ToString.Exclude
     @OneToMany(mappedBy = "branchEntity")
     private Set<OpeningHoursEntity> openingHoursEntities;
 
+    @ToString.Exclude
     @OneToMany(mappedBy = "branchEntity")
     private Set<OpeningHoursExceptionEntity> openingHoursExceptionEntities;
 }

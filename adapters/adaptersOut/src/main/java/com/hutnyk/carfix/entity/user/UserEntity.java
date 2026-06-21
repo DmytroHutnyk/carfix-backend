@@ -5,7 +5,9 @@ import com.hutnyk.carfix.user.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -13,11 +15,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "users")
 @Entity
 public class UserEntity {
 
     @Id
+    @EqualsAndHashCode.Include
     @Column(name = "user_id", nullable = false)
     private UUID id;
 
@@ -36,6 +40,7 @@ public class UserEntity {
     @Column(name = "email", length = 30, nullable = false)
     private String email;
 
+    @ToString.Exclude
     @Column(name = "password", nullable = false)
     private String password;
 
@@ -46,6 +51,7 @@ public class UserEntity {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @ToString.Exclude
     @OneToOne
     @JoinColumn(name = "address_id")
     private AddressEntity addressEntity;

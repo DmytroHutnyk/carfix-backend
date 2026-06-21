@@ -4,18 +4,22 @@ import com.hutnyk.carfix.service.ServiceStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "services")
 @Entity
 public class ServiceEntity {
 
     @Id
+    @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "service_id", nullable = false)
     private Integer id;
@@ -40,6 +44,7 @@ public class ServiceEntity {
     @Column(name = "service_bay_id", nullable = false)
     private Integer serviceBayId;
 
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "service_category_id", nullable = false)
     private ServiceCategoryEntity serviceCategoryEntity;
