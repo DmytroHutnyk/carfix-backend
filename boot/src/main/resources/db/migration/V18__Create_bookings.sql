@@ -10,6 +10,6 @@ CREATE TABLE bookings (
                           car_profile_id uuid  NOT NULL
 
                               CONSTRAINT check_bookings_status
-                                  CHECK (status IN ('scheduled', 'in_progress', 'completed', 'cancelled'))
+                                  CHECK (status IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'))
 );
 

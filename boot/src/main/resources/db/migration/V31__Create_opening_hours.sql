@@ -9,7 +9,7 @@ CREATE TABLE opening_hours (
 
                                CONSTRAINT check_opening_hours
                                    CHECK (day_of_week
-                                       IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
+                                       IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY')
                                        )
 );
 

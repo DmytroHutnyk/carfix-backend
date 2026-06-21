@@ -11,6 +11,6 @@ CREATE TABLE services (
                           service_category_id int  NOT NULL,
 
                           CONSTRAINT check_services_status
-                              CHECK (status IN ('active', 'suspended'))
+                              CHECK (status IN ('ACTIVE', 'SUSPENDED'))
 );
 

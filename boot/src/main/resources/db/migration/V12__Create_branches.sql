@@ -11,6 +11,6 @@ CREATE TABLE branches (
                           owner_id uuid  NOT NULL,
 
                           CONSTRAINT check_branches_status
-                              CHECK (status IN ('verification_pending', 'active', 'suspended'))
+                              CHECK (status IN ('VERIFICATION_PENDING', 'ACTIVE', 'SUSPENDED'))
 );
 
