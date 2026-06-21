@@ -20,15 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 public class UserController {
 
     private final UserPortIn userPortIn;
 
-    /**
-     * Partially updates the currently authenticated user's profile.
-     */
-    @PatchMapping("/me")
+    @PatchMapping("/{id}")
     public ResponseEntity<UserResponse> updateCurrentUser(@Valid @RequestBody UpdateUserRequest request,
                                                           @AuthenticationPrincipal UserDetails userDetails) {
         UpdateUserCommand command = UpdateUserCommandMapper.toCommand(request);
