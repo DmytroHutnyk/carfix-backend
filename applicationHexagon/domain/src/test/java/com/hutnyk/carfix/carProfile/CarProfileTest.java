@@ -15,8 +15,8 @@ import java.time.LocalDate;
 public class CarProfileTest {
 
     private CarProfile createCarProfileWithVin(String vin) {
-        return CarProfile.of(
-                1,
+        return CarProfile.create(
+                CarProfileId.genId(),
                 "Test Car",
                 vin,
                 null,
@@ -29,8 +29,8 @@ public class CarProfileTest {
     }
 
     private CarProfile createCarProfileWithPlates(String plates) {
-        return CarProfile.of(
-                1,
+        return CarProfile.create(
+                CarProfileId.genId(),
                 "Test Car",
                 null,
                 plates,
@@ -43,8 +43,8 @@ public class CarProfileTest {
     }
 
     private CarProfile createCarProfileWithServiceDate(LocalDate serviceDate) {
-        return CarProfile.of(
-                1,
+        return CarProfile.create(
+                CarProfileId.genId(),
                 "Test Car",
                 null,
                 null,
@@ -57,8 +57,8 @@ public class CarProfileTest {
     }
 
     private CarProfile createCarProfileWithInsuranceDate(LocalDate insuranceDate) {
-        return CarProfile.of(
-                1,
+        return CarProfile.create(
+                CarProfileId.genId(),
                 "Test Car",
                 null,
                 null,
@@ -173,7 +173,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithServiceDate(serviceDate);
 
         //then
-        assertThat(result.getServiceCertificateValidUpTo()).isEqualTo(serviceDate);
+        assertThat(result.getServiceCertificateDate()).isEqualTo(serviceDate);
     }
 
     @Test
@@ -185,7 +185,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithInsuranceDate(insuranceDate);
 
         //then
-        assertThat(result.getInsuranceValidUpTo()).isEqualTo(insuranceDate);
+        assertThat(result.getInsuranceDate()).isEqualTo(insuranceDate);
     }
 
     @Test
@@ -197,7 +197,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithServiceDate(serviceDate);
 
         //then
-        assertThat(result.getServiceCertificateValidUpTo()).isEqualTo(serviceDate);
+        assertThat(result.getServiceCertificateDate()).isEqualTo(serviceDate);
     }
 
     @Test
@@ -206,7 +206,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithServiceDate(null);
 
         //then
-        assertThat(result.getServiceCertificateValidUpTo()).isNull();
+        assertThat(result.getServiceCertificateDate()).isNull();
     }
 
     @Test
@@ -215,7 +215,7 @@ public class CarProfileTest {
         CarProfile result = createCarProfileWithInsuranceDate(null);
 
         //then
-        assertThat(result.getInsuranceValidUpTo()).isNull();
+        assertThat(result.getInsuranceDate()).isNull();
     }
 
     @Test
@@ -264,6 +264,32 @@ public class CarProfileTest {
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.EXPIRATION_DATE_TOO_OLD);
+    }
+
+    // of() reconstitutes from DB and skips creation-time validation (only null checks)
+    @Test
+    public void test_of_skips_vin_format_validation() {
+        //given an invalid VIN that create() would reject
+        CarProfile result = CarProfile.of(
+                CarProfileId.genId(), "Test Car", "not-a-valid-vin", null,
+                null, null, UserId.genId(), null, 1);
+
+        //then
+        assertThat(result.getVin()).isEqualTo("not-a-valid-vin");
+    }
+
+    @Test
+    public void test_of_skips_date_validation_for_too_old_date() {
+        //given a date older than create() would allow
+        LocalDate tooOld = LocalDate.now().minusYears(50);
+
+        //when
+        CarProfile result = CarProfile.of(
+                CarProfileId.genId(), "Test Car", null, null,
+                tooOld, null, UserId.genId(), null, 1);
+
+        //then
+        assertThat(result.getServiceCertificateDate()).isEqualTo(tooOld);
     }
 }
 
