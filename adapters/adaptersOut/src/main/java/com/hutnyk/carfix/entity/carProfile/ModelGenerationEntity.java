@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,7 +28,4 @@ public class ModelGenerationEntity {
     @ManyToOne
     @JoinColumn(name = "car_model_id", nullable = false)
     private CarModelEntity carModelEntity;
-
-    @OneToMany(mappedBy = "modelGenerationEntity")
-    private Set<CarProfileEntity> carProfileEntities;
 }

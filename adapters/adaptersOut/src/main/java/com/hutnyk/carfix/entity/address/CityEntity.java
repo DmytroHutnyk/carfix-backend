@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -25,7 +23,4 @@ public class CityEntity {
     @ManyToOne
     @JoinColumn(name = "region_id", nullable = false)
     private RegionEntity regionEntity;
-
-    @OneToMany(mappedBy = "cityEntity")
-    private Set<AddressEntity> addressEntity;
 }
