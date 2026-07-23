@@ -1,5 +1,6 @@
 package com.hutnyk.carfix;
 
+import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
 import com.hutnyk.carfix.exceptions.EmailAlreadyTakenException;
@@ -15,14 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Component
+@ApplicationService
 @RequiredArgsConstructor
 public class CustomerService implements CustomerPortIn {
 
     private final UserPortOut userPortOut;
     private final CustomerPortOut customerPortOut;
 
-    @Transactional
     @Override
     public Customer registerCustomer(RegisterUserCommand command) {
 

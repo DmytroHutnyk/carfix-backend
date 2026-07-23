@@ -1,5 +1,6 @@
 package com.hutnyk.carfix;
 
+import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.in.UserPortIn;
 import com.hutnyk.carfix.in.commands.UpdateUserCommand;
 import com.hutnyk.carfix.out.UserPortOut;
@@ -10,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Component
+@ApplicationService
 @RequiredArgsConstructor
 public class UserService implements UserPortIn {
 
@@ -21,7 +22,6 @@ public class UserService implements UserPortIn {
         return userPortOut.loadUserByEmail(email);
     }
 
-    @Transactional
     @Override
     public User updateUser(String email, UpdateUserCommand command) {
         User user = userPortOut.loadUserByEmail(email)
