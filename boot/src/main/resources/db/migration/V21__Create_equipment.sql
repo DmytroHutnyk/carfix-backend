@@ -9,6 +9,6 @@ CREATE TABLE equipment (
                            branch_id uuid  NOT NULL,
 
                            CONSTRAINT check_equipment_status
-                               CHECK (status IN ('active', 'suspended'))
+                               CHECK (status IN ('ACTIVE', 'SUSPENDED'))
 );
 
