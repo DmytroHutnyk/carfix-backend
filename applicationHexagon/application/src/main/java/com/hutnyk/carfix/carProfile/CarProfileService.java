@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.carProfile;
 
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
-import com.hutnyk.carfix.carProfile.exception.ModelGenerationNotFoundException;
+import com.hutnyk.carfix.carCatalog.exception.ModelGenerationNotFoundException;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.in.CarProfilePortIn;
@@ -13,6 +13,7 @@ import com.hutnyk.carfix.out.CustomerPortOut;
 import com.hutnyk.carfix.query.CarProfileView;
 import com.hutnyk.carfix.user.UserId;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,7 @@ public class CarProfileService implements CarProfilePortIn {
     private final CarCatalogPortOut carCatalogPortOut;
 
     @Override
+    @Transactional(readOnly = true)
     public List<CarProfileView> getMyCarProfiles(String email) {
         Customer customer = customerPortOut.loadCustomerByUsername(email);
         return carProfilePortOut.findAllByCustomerId(customer.getUser().getId().id());
