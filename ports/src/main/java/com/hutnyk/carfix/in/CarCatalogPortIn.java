@@ -1,8 +1,8 @@
 package com.hutnyk.carfix.in;
 
-import com.hutnyk.carfix.carProfile.CarBrand;
-import com.hutnyk.carfix.carProfile.CarModel;
-import com.hutnyk.carfix.carProfile.ModelGeneration;
+import com.hutnyk.carfix.carCatalog.CarBrand;
+import com.hutnyk.carfix.carCatalog.CarModel;
+import com.hutnyk.carfix.carCatalog.ModelGeneration;
 
 import java.util.List;
 

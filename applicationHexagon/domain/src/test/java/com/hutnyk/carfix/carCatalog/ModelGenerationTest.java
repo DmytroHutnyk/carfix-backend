@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.carProfile;
+package com.hutnyk.carfix.carCatalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

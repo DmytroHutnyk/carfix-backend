@@ -1,10 +1,10 @@
 package com.hutnyk.carfix.carProfile;
 
+import com.hutnyk.carfix.carCatalog.CarBrandEntity;
+import com.hutnyk.carfix.carCatalog.CarModelEntity;
+import com.hutnyk.carfix.carCatalog.ModelGenerationEntity;
 import com.hutnyk.carfix.entity.user.CustomerEntity;
-import com.hutnyk.carfix.query.CarBrandView;
-import com.hutnyk.carfix.query.CarModelView;
 import com.hutnyk.carfix.query.CarProfileView;
-import com.hutnyk.carfix.query.ModelGenerationView;
 import com.hutnyk.carfix.user.UserId;
 
 public class CarProfileMapper {
@@ -45,21 +45,6 @@ public class CarProfileMapper {
                 mge.getId(),
                 mge.getName()
         );
-    }
-
-    public static CarBrandView toBrandView(CarBrandEntity e) {
-        if (e == null) return null;
-        return new CarBrandView(e.getId(), e.getName());
-    }
-
-    public static CarModelView toModelView(CarModelEntity e) {
-        if (e == null) return null;
-        return new CarModelView(e.getId(), e.getName(), e.getCarBrandEntity().getId());
-    }
-
-    public static ModelGenerationView toGenerationView(ModelGenerationEntity e) {
-        if (e == null) return null;
-        return new ModelGenerationView(e.getId(), e.getName(), e.getStartProduction(), e.getEndProduction(), e.getCarModelEntity().getId());
     }
 
     public static CarProfileEntity toEntity(CarProfile p, CustomerEntity customer, ModelGenerationEntity generation) {

@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.carProfile;
+package com.hutnyk.carfix.carCatalog;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

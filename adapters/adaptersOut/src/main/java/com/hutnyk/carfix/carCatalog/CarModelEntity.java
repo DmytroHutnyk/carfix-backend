@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.carProfile;
+package com.hutnyk.carfix.carCatalog;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,29 +8,24 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Entity(name = "model_generations")
-public class ModelGenerationEntity {
+@Entity
+@Table(name = "car_models")
+public class CarModelEntity {
 
     @Id
     @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "model_generation_id", nullable = false)
+    @Column(name = "car_model_id", nullable = false)
     private Integer id;
 
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
-    @Column(name = "start_production", nullable = false)
-    private Short startProduction;
-
-    @Column(name = "end_production")
-    private Short endProduction;
-
     @ToString.Exclude
     @ManyToOne
-    @JoinColumn(name = "car_model_id", nullable = false)
-    private CarModelEntity carModelEntity;
+    @JoinColumn(name = "car_brand_id", nullable = false)
+    private CarBrandEntity carBrandEntity;
 }

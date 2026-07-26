@@ -1,5 +1,7 @@
 package com.hutnyk.carfix.carProfile;
 
+import com.hutnyk.carfix.carCatalog.ModelGenerationEntity;
+import com.hutnyk.carfix.carCatalog.ModelGenerationRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.query.CarProfileView;
 import com.hutnyk.carfix.entity.user.CustomerEntity;

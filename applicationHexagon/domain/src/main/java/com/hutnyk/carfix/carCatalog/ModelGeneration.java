@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.carProfile;
+package com.hutnyk.carfix.carCatalog;
 
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
