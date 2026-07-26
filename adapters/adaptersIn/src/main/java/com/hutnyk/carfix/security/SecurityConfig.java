@@ -73,6 +73,7 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/car-catalog/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/logout").permitAll()
                         .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers("/api/customer/auth/**").permitAll()

@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.controller;
+package com.hutnyk.carfix.controller.auth;
 
 import com.hutnyk.carfix.assembler.AccountResponseAssembler;
 import com.hutnyk.carfix.dto.request.LoginUserRequest;
