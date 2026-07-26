@@ -1,4 +1,4 @@
-package com.hutnyk.carfix;
+package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.in.UserPortIn;

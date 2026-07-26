@@ -1,5 +1,7 @@
 package com.hutnyk.carfix.controller;
 
+import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
+import com.hutnyk.carfix.carProfile.exception.ModelGenerationNotFoundException;
 import com.hutnyk.carfix.exception.CustomerNotFoundException;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exceptions.EmailAlreadyTakenException;
@@ -125,6 +127,22 @@ public class ExceptionController{
         problemDetail.setProperty("authorization", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleCarProfileNotFound(CarProfileNotFoundException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleModelGenerationNotFound(ModelGenerationNotFoundException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 
     @ResponseStatus(HttpStatus.FORBIDDEN)

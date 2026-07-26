@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.entity.carProfile;
+package com.hutnyk.carfix.carProfile;
 
 import com.hutnyk.carfix.entity.user.CustomerEntity;
 import jakarta.persistence.*;

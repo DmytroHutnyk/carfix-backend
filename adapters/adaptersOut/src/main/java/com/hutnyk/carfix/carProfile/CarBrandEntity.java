@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.entity.carProfile;
+package com.hutnyk.carfix.carProfile;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

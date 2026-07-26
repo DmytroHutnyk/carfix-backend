@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.entity.carProfile;
+package com.hutnyk.carfix.carProfile;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,30 +7,30 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import java.util.Set;
-
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Entity(name = "car_models")
-public class CarModelEntity {
+@Entity(name = "model_generations")
+public class ModelGenerationEntity {
 
     @Id
     @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "car_model_id", nullable = false)
+    @Column(name = "model_generation_id", nullable = false)
     private Integer id;
 
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
-    @ToString.Exclude
-    @ManyToOne
-    @JoinColumn(name = "car_brand_id", nullable = false)
-    private CarBrandEntity carBrandEntity;
+    @Column(name = "start_production", nullable = false)
+    private Short startProduction;
+
+    @Column(name = "end_production")
+    private Short endProduction;
 
     @ToString.Exclude
-    @OneToMany(mappedBy = "carModelEntity")
-    private Set<ModelGenerationEntity> modelGenerationEntities;
+    @ManyToOne
+    @JoinColumn(name = "car_model_id", nullable = false)
+    private CarModelEntity carModelEntity;
 }

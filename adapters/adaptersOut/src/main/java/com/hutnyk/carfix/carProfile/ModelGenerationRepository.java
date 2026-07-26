@@ -1,6 +1,5 @@
-package com.hutnyk.carfix.repository;
+package com.hutnyk.carfix.carProfile;
 
-import com.hutnyk.carfix.entity.carProfile.ModelGenerationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

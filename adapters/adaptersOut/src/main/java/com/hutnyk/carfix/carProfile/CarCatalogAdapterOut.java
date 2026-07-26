@@ -1,14 +1,10 @@
-package com.hutnyk.carfix.adapter;
+package com.hutnyk.carfix.carProfile;
 
-import com.hutnyk.carfix.carProfile.CarBrand;
-import com.hutnyk.carfix.carProfile.CarModel;
-import com.hutnyk.carfix.carProfile.ModelGeneration;
 import com.hutnyk.carfix.components.PersistenceAdapter;
-import com.hutnyk.carfix.mapper.CarProfileMapper;
 import com.hutnyk.carfix.out.CarCatalogPortOut;
-import com.hutnyk.carfix.repository.CarBrandRepository;
-import com.hutnyk.carfix.repository.CarModelRepository;
-import com.hutnyk.carfix.repository.ModelGenerationRepository;
+import com.hutnyk.carfix.query.CarBrandView;
+import com.hutnyk.carfix.query.CarModelView;
+import com.hutnyk.carfix.query.ModelGenerationView;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -22,23 +18,23 @@ public class CarCatalogAdapterOut implements CarCatalogPortOut {
     private final ModelGenerationRepository modelGenerationRepository;
 
     @Override
-    public List<CarBrand> findAllBrands() {
+    public List<CarBrandView> findAllBrands() {
         return carBrandRepository.findAll().stream()
-                .map(CarProfileMapper::toBrandDomain)
+                .map(CarProfileMapper::toBrandView)
                 .toList();
     }
 
     @Override
-    public List<CarModel> findModelsByBrandId(Integer brandId) {
+    public List<CarModelView> findModelsByBrandId(Integer brandId) {
         return carModelRepository.findByCarBrandEntityId(brandId).stream()
-                .map(CarProfileMapper::toModelDomain)
+                .map(CarProfileMapper::toModelView)
                 .toList();
     }
 
     @Override
-    public List<ModelGeneration> findGenerationsByModelId(Integer modelId) {
+    public List<ModelGenerationView> findGenerationsByModelId(Integer modelId) {
         return modelGenerationRepository.findByCarModelEntityId(modelId).stream()
-                .map(CarProfileMapper::toGenerationDomain)
+                .map(CarProfileMapper::toGenerationView)
                 .toList();
     }
 
