@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.controller;
 
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
-import com.hutnyk.carfix.carProfile.exception.ModelGenerationNotFoundException;
+import com.hutnyk.carfix.carCatalog.exception.ModelGenerationNotFoundException;
 import com.hutnyk.carfix.exception.CustomerNotFoundException;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exceptions.EmailAlreadyTakenException;
