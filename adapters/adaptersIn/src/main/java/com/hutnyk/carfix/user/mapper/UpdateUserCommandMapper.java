@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.user.mapper;
 
-import com.hutnyk.carfix.in.commands.UpdateUserCommand;
+import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
 import com.hutnyk.carfix.user.dto.request.UpdateUserRequest;
 
 public class UpdateUserCommandMapper {

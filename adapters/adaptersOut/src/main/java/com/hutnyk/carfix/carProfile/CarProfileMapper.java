@@ -3,8 +3,8 @@ package com.hutnyk.carfix.carProfile;
 import com.hutnyk.carfix.carCatalog.CarBrandEntity;
 import com.hutnyk.carfix.carCatalog.CarModelEntity;
 import com.hutnyk.carfix.carCatalog.ModelGenerationEntity;
-import com.hutnyk.carfix.entity.user.CustomerEntity;
-import com.hutnyk.carfix.query.CarProfileView;
+import com.hutnyk.carfix.customer.CustomerEntity;
+import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
 import com.hutnyk.carfix.user.UserId;
 
 public class CarProfileMapper {

@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.security;
 
-import com.hutnyk.carfix.in.UserPortIn;
+import com.hutnyk.carfix.in.user.UserPortIn;
 import com.hutnyk.carfix.user.mapper.UserDetailsMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;

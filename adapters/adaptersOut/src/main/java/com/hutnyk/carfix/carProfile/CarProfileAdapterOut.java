@@ -3,10 +3,10 @@ package com.hutnyk.carfix.carProfile;
 import com.hutnyk.carfix.carCatalog.ModelGenerationEntity;
 import com.hutnyk.carfix.carCatalog.ModelGenerationRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
-import com.hutnyk.carfix.query.CarProfileView;
-import com.hutnyk.carfix.entity.user.CustomerEntity;
-import com.hutnyk.carfix.out.CarProfilePortOut;
-import com.hutnyk.carfix.repository.CustomerRepository;
+import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
+import com.hutnyk.carfix.customer.CustomerEntity;
+import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
+import com.hutnyk.carfix.customer.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;

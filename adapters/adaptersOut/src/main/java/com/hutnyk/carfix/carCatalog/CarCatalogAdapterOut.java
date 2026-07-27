@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.carCatalog;
 
 import com.hutnyk.carfix.components.PersistenceAdapter;
-import com.hutnyk.carfix.out.CarCatalogPortOut;
+import com.hutnyk.carfix.out.carCatalog.CarCatalogPortOut;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;

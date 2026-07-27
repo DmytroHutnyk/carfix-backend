@@ -1,9 +1,9 @@
 package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.components.ApplicationService;
-import com.hutnyk.carfix.in.UserPortIn;
-import com.hutnyk.carfix.in.commands.UpdateUserCommand;
-import com.hutnyk.carfix.out.UserPortOut;
+import com.hutnyk.carfix.in.user.UserPortIn;
+import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
+import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.user.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

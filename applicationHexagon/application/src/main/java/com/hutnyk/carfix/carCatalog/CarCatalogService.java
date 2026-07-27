@@ -1,8 +1,8 @@
 package com.hutnyk.carfix.carCatalog;
 
 import com.hutnyk.carfix.components.ApplicationService;
-import com.hutnyk.carfix.in.CarCatalogPortIn;
-import com.hutnyk.carfix.out.CarCatalogPortOut;
+import com.hutnyk.carfix.in.carCatalog.CarCatalogPortIn;
+import com.hutnyk.carfix.out.carCatalog.CarCatalogPortOut;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 

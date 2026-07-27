@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.user;
 
-import com.hutnyk.carfix.entity.address.AddressEntity;
+import com.hutnyk.carfix.address.AddressEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

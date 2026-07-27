@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.components.PersistenceAdapter;
-import com.hutnyk.carfix.out.UserPortOut;
+import com.hutnyk.carfix.out.user.UserPortOut;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
