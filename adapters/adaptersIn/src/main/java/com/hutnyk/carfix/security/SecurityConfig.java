@@ -69,12 +69,18 @@ public class SecurityConfig {
                 )
 
                 .exceptionHandling(e ->
-                        e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))                   // return 401 instead of default 403 when user is not authorized
+                        e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))                   // return 401 instead of default 403 when user is not authorized(
                 )
 
-                .authorizeHttpRequests(authorize ->
-                        authorize.requestMatchers("/api/customer/auth/me").authenticated()                            // so the session validity is checked automatically by spring security
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/car-catalog/**").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers("/api/customer/auth/**").permitAll()
+                        .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/owner/**").hasRole("OWNER")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().authenticated()
                 );
 

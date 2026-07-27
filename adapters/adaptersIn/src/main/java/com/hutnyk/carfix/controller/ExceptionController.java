@@ -1,5 +1,7 @@
 package com.hutnyk.carfix.controller;
 
+import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
+import com.hutnyk.carfix.carCatalog.exception.ModelGenerationNotFoundException;
 import com.hutnyk.carfix.exception.CustomerNotFoundException;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exceptions.EmailAlreadyTakenException;
@@ -9,6 +11,7 @@ import com.hutnyk.carfix.user.PhoneNumber;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -109,7 +112,7 @@ public class ExceptionController{
     public ResponseEntity<ProblemDetail> handleLoginFailure(BadCredentialsException ex){
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authorization failed");
         problemDetail.setTitle("Authorization failed");
-
+//todo Authentication
         problemDetail.setProperty("authorization", "Wrong email or password");
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
@@ -118,6 +121,7 @@ public class ExceptionController{
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler
     public ResponseEntity<ProblemDetail> handleLoginFailure(CustomerNotFoundException ex){
+        //todo Authentication
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Authorization failed");
         problemDetail.setTitle("Authorization failed");
         problemDetail.setProperty("authorization", ex.getMessage());
@@ -125,6 +129,29 @@ public class ExceptionController{
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleCarProfileNotFound(CarProfileNotFoundException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
 
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleModelGenerationNotFound(ModelGenerationNotFoundException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler
+    public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied");
+        problemDetail.setTitle("Access denied");
+        problemDetail.setProperty("authorization", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
+    }
 
 }

@@ -11,7 +11,7 @@ ALTER TABLE employees ADD CONSTRAINT fk_employees_branches FOREIGN KEY (branch_i
 ALTER TABLE car_profiles ADD CONSTRAINT fk_car_profiles_customers FOREIGN KEY (customer_id) REFERENCES customers (user_id);
 ALTER TABLE car_profiles ADD CONSTRAINT fk_car_profiles_files FOREIGN KEY (file_id) REFERENCES files (file_id);
 ALTER TABLE car_profiles ADD CONSTRAINT fk_car_profiles_model_generations FOREIGN KEY (model_generation_id) REFERENCES model_generations (model_generation_id);
-ALTER TABLE model_generations ADD CONSTRAINT fl_model_generations_car_models FOREIGN KEY (car_model_id) REFERENCES model_generations (model_generation_id);
+ALTER TABLE model_generations ADD CONSTRAINT fk_model_generations_car_models FOREIGN KEY (car_model_id) REFERENCES car_models (car_model_id);
 ALTER TABLE car_models ADD CONSTRAINT fk_car_models_car_brands FOREIGN KEY (car_brand_id) REFERENCES car_brands (car_brand_id);
 ALTER TABLE bookings ADD CONSTRAINT fk_bookings_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
 ALTER TABLE bookings ADD CONSTRAINT fk_bookings_car_profiles FOREIGN KEY (car_profile_id) REFERENCES car_profiles (car_profile_id);
@@ -49,4 +49,7 @@ ALTER TABLE employees_bookings ADD CONSTRAINT fk_employees_bookings_employees FO
 ALTER TABLE bookings_employees ADD CONSTRAINT fk_bookings_employees_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id);
 ALTER TABLE bookings_employees ADD CONSTRAINT fk_bookings_employees_employees FOREIGN KEY (employee_id) REFERENCES employees (user_id);
 ALTER TABLE users ADD CONSTRAINT uq_users_address UNIQUE (address_id);
+
+-- A booking can be reviewed at most once.
+ALTER TABLE reviews ADD CONSTRAINT uq_reviews_booking_id UNIQUE (booking_id);
 

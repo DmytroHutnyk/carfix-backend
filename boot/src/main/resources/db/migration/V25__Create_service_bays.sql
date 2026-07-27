@@ -9,6 +9,6 @@ CREATE TABLE service_bays (
                               branch_id uuid  NOT NULL,
 
                               CONSTRAINT check_service_bays_status
-                                  CHECK (status IN ('active', 'suspended'))
+                                  CHECK (status IN ('ACTIVE', 'SUSPENDED'))
 );
 

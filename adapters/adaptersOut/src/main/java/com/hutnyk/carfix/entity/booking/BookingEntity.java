@@ -2,7 +2,7 @@ package com.hutnyk.carfix.entity.booking;
 
 import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.entity.branch.BranchEntity;
-import com.hutnyk.carfix.entity.carProfile.CarProfileEntity;
+import com.hutnyk.carfix.carProfile.CarProfileEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

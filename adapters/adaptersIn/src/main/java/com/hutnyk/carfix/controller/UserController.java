@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.controller;
 
 import com.hutnyk.carfix.dto.request.UpdateUserRequest;
-import com.hutnyk.carfix.dto.response.UserResponse;
+import com.hutnyk.carfix.dto.response.UserCoreResponse;
 import com.hutnyk.carfix.in.UserPortIn;
 import com.hutnyk.carfix.in.commands.UpdateUserCommand;
 import com.hutnyk.carfix.mapper.UpdateUserCommandMapper;
@@ -25,12 +25,12 @@ public class UserController {
 
     private final UserPortIn userPortIn;
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<UserResponse> updateCurrentUser(@Valid @RequestBody UpdateUserRequest request,
-                                                          @AuthenticationPrincipal UserDetails userDetails) {
+    @PatchMapping("/me")
+    public ResponseEntity<UserCoreResponse> updateCurrentUser(@Valid @RequestBody UpdateUserRequest request,
+                                                              @AuthenticationPrincipal UserDetails userDetails) {
         UpdateUserCommand command = UpdateUserCommandMapper.toCommand(request);
         User updatedUser = userPortIn.updateUser(userDetails.getUsername(), command);
 
-        return ResponseEntity.status(HttpStatus.OK).body(UserToResponseMapper.toResponse(updatedUser));
+        return ResponseEntity.status(HttpStatus.OK).body(UserToResponseMapper.toCoreResponse(updatedUser));
     }
 }

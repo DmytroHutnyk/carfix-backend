@@ -1,5 +1,8 @@
 set dotenv-filename := ".env.dev"
 
+# Machine-local recipes; not in the repo, absent on fresh clones
+import? '.local/local.just'
+
 # Start the app with dev profile
 dev:
     cd boot && mvn spring-boot:run -Dspring-boot.run.profiles=dev

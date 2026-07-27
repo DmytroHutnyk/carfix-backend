@@ -8,6 +8,6 @@ CREATE TABLE employees (
                            branch_id uuid  NOT NULL,
 
                            CONSTRAINT check_employees_status
-                               CHECK (status IN ('busy', 'active', 'free', 'suspended'))
+                               CHECK (status IN ('BUSY', 'ACTIVE', 'FREE', 'SUSPENDED'))
 );
 

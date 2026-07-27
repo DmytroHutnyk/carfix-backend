@@ -16,6 +16,6 @@ CREATE TABLE files (
                        deleted_at timestamptz,
 
                        CONSTRAINT check_files_status
-                           CHECK (status IN ('pending', 'processed', 'failed', 'deleted', 'archived'))
+                           CHECK (status IN ('PENDING', 'PROCESSED', 'FAILED', 'DELETED', 'ARCHIVED'))
 );
 
