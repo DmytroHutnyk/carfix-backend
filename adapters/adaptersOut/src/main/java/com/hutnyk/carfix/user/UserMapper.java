@@ -1,8 +1,6 @@
-package com.hutnyk.carfix.mapper;
+package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.entity.address.AddressEntity;
-import com.hutnyk.carfix.entity.user.UserEntity;
-import com.hutnyk.carfix.user.*;
 
 public class UserMapper {
 

@@ -1,6 +1,5 @@
-package com.hutnyk.carfix.repository;
+package com.hutnyk.carfix.user;
 
-import com.hutnyk.carfix.entity.user.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 

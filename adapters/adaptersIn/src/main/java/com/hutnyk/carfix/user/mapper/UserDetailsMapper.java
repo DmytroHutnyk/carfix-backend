@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.mapper;
+package com.hutnyk.carfix.user.mapper;
 
 import com.hutnyk.carfix.security.CustomUserDetails;
 import com.hutnyk.carfix.user.User;

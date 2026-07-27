@@ -2,9 +2,9 @@ package com.hutnyk.carfix.mapper.impl;
 
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.dto.response.CustomerAccountResponse;
-import com.hutnyk.carfix.mapper.UserToResponseMapper;
 import com.hutnyk.carfix.mapper.interfaces.LoginUserMapper;
 import com.hutnyk.carfix.user.User;
+import com.hutnyk.carfix.user.mapper.UserToResponseMapper;
 import org.springframework.stereotype.Service;
 
 @Service

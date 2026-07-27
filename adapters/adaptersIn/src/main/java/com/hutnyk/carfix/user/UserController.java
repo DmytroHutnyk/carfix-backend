@@ -1,19 +1,18 @@
-package com.hutnyk.carfix.controller;
+package com.hutnyk.carfix.user;
 
-import com.hutnyk.carfix.dto.request.UpdateUserRequest;
-import com.hutnyk.carfix.dto.response.UserCoreResponse;
 import com.hutnyk.carfix.in.UserPortIn;
 import com.hutnyk.carfix.in.commands.UpdateUserCommand;
-import com.hutnyk.carfix.mapper.UpdateUserCommandMapper;
-import com.hutnyk.carfix.mapper.UserToResponseMapper;
-import com.hutnyk.carfix.user.User;
+import com.hutnyk.carfix.user.dto.request.UpdateUserRequest;
+import com.hutnyk.carfix.user.dto.response.UserCoreResponse;
+import com.hutnyk.carfix.user.mapper.UpdateUserCommandMapper;
+import com.hutnyk.carfix.user.mapper.UserToResponseMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +24,7 @@ public class UserController {
 
     private final UserPortIn userPortIn;
 
-    @PatchMapping("/me")
+    @PutMapping("/me")
     public ResponseEntity<UserCoreResponse> updateCurrentUser(@Valid @RequestBody UpdateUserRequest request,
                                                               @AuthenticationPrincipal UserDetails userDetails) {
         UpdateUserCommand command = UpdateUserCommandMapper.toCommand(request);

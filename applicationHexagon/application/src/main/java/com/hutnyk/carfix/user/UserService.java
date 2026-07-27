@@ -24,18 +24,20 @@ public class UserService implements UserPortIn {
 
     @Override
     public User updateUser(String email, UpdateUserCommand command) {
-        User user = userPortOut.loadUserByEmail(email)
+        User existing = userPortOut.loadUserByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + email));
 
-        if (command.name() != null) {
-            user = user.withName(command.name());
-        }
-        if (command.surname() != null) {
-            user = user.withSurname(command.surname());
-        }
-        if (command.dateOfBirth() != null) {
-            user = user.withDateOfBirth(command.dateOfBirth());
-        }
+        User user = User.of(
+                existing.getId(),
+                command.name(),
+                command.surname(),
+                existing.getPhoneNumber(),
+                existing.getEmail(),
+                existing.getRole(),
+                existing.getPasswordHash(),
+                command.dateOfBirth(),
+                existing.getAddressId()
+        );
 
         return userPortOut.update(user);
     }

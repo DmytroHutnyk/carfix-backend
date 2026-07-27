@@ -3,12 +3,12 @@ package com.hutnyk.carfix.adapter;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.mapper.CustomerMapper;
-import com.hutnyk.carfix.mapper.UserMapper;
 import com.hutnyk.carfix.out.CustomerPortOut;
 import com.hutnyk.carfix.entity.user.CustomerEntity;
-import com.hutnyk.carfix.entity.user.UserEntity;
 import com.hutnyk.carfix.repository.CustomerRepository;
-import com.hutnyk.carfix.repository.UserRepository;
+import com.hutnyk.carfix.user.UserEntity;
+import com.hutnyk.carfix.user.UserMapper;
+import com.hutnyk.carfix.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
@@ -21,7 +21,7 @@ public class CustomerAdapterOut implements CustomerPortOut {
     private final UserRepository userRepository;
 
     @Override
-    public Customer saveUserAndCustomer(Customer customer){
+    public Customer insertCustomer(Customer customer){
 
         UserEntity userEntity = UserMapper.toEntity(customer.getUser(), null);
         CustomerEntity customerEntity = CustomerMapper.toEntity(customer, userEntity, null);

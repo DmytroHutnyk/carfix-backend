@@ -4,6 +4,6 @@ import com.hutnyk.carfix.customer.Customer;
 
 public interface CustomerPortOut {
 
-    Customer saveUserAndCustomer(Customer customer);
+    Customer insertCustomer(Customer customer);
     Customer loadCustomerByUsername(String email);
 }

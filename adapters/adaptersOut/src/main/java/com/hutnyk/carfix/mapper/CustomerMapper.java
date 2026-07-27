@@ -4,7 +4,7 @@ import com.hutnyk.carfix.carProfile.CarProfileEntity;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.entity.user.CustomerEntity;
 import com.hutnyk.carfix.user.User;
-import com.hutnyk.carfix.entity.user.UserEntity;
+import com.hutnyk.carfix.user.UserEntity;
 
 import java.util.Set;
 

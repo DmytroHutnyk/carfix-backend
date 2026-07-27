@@ -1,4 +1,4 @@
-package com.hutnyk.carfix.dto.response;
+package com.hutnyk.carfix.user.dto.response;
 
 import java.time.LocalDate;
 

@@ -54,7 +54,7 @@ public class CustomerService implements CustomerPortIn {
         
         Customer customer = Customer.of(user, CustomerStatus.ACTIVE);
         
-        return customerPortOut.saveUserAndCustomer(customer);
+        return customerPortOut.insertCustomer(customer);
     }
 
     @Override

@@ -1,7 +1,7 @@
-package com.hutnyk.carfix.mapper;
+package com.hutnyk.carfix.user.mapper;
 
-import com.hutnyk.carfix.dto.response.UserCoreResponse;
 import com.hutnyk.carfix.user.User;
+import com.hutnyk.carfix.user.dto.response.UserCoreResponse;
 
 public class UserToResponseMapper {
     public static UserCoreResponse toCoreResponse(User user) {
