@@ -4,11 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * {@code ValidationErrorType} enum is used to supply Exception classes with default exception message.
+ * {@code ValidationErrorType} supplies validation exceptions with a default message and doubles as
+ * their {@link ErrorCode}: every constant is a published code in the {@link ErrorCategory#VALIDATION}
+ * category.
  */
 @Getter
 @AllArgsConstructor
-public enum ValidationErrorType {
+public enum ValidationErrorType implements ErrorCode {
     NULL_VALUE("NULL_VALUE", "Value cannot be null"),
     EMPTY_STRING("EMPTY_STRING", "String cannot be empty or blank"),
     
@@ -36,5 +38,15 @@ public enum ValidationErrorType {
 
     private final String code;
     private final String defaultMessage;
+
+    @Override
+    public String code() {
+        return code;
+    }
+
+    @Override
+    public ErrorCategory category() {
+        return ErrorCategory.VALIDATION;
+    }
 }
 

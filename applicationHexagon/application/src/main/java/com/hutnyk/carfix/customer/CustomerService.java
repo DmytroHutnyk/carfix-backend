@@ -3,16 +3,14 @@ package com.hutnyk.carfix.customer;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
-import com.hutnyk.carfix.customer.exception.EmailAlreadyTakenException;
-import com.hutnyk.carfix.customer.exception.PhoneNumberAlreadyTakenException;
+import com.hutnyk.carfix.user.exception.EmailAlreadyTakenException;
+import com.hutnyk.carfix.user.exception.PhoneNumberAlreadyTakenException;
 import com.hutnyk.carfix.in.customer.CustomerPortIn;
 import com.hutnyk.carfix.in.customer.commands.RegisterUserCommand;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
 import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.user.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -45,11 +43,11 @@ public class CustomerService implements CustomerPortIn {
         );
 
         if (userPortOut.existsByEmail(command.email())) {
-            throw new EmailAlreadyTakenException("User with email already exists", command.email());
+            throw new EmailAlreadyTakenException(command.email());
         }
 
         if(userPortOut.existsByPhoneNumber(phoneNumber)){
-            throw new PhoneNumberAlreadyTakenException("User with such phone number already exists", phoneNumber);
+            throw new PhoneNumberAlreadyTakenException(phoneNumber);
         }
         
         Customer customer = Customer.of(user, CustomerStatus.ACTIVE);

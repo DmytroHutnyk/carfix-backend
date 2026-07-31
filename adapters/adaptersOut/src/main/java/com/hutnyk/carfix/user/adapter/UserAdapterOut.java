@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.user.adapter;
 
 import com.hutnyk.carfix.components.PersistenceAdapter;
+import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -35,7 +36,7 @@ public class UserAdapterOut implements UserPortOut {
     @Override
     public User update(User user){
         UserEntity entity = userRepository.findById(user.getId().id())
-                .orElseThrow(() -> new IllegalStateException("User not found: " + user.getId().id()));
+                .orElseThrow(() -> new UnexpectedStateException("User not found: " + user.getId().id()));
 
         entity.setName(user.getName());
         entity.setSurname(user.getSurname());

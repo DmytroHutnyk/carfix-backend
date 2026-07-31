@@ -5,6 +5,7 @@ import com.hutnyk.carfix.in.user.UserPortIn;
 import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
 import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.user.*;
+import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,7 @@ public class UserService implements UserPortIn {
     @Override
     public User updateUser(String email, UpdateUserCommand command) {
         User existing = userPortOut.loadUserByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + email));
+                .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(email));
 
         User user = User.of(
                 existing.getId(),

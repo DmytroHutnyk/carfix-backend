@@ -9,6 +9,7 @@ import com.hutnyk.carfix.carProfile.repository.CarProfileRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.customer.entity.CustomerEntity;
 import com.hutnyk.carfix.customer.repository.CustomerRepository;
+import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
 import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,9 @@ public class CarProfileAdapterOut implements CarProfilePortOut {
 
     @Override
     public CarProfile update(CarProfile profile) {
-        CarProfileEntity entity = carProfileRepository.findById(profile.getId().id()).orElseThrow(IllegalStateException::new);
+        CarProfileEntity entity = carProfileRepository.findById(profile.getId().id())
+                .orElseThrow(() -> new UnexpectedStateException(
+                        "Car profile row missing on update: " + profile.getId().id()));
 
         ModelGenerationEntity generation = modelGenerationRepository.getReferenceById(profile.getModelGenerationId());
         CarProfileMapper.updateEntity(entity, profile, generation);

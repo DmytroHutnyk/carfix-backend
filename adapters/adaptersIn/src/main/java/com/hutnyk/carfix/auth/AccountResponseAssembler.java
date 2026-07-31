@@ -1,10 +1,11 @@
 package com.hutnyk.carfix.auth;
 
 import com.hutnyk.carfix.auth.dto.response.AccountResponse;
-import com.hutnyk.carfix.auth.exception.CustomerNotFoundException;
+import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.customer.CustomerPortIn;
 import com.hutnyk.carfix.auth.mapper.LoginUserMapper;
 import com.hutnyk.carfix.user.UserRole;
+import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,9 +20,9 @@ public class AccountResponseAssembler {
         return switch (role) {
             case CUSTOMER -> loginUserMapper.customerToAccountResponse(
                     customerPortIn.loadByCustomerUsername(username).orElseThrow(() ->
-                            new CustomerNotFoundException("No customer aggregate for authenticated principal: " + username)));
+                            AuthenticatedUserMissingException.noCustomerAggregate(username)));
             // case OWNER -> ownerAccountMapper.toResponse(ownerPortIn.loadByOwnerUsername(username)...);  // add WITH the owner slice — out of scope now
-            default -> throw new IllegalStateException("Unsupported account role for assembly: " + role);
+            default -> throw new UnexpectedStateException("Unsupported account role for assembly: " + role);
         };
     }
 }
