@@ -32,7 +32,7 @@ public class BookingMapper {
                 CarProfileId.of(e.getCarProfileEntity().getId())
         );
     }
-//TODO
+
     public static BookingView toView(BookingEntity e) {
         if (e == null) return null;
         BranchEntity branch = e.getBranchEntity();
