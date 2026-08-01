@@ -1,25 +1,33 @@
 package com.hutnyk.carfix.booking;
 
+import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.carProfile.CarProfileId;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.With;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static com.hutnyk.carfix.util.Validator.*;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class Booking {
 
+    public static final Duration SAFE_CANCELLATION_NOTICE = Duration.ofHours(24);
+
     @EqualsAndHashCode.Include
     private final BookingId id;
     private final LocalDate date;
+    @With(AccessLevel.PRIVATE)
     private final BookingStatus status;
     private final LocalTime startTime;
     private final LocalTime endTime;
@@ -88,5 +96,18 @@ public final class Booking {
                 .branchId(branchId)
                 .carProfileId(carProfileId)
                 .build();
+    }
+
+    public Booking cancel() {
+        if (status != BookingStatus.SCHEDULED) {
+            throw new BookingCancellationNotAllowedException(id.id(), status);
+        }
+        return withStatus(BookingStatus.CANCELLED);
+    }
+
+    public Instant safeCancelUntil(ZoneId branchZone) {
+        return ZonedDateTime.of(date, startTime, branchZone)
+                .minus(SAFE_CANCELLATION_NOTICE)
+                .toInstant();
     }
 }
