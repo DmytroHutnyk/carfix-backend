@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.carProfile.mapper;
 
 import com.hutnyk.carfix.carProfile.dto.request.CreateCarProfileRequest;
-import com.hutnyk.carfix.in.carProfile.commands.CreateCarProfileCommand;
+import com.hutnyk.carfix.in.commands.CreateCarProfileCommand;
 
 public class CreateCarProfileCommandMapper {
     public static CreateCarProfileCommand toCommand(CreateCarProfileRequest request) {

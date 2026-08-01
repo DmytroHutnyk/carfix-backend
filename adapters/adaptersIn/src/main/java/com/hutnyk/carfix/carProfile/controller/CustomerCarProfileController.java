@@ -6,7 +6,7 @@ import com.hutnyk.carfix.carProfile.dto.response.CarProfileResponse;
 import com.hutnyk.carfix.carProfile.mapper.CarProfileResponseMapper;
 import com.hutnyk.carfix.carProfile.mapper.CreateCarProfileCommandMapper;
 import com.hutnyk.carfix.carProfile.mapper.UpdateCarProfileCommandMapper;
-import com.hutnyk.carfix.in.carProfile.CarProfilePortIn;
+import com.hutnyk.carfix.in.CarProfilePortIn;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

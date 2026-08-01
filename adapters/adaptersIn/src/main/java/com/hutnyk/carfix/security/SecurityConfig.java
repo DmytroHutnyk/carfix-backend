@@ -1,13 +1,11 @@
 package com.hutnyk.carfix.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hutnyk.carfix.error.ProblemDetailAccessDeniedHandler;
-import com.hutnyk.carfix.error.ProblemDetailAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -20,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
@@ -40,7 +39,6 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper objectMapper;
 
     @Bean
     @Order(1)
@@ -70,9 +68,8 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 )
 
-                .exceptionHandling(e -> e
-                        .authenticationEntryPoint(new ProblemDetailAuthenticationEntryPoint(objectMapper))
-                        .accessDeniedHandler(new ProblemDetailAccessDeniedHandler(objectMapper))
+                .exceptionHandling(e ->
+                        e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))                   // return 401 instead of default 403 when user is not authorized(
                 )
 
                 .authorizeHttpRequests(authorize -> authorize

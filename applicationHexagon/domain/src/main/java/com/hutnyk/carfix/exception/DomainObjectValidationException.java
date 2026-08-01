@@ -1,72 +1,74 @@
 package com.hutnyk.carfix.exception;
 
 import lombok.Getter;
-
 /**
- * The domain rejected a value.
- *
- * Carries its {@link ValidationErrorType} both as the human-readable default message and as the
- * published {@link ErrorCode}.
+ *  {@code DomainObjectValidationException} used for validation exceptions.
  */
 @Getter
-public class DomainObjectValidationException extends ValidationException {
-
+public class DomainObjectValidationException extends DomainObjectException {
     private final ValidationErrorType errorType;
+    private final String fieldName;
+    private final Object rejectedValue;
 
     /**
-     * Validation exception with errorType, fieldName and rejectedValue.
-     *
-     * @param errorType the rule that was broken
-     * @param fieldName the field that broke it
-     * @param rejectedValue the offending value — never pass a secret, it lands in the message
+     * Validation exception constructor with errorType, fieldName and rejectedValue.
+     * @param errorType
+     * @param fieldName
+     * @param rejectedValue
      */
     public DomainObjectValidationException(ValidationErrorType errorType, String fieldName, Object rejectedValue) {
-        super(errorType, buildMessage(errorType, fieldName, rejectedValue), fieldName, rejectedValue);
+        super(buildMessage(errorType, fieldName, rejectedValue));
         this.errorType = errorType;
+        this.fieldName = fieldName;
+        this.rejectedValue = rejectedValue;
     }
 
     /**
-     * Validation exception with errorType and fieldName, without rejectedValue.
-     *
-     * @param errorType the rule that was broken
-     * @param fieldName the field that broke it
+     * Validation exception constructor with errorType, fieldName, without rejectedValue. RejectedValue = null.
+     * @param errorType
+     * @param fieldName
      */
     public DomainObjectValidationException(ValidationErrorType errorType, String fieldName) {
-        super(errorType, buildMessage(errorType, fieldName, null), fieldName, null);
+        super(buildMessage(errorType, fieldName, null));
         this.errorType = errorType;
+        this.fieldName = fieldName;
+        this.rejectedValue = null;
     }
 
     /**
-     * Validation exception with errorType, fieldName, rejectedValue and a custom message.
-     *
-     * @param errorType the rule that was broken
-     * @param fieldName the field that broke it
-     * @param rejectedValue the offending value
-     * @param customMessage replaces the message built from the error type
+     * Validation exception constructor with errorType, fieldName, rejectedValue and custom message provided.
+     * @param errorType
+     * @param fieldName
+     * @param customMessage
      */
     public DomainObjectValidationException(ValidationErrorType errorType,
                                            String fieldName,
                                            Object rejectedValue,
                                            String customMessage) {
-        super(errorType, customMessage, fieldName, rejectedValue);
+        super(customMessage);
         this.errorType = errorType;
+        this.fieldName = fieldName;
+        this.rejectedValue = rejectedValue;
     }
+
 
     /**
      * Builds a message from parameters passed as arguments, matching class fields.
-     *
+     * @param errorType
+     * @param fieldName
+     * @param rejectedValue
      * @return {@code String}
      */
-    private static String buildMessage(ValidationErrorType errorType, String fieldName, Object rejectedValue) {
+    private static String buildMessage(ValidationErrorType errorType, String fieldName, Object rejectedValue){
         StringBuilder message = new StringBuilder();
 
-        if (fieldName != null) {
+        if(fieldName != null){
             message.append(fieldName).append(": ");
         }
 
         message.append(errorType.getDefaultMessage());
 
-        if (rejectedValue != null) {
+        if(rejectedValue != null){
             message.append(" (received: ").append(rejectedValue).append(")");
         }
 

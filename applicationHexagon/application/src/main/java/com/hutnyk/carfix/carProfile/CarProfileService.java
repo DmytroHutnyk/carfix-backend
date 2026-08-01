@@ -4,14 +4,13 @@ import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.carCatalog.exception.ModelGenerationNotFoundException;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.customer.Customer;
-import com.hutnyk.carfix.exception.UnexpectedStateException;
-import com.hutnyk.carfix.in.carProfile.CarProfilePortIn;
-import com.hutnyk.carfix.in.carProfile.commands.CreateCarProfileCommand;
-import com.hutnyk.carfix.in.carProfile.commands.UpdateCarProfileCommand;
-import com.hutnyk.carfix.out.carCatalog.CarCatalogPortOut;
-import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
-import com.hutnyk.carfix.out.customer.CustomerPortOut;
-import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
+import com.hutnyk.carfix.in.CarProfilePortIn;
+import com.hutnyk.carfix.in.commands.CreateCarProfileCommand;
+import com.hutnyk.carfix.in.commands.UpdateCarProfileCommand;
+import com.hutnyk.carfix.out.CarCatalogPortOut;
+import com.hutnyk.carfix.out.CarProfilePortOut;
+import com.hutnyk.carfix.out.CustomerPortOut;
+import com.hutnyk.carfix.query.CarProfileView;
 import com.hutnyk.carfix.user.UserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +36,7 @@ public class CarProfileService implements CarProfilePortIn {
     @Override
     public CarProfileView createCarProfile(String email, CreateCarProfileCommand cmd) {
         if (!carCatalogPortOut.existsGenerationById(cmd.modelGenerationId())) {
-            throw new ModelGenerationNotFoundException(cmd.modelGenerationId());
+            throw new ModelGenerationNotFoundException("Model generation not found: " + cmd.modelGenerationId());
         }
         Customer customer = customerPortOut.loadCustomerByUsername(email);
         UUID customerId = customer.getUser().getId().id();
@@ -55,9 +54,7 @@ public class CarProfileService implements CarProfilePortIn {
         );
         carProfilePortOut.insert(profile);
 
-        return carProfilePortOut.findByIdAndCustomerId(profile.getId().id(), customerId)
-                .orElseThrow(() -> new UnexpectedStateException(
-                        "Car profile disappeared right after insert: " + profile.getId().id()));
+        return carProfilePortOut.findByIdAndCustomerId(profile.getId().id(), customerId).orElseThrow();
     }
 
     @Override
@@ -67,11 +64,11 @@ public class CarProfileService implements CarProfilePortIn {
 
         CarProfileView existing = carProfilePortOut
                 .findByIdAndCustomerId(profileId, customerId)
-                .orElseThrow(() -> new CarProfileNotFoundException(profileId));
+                .orElseThrow(() -> new CarProfileNotFoundException("Car profile not found: " + profileId));
 
         if (!cmd.modelGenerationId().equals(existing.generationId())
                 && !carCatalogPortOut.existsGenerationById(cmd.modelGenerationId())) {
-            throw new ModelGenerationNotFoundException(cmd.modelGenerationId());
+            throw new ModelGenerationNotFoundException("Model generation not found: " + cmd.modelGenerationId());
         }
 
         CarProfile updated = CarProfile.create(
@@ -87,16 +84,14 @@ public class CarProfileService implements CarProfilePortIn {
         );
         carProfilePortOut.update(updated);
 
-        return carProfilePortOut.findByIdAndCustomerId(profileId, customerId)
-                .orElseThrow(() -> new UnexpectedStateException(
-                        "Car profile disappeared right after update: " + profileId));
+        return carProfilePortOut.findByIdAndCustomerId(profileId, customerId).orElseThrow();
     }
 
     @Override
     public void deleteCarProfile(String email, UUID profileId) {
         Customer customer = customerPortOut.loadCustomerByUsername(email);
         if (!carProfilePortOut.existsByIdAndCustomerId(profileId, customer.getUser().getId().id())) {
-            throw new CarProfileNotFoundException(profileId);
+            throw new CarProfileNotFoundException("Car profile not found: " + profileId);
         }
         carProfilePortOut.deleteById(profileId);
     }
