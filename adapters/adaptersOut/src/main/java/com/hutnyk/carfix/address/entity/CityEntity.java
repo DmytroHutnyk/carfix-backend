@@ -25,7 +25,7 @@ public class CityEntity {
     private String name;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "region_id", nullable = false)
     private RegionEntity regionEntity;
 }

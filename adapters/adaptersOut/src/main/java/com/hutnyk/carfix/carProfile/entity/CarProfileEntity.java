@@ -40,7 +40,7 @@ public class CarProfileEntity {
     private LocalDate insuranceDate;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customerEntity;
 
@@ -48,7 +48,7 @@ public class CarProfileEntity {
 //    private Integer fileId;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "model_generation_id", nullable = false)
     private ModelGenerationEntity modelGenerationEntity;
 

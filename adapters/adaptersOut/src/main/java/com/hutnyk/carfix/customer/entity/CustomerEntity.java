@@ -27,7 +27,7 @@ public class CustomerEntity {
     private UUID id;
 
     @ToString.Exclude
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "user_id")
     private UserEntity userEntity;

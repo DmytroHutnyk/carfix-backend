@@ -44,7 +44,7 @@ public class BranchEntity {
     private String tz;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id", nullable = false)
     private AddressEntity addressEntity;
 

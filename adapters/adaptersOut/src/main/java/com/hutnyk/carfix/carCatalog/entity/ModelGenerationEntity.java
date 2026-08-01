@@ -31,7 +31,7 @@ public class ModelGenerationEntity {
     private Short endProduction;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "car_model_id", nullable = false)
     private CarModelEntity carModelEntity;
 }

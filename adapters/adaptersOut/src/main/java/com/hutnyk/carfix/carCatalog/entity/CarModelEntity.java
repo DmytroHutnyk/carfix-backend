@@ -25,7 +25,7 @@ public class CarModelEntity {
     private String name;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "car_brand_id", nullable = false)
     private CarBrandEntity carBrandEntity;
 }
