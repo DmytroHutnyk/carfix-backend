@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.carProfile.mapper;
 
 import com.hutnyk.carfix.carProfile.dto.response.CarProfileResponse;
-import com.hutnyk.carfix.query.CarProfileView;
+import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
 
 
 //TODO why view?

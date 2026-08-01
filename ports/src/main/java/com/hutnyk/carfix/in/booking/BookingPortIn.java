@@ -1,0 +1,11 @@
+package com.hutnyk.carfix.in.booking;
+
+import com.hutnyk.carfix.in.booking.query.BookingView;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface BookingPortIn {
+    List<BookingView> getMyBookings(String customerEmail);
+    BookingView cancelBooking(String customerEmail, UUID bookingId);
+}

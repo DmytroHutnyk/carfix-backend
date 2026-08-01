@@ -1,10 +1,11 @@
 package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.components.ApplicationService;
-import com.hutnyk.carfix.in.UserPortIn;
-import com.hutnyk.carfix.in.commands.UpdateUserCommand;
-import com.hutnyk.carfix.out.UserPortOut;
+import com.hutnyk.carfix.in.user.UserPortIn;
+import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
+import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.user.*;
+import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,18 +25,20 @@ public class UserService implements UserPortIn {
 
     @Override
     public User updateUser(String email, UpdateUserCommand command) {
-        User user = userPortOut.loadUserByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + email));
+        User existing = userPortOut.loadUserByEmail(email)
+                .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(email));
 
-        if (command.name() != null) {
-            user = user.withName(command.name());
-        }
-        if (command.surname() != null) {
-            user = user.withSurname(command.surname());
-        }
-        if (command.dateOfBirth() != null) {
-            user = user.withDateOfBirth(command.dateOfBirth());
-        }
+        User user = User.of(
+                existing.getId(),
+                command.name(),
+                command.surname(),
+                existing.getPhoneNumber(),
+                existing.getEmail(),
+                existing.getRole(),
+                existing.getPasswordHash(),
+                command.dateOfBirth(),
+                existing.getAddressId()
+        );
 
         return userPortOut.update(user);
     }
