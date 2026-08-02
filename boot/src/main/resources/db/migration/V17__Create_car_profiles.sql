@@ -9,6 +9,6 @@ CREATE TABLE car_profiles (
                               insurance_date date,
                               customer_id uuid  NOT NULL,
                               file_id int,
-                              model_generation_id int  NOT NULL
+                              model_version_id int  NOT NULL
 );
 

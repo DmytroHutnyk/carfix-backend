@@ -35,7 +35,7 @@ public final class CarProfile {
 
     //Nullable
     private final Integer fileId;
-    private final Integer modelGenerationId;
+    private final Integer modelVersionId;
 
     @Builder
     private CarProfile(
@@ -47,7 +47,7 @@ public final class CarProfile {
             LocalDate insuranceDate,
             UserId customerId,
             Integer fileId,
-            Integer modelGenerationId) {
+            Integer modelVersionId) {
         this.id = id;
         this.name = Validator.notBlank(name, "name");
         this.vin = validateVin(vin);
@@ -56,7 +56,7 @@ public final class CarProfile {
         this.insuranceDate = insuranceDate;
         this.customerId = Validator.notNull(customerId, "customerId");
         this.fileId = fileId;
-        this.modelGenerationId = Validator.notNull(modelGenerationId, "modelGenerationId");
+        this.modelVersionId = Validator.notNull(modelVersionId, "modelVersionId");
     }
 
     /**
@@ -72,7 +72,7 @@ public final class CarProfile {
             LocalDate insuranceDate,
             UserId customerId,
             Integer fileId,
-            Integer modelGenerationId) {
+            Integer modelVersionId) {
         return CarProfile.builder()
                 .id(id)
                 .name(name)
@@ -82,7 +82,7 @@ public final class CarProfile {
                 .insuranceDate(insuranceDate)
                 .customerId(customerId)
                 .fileId(fileId)
-                .modelGenerationId(modelGenerationId)
+                .modelVersionId(modelVersionId)
                 .build();
     }
 
@@ -99,7 +99,7 @@ public final class CarProfile {
             LocalDate insuranceDate,
             UserId customerId,
             Integer fileId,
-            Integer modelGenerationId) {
+            Integer modelVersionId) {
         return CarProfile.builder()
                 .id(id)
                 .name(name)
@@ -109,7 +109,7 @@ public final class CarProfile {
                 .insuranceDate(validateDate(insuranceDate, "insuranceDate"))
                 .customerId(customerId)
                 .fileId(fileId)
-                .modelGenerationId(modelGenerationId)
+                .modelVersionId(modelVersionId)
                 .build();
     }
 

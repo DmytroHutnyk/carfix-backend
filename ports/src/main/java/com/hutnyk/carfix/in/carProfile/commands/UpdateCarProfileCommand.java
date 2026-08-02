@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 public record UpdateCarProfileCommand(
         String name,
-        Integer modelGenerationId,
+        Integer modelVersionId,
         String vin,
         String plates,
         LocalDate insuranceDate,

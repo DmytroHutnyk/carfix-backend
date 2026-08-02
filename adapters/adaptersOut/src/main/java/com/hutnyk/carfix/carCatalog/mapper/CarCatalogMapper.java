@@ -2,10 +2,10 @@ package com.hutnyk.carfix.carCatalog.mapper;
 
 import com.hutnyk.carfix.carCatalog.CarBrand;
 import com.hutnyk.carfix.carCatalog.CarModel;
-import com.hutnyk.carfix.carCatalog.ModelGeneration;
+import com.hutnyk.carfix.carCatalog.ModelVersion;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarModelEntity;
-import com.hutnyk.carfix.carCatalog.entity.ModelGenerationEntity;
+import com.hutnyk.carfix.carCatalog.entity.ModelVersionEntity;
 
 public class CarCatalogMapper {
 
@@ -19,9 +19,9 @@ public class CarCatalogMapper {
         return CarModel.of(e.getId(), e.getName(), e.getCarBrandEntity().getId());
     }
 
-    public static ModelGeneration toDomain(ModelGenerationEntity e) {
+    public static ModelVersion toDomain(ModelVersionEntity e) {
         if (e == null) return null;
-        return ModelGeneration.of(
+        return ModelVersion.of(
                 e.getId(),
                 e.getName(),
                 e.getStartProduction(),

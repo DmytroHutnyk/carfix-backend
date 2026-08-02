@@ -2,10 +2,10 @@ package com.hutnyk.carfix.carCatalog.mapper;
 
 import com.hutnyk.carfix.carCatalog.CarBrand;
 import com.hutnyk.carfix.carCatalog.CarModel;
-import com.hutnyk.carfix.carCatalog.ModelGeneration;
+import com.hutnyk.carfix.carCatalog.ModelVersion;
 import com.hutnyk.carfix.carCatalog.dto.response.CarBrandResponse;
 import com.hutnyk.carfix.carCatalog.dto.response.CarModelResponse;
-import com.hutnyk.carfix.carCatalog.dto.response.ModelGenerationResponse;
+import com.hutnyk.carfix.carCatalog.dto.response.ModelVersionResponse;
 
 public class CarCatalogResponseMapper {
     public static CarBrandResponse toBrandResponse(CarBrand brand) {
@@ -18,14 +18,14 @@ public class CarCatalogResponseMapper {
         return new CarModelResponse(model.getId(), model.getName(), model.getCarBrandId());
     }
 
-    public static ModelGenerationResponse toGenerationResponse(ModelGeneration generation) {
-        if (generation == null) return null;
-        return new ModelGenerationResponse(
-                generation.getId(),
-                generation.getName(),
-                generation.getStartProduction(),
-                generation.getEndProduction(),
-                generation.getCarModelId()
+    public static ModelVersionResponse toVersionResponse(ModelVersion version) {
+        if (version == null) return null;
+        return new ModelVersionResponse(
+                version.getId(),
+                version.getName(),
+                version.getStartProduction(),
+                version.getEndProduction(),
+                version.getCarModelId()
         );
     }
 }

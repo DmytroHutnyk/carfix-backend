@@ -12,13 +12,13 @@ import lombok.ToString;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "model_generations")
-public class ModelGenerationEntity {
+@Table(name = "model_versions")
+public class ModelVersionEntity {
 
     @Id
     @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "model_generation_id", nullable = false)
+    @Column(name = "model_version_id", nullable = false)
     private Integer id;
 
     @Column(name = "name", length = 50, nullable = false)

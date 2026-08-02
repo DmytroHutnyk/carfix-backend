@@ -7,7 +7,7 @@ import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarModelEntity;
-import com.hutnyk.carfix.carCatalog.entity.ModelGenerationEntity;
+import com.hutnyk.carfix.carCatalog.entity.ModelVersionEntity;
 import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.carProfile.entity.CarProfileEntity;
 import com.hutnyk.carfix.in.booking.query.BookingServiceView;
@@ -38,8 +38,8 @@ public class BookingMapper {
         BranchEntity branch = e.getBranchEntity();
         AddressEntity address = branch.getAddressEntity();
         CarProfileEntity carProfile = e.getCarProfileEntity();
-        ModelGenerationEntity generation = carProfile.getModelGenerationEntity();
-        CarModelEntity model = generation.getCarModelEntity();
+        ModelVersionEntity version = carProfile.getModelVersionEntity();
+        CarModelEntity model = version.getCarModelEntity();
 
         List<BookingServiceView> services = e.getServiceEntities().stream()
                 .map(s -> new BookingServiceView(s.getName(), s.getPrice()))

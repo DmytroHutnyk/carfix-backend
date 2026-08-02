@@ -28,7 +28,7 @@ public class CarCatalogService implements CarCatalogPortIn {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ModelGeneration> getGenerationsByModelId(Integer modelId) {
-        return carCatalogPortOut.findGenerationsByModelId(modelId);
+    public List<ModelVersion> getVersionsByModelId(Integer modelId) {
+        return carCatalogPortOut.findVersionsByModelId(modelId);
     }
 }

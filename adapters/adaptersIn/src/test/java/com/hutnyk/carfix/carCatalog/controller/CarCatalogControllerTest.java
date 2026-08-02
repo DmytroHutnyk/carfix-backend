@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.hutnyk.carfix.carCatalog.CarBrand;
 import com.hutnyk.carfix.carCatalog.CarModel;
-import com.hutnyk.carfix.carCatalog.ModelGeneration;
+import com.hutnyk.carfix.carCatalog.ModelVersion;
 import com.hutnyk.carfix.in.carCatalog.CarCatalogPortIn;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,8 +29,8 @@ public class CarCatalogControllerTest {
         }
 
         @Override
-        public List<ModelGeneration> getGenerationsByModelId(Integer modelId) {
-            return List.of(ModelGeneration.of(100, "2.5 Hybrid", (short) 2018, (short) 2024, modelId));
+        public List<ModelVersion> getVersionsByModelId(Integer modelId) {
+            return List.of(ModelVersion.of(100, "XV70 2.5 Hybrid", (short) 2018, (short) 2024, modelId));
         }
     }
 
@@ -59,12 +59,12 @@ public class CarCatalogControllerTest {
     }
 
     @Test
-    public void test_getGenerations_returns_generation_json_for_model() throws Exception {
+    public void test_getVersions_returns_version_json_for_model() throws Exception {
         //when + then
-        mockMvc.perform(get("/api/car-catalog/models/10/generations"))
+        mockMvc.perform(get("/api/car-catalog/models/10/versions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(100))
-                .andExpect(jsonPath("$[0].name").value("2.5 Hybrid"))
+                .andExpect(jsonPath("$[0].name").value("XV70 2.5 Hybrid"))
                 .andExpect(jsonPath("$[0].startProduction").value(2018))
                 .andExpect(jsonPath("$[0].endProduction").value(2024))
                 .andExpect(jsonPath("$[0].modelId").value(10));

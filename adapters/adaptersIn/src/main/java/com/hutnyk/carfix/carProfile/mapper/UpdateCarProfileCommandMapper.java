@@ -8,7 +8,7 @@ public class UpdateCarProfileCommandMapper {
         if (request == null) return null;
         return new UpdateCarProfileCommand(
                 request.name(),
-                request.modelGenerationId(),
+                request.modelVersionId(),
                 request.vin(),
                 request.plates(),
                 request.insuranceDate(),

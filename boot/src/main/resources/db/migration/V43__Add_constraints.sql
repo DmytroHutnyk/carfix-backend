@@ -10,8 +10,8 @@ ALTER TABLE employees ADD CONSTRAINT fk_employees_users FOREIGN KEY (user_id) RE
 ALTER TABLE employees ADD CONSTRAINT fk_employees_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
 ALTER TABLE car_profiles ADD CONSTRAINT fk_car_profiles_customers FOREIGN KEY (customer_id) REFERENCES customers (user_id);
 ALTER TABLE car_profiles ADD CONSTRAINT fk_car_profiles_files FOREIGN KEY (file_id) REFERENCES files (file_id);
-ALTER TABLE car_profiles ADD CONSTRAINT fk_car_profiles_model_generations FOREIGN KEY (model_generation_id) REFERENCES model_generations (model_generation_id);
-ALTER TABLE model_generations ADD CONSTRAINT fk_model_generations_car_models FOREIGN KEY (car_model_id) REFERENCES car_models (car_model_id);
+ALTER TABLE car_profiles ADD CONSTRAINT fk_car_profiles_model_versions FOREIGN KEY (model_version_id) REFERENCES model_versions (model_version_id);
+ALTER TABLE model_versions ADD CONSTRAINT fk_model_versions_car_models FOREIGN KEY (car_model_id) REFERENCES car_models (car_model_id);
 ALTER TABLE car_models ADD CONSTRAINT fk_car_models_car_brands FOREIGN KEY (car_brand_id) REFERENCES car_brands (car_brand_id);
 ALTER TABLE bookings ADD CONSTRAINT fk_bookings_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
 ALTER TABLE bookings ADD CONSTRAINT fk_bookings_car_profiles FOREIGN KEY (car_profile_id) REFERENCES car_profiles (car_profile_id);

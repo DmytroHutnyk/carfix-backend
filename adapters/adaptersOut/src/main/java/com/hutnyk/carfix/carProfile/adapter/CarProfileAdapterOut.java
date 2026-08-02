@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.carProfile.adapter;
 
-import com.hutnyk.carfix.carCatalog.entity.ModelGenerationEntity;
-import com.hutnyk.carfix.carCatalog.repository.ModelGenerationRepository;
+import com.hutnyk.carfix.carCatalog.entity.ModelVersionEntity;
+import com.hutnyk.carfix.carCatalog.repository.ModelVersionRepository;
 import com.hutnyk.carfix.carProfile.CarProfile;
 import com.hutnyk.carfix.carProfile.entity.CarProfileEntity;
 import com.hutnyk.carfix.carProfile.mapper.CarProfileMapper;
@@ -24,7 +24,7 @@ public class CarProfileAdapterOut implements CarProfilePortOut {
 
     private final CarProfileRepository carProfileRepository;
     private final CustomerRepository customerRepository;
-    private final ModelGenerationRepository modelGenerationRepository;
+    private final ModelVersionRepository modelVersionRepository;
 
     @Override
     public List<CarProfileView> findAllByCustomerId(UUID customerId) {
@@ -47,8 +47,8 @@ public class CarProfileAdapterOut implements CarProfilePortOut {
     @Override
     public CarProfile insert(CarProfile profile) {
         CustomerEntity customer = customerRepository.getReferenceById(profile.getCustomerId().id());
-        ModelGenerationEntity generation = modelGenerationRepository.getReferenceById(profile.getModelGenerationId());
-        return CarProfileMapper.toDomain(carProfileRepository.save(CarProfileMapper.toEntity(profile, customer, generation)));
+        ModelVersionEntity version = modelVersionRepository.getReferenceById(profile.getModelVersionId());
+        return CarProfileMapper.toDomain(carProfileRepository.save(CarProfileMapper.toEntity(profile, customer, version)));
     }
 
     @Override
@@ -57,8 +57,8 @@ public class CarProfileAdapterOut implements CarProfilePortOut {
                 .orElseThrow(() -> new UnexpectedStateException(
                         "Car profile row missing on update: " + profile.getId().id()));
 
-        ModelGenerationEntity generation = modelGenerationRepository.getReferenceById(profile.getModelGenerationId());
-        CarProfileMapper.updateEntity(entity, profile, generation);
+        ModelVersionEntity version = modelVersionRepository.getReferenceById(profile.getModelVersionId());
+        CarProfileMapper.updateEntity(entity, profile, version);
 
         return CarProfileMapper.toDomain(carProfileRepository.save(entity));
     }
