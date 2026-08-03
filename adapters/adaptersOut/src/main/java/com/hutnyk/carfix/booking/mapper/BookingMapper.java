@@ -3,6 +3,7 @@ package com.hutnyk.carfix.booking.mapper;
 import com.hutnyk.carfix.address.entity.AddressEntity;
 import com.hutnyk.carfix.booking.Booking;
 import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.booking.BookingPricing;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
@@ -46,9 +47,8 @@ public class BookingMapper {
                 .sorted(Comparator.comparing(BookingServiceView::name))
                 .toList();
 
-        BigDecimal totalPrice = services.stream()
-                .map(BookingServiceView::price)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPrice = BookingPricing.total(
+                services.stream().map(BookingServiceView::price).toList());
 
         return new BookingView(
                 e.getId(),
