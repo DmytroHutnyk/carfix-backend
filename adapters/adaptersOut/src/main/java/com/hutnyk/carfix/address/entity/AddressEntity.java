@@ -34,7 +34,7 @@ public class AddressEntity {
     private String postalCode;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "city_id", nullable = false)
     private CityEntity cityEntity;
 }

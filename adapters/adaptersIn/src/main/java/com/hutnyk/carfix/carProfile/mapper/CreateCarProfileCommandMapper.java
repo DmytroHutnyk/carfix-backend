@@ -12,7 +12,7 @@ public class CreateCarProfileCommandMapper {
                 request.plates(),
                 request.serviceCertificateDate(),
                 request.insuranceDate(),
-                request.modelGenerationId()
+                request.modelVersionId()
         );
     }
 }

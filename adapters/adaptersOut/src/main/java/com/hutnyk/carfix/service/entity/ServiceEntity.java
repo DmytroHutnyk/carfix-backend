@@ -45,7 +45,7 @@ public class ServiceEntity {
     private Integer serviceBayId;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_category_id", nullable = false)
     private ServiceCategoryEntity serviceCategoryEntity;
 }

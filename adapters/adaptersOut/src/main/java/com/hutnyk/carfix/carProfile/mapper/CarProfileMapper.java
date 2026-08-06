@@ -2,7 +2,7 @@ package com.hutnyk.carfix.carProfile.mapper;
 
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarModelEntity;
-import com.hutnyk.carfix.carCatalog.entity.ModelGenerationEntity;
+import com.hutnyk.carfix.carCatalog.entity.ModelVersionEntity;
 import com.hutnyk.carfix.carProfile.CarProfile;
 import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.carProfile.entity.CarProfileEntity;
@@ -23,14 +23,14 @@ public class CarProfileMapper {
                 e.getInsuranceDate(),
                 UserId.of(e.getCustomerEntity().getId()),
                 null,
-                e.getModelGenerationEntity().getId()
+                e.getModelVersionEntity().getId()
         );
     }
 
     public static CarProfileView toView(CarProfileEntity e) {
         if (e == null) return null;
-        ModelGenerationEntity mge = e.getModelGenerationEntity();
-        CarModelEntity cme = mge.getCarModelEntity();
+        ModelVersionEntity mve = e.getModelVersionEntity();
+        CarModelEntity cme = mve.getCarModelEntity();
         CarBrandEntity cbe = cme.getCarBrandEntity();
         return new CarProfileView(
                 e.getId(),
@@ -45,12 +45,12 @@ public class CarProfileMapper {
                 cbe.getName(),
                 cme.getId(),
                 cme.getName(),
-                mge.getId(),
-                mge.getName()
+                mve.getId(),
+                mve.getName()
         );
     }
 
-    public static CarProfileEntity toEntity(CarProfile p, CustomerEntity customer, ModelGenerationEntity generation) {
+    public static CarProfileEntity toEntity(CarProfile p, CustomerEntity customer, ModelVersionEntity version) {
         if (p == null) return null;
         return new CarProfileEntity(
                 p.getId().id(),
@@ -60,17 +60,17 @@ public class CarProfileMapper {
                 p.getServiceCertificateDate(),
                 p.getInsuranceDate(),
                 customer,
-                generation
+                version
         );
     }
 
-    public static void updateEntity(CarProfileEntity e, CarProfile p, ModelGenerationEntity generation) {
+    public static void updateEntity(CarProfileEntity e, CarProfile p, ModelVersionEntity version) {
         if (e == null || p == null) return;
         e.setName(p.getName());
         e.setVin(p.getVin());
         e.setPlates(p.getPlates());
         e.setServiceCertificateDate(p.getServiceCertificateDate());
         e.setInsuranceDate(p.getInsuranceDate());
-        e.setModelGenerationEntity(generation);
+        e.setModelVersionEntity(version);
     }
 }

@@ -19,8 +19,8 @@ public class CarProfileResponseMapper {
                 view.brandName(),
                 view.modelId(),
                 view.modelName(),
-                view.generationId(),
-                view.generationName()
+                view.versionId(),
+                view.versionName()
         );
     }
 }

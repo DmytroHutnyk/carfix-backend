@@ -52,7 +52,7 @@ public class UserEntity {
     private LocalDate dateOfBirth;
 
     @ToString.Exclude
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private AddressEntity addressEntity;
 }

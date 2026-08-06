@@ -11,7 +11,7 @@ import com.hutnyk.carfix.branch.BranchStatus;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarModelEntity;
-import com.hutnyk.carfix.carCatalog.entity.ModelGenerationEntity;
+import com.hutnyk.carfix.carCatalog.entity.ModelVersionEntity;
 import com.hutnyk.carfix.carProfile.entity.CarProfileEntity;
 import com.hutnyk.carfix.in.booking.query.BookingServiceView;
 import com.hutnyk.carfix.in.booking.query.BookingView;
@@ -56,15 +56,15 @@ public class BookingMapperTest {
         model.setName("X5");
         model.setCarBrandEntity(brand);
 
-        ModelGenerationEntity generation = new ModelGenerationEntity();
-        generation.setName("G05");
-        generation.setCarModelEntity(model);
+        ModelVersionEntity version = new ModelVersionEntity();
+        version.setName("G05");
+        version.setCarModelEntity(model);
 
         CarProfileEntity carProfile = new CarProfileEntity();
         carProfile.setId(CAR_PROFILE_ID);
         carProfile.setName("Weekend Car");
         carProfile.setPlates("KR 67890");
-        carProfile.setModelGenerationEntity(generation);
+        carProfile.setModelVersionEntity(version);
 
         ServiceEntity diagnostics = new ServiceEntity();
         diagnostics.setId(1);

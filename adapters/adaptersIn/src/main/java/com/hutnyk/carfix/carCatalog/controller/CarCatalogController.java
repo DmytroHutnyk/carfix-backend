@@ -3,7 +3,7 @@ package com.hutnyk.carfix.carCatalog.controller;
 import com.hutnyk.carfix.carCatalog.dto.response.CarBrandResponse;
 import com.hutnyk.carfix.carCatalog.mapper.CarCatalogResponseMapper;
 import com.hutnyk.carfix.carCatalog.dto.response.CarModelResponse;
-import com.hutnyk.carfix.carCatalog.dto.response.ModelGenerationResponse;
+import com.hutnyk.carfix.carCatalog.dto.response.ModelVersionResponse;
 import com.hutnyk.carfix.in.carCatalog.CarCatalogPortIn;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,10 +37,10 @@ public class CarCatalogController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/models/{modelId}/generations")
-    public ResponseEntity<List<ModelGenerationResponse>> getGenerations(@PathVariable Integer modelId) {
-        List<ModelGenerationResponse> response = carCatalogPortIn.getGenerationsByModelId(modelId).stream()
-                .map(CarCatalogResponseMapper::toGenerationResponse)
+    @GetMapping("/models/{modelId}/versions")
+    public ResponseEntity<List<ModelVersionResponse>> getVersions(@PathVariable Integer modelId) {
+        List<ModelVersionResponse> response = carCatalogPortIn.getVersionsByModelId(modelId).stream()
+                .map(CarCatalogResponseMapper::toVersionResponse)
                 .toList();
         return ResponseEntity.ok(response);
     }

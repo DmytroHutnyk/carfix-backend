@@ -20,7 +20,7 @@ public class RegionEntity {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "countries_iso")
     private CountryEntity countryEntity;
 

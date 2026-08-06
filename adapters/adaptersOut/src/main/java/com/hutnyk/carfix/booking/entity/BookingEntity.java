@@ -43,12 +43,12 @@ public class BookingEntity {
     private LocalTime endTime;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id", nullable = false)
     private BranchEntity branchEntity;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "car_profile_id", nullable = false)
     private CarProfileEntity carProfileEntity;
 

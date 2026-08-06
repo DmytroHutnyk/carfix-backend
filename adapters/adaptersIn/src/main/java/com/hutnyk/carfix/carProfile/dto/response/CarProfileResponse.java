@@ -13,6 +13,6 @@ public record CarProfileResponse(
         String brandName,
         Integer modelId,
         String modelName,
-        Integer generationId,
-        String generationName
+        Integer versionId,
+        String versionName
 ) {}

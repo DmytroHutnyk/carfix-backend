@@ -16,8 +16,8 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
            "JOIN FETCH br.addressEntity a " +
            "JOIN FETCH a.cityEntity " +
            "JOIN FETCH b.carProfileEntity cp " +
-           "JOIN FETCH cp.modelGenerationEntity mg " +
-           "JOIN FETCH mg.carModelEntity cm " +
+           "JOIN FETCH cp.modelVersionEntity mv " +
+           "JOIN FETCH mv.carModelEntity cm " +
            "JOIN FETCH cm.carBrandEntity " +
            "LEFT JOIN FETCH b.serviceEntities " +
            "WHERE cp.customerEntity.id = :customerId " +
@@ -29,8 +29,8 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
            "JOIN FETCH br.addressEntity a " +
            "JOIN FETCH a.cityEntity " +
            "JOIN FETCH b.carProfileEntity cp " +
-           "JOIN FETCH cp.modelGenerationEntity mg " +
-           "JOIN FETCH mg.carModelEntity cm " +
+           "JOIN FETCH cp.modelVersionEntity mv " +
+           "JOIN FETCH mv.carModelEntity cm " +
            "JOIN FETCH cm.carBrandEntity " +
            "LEFT JOIN FETCH b.serviceEntities " +
            "WHERE b.id = :id AND cp.customerEntity.id = :customerId")

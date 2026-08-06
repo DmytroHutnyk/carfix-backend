@@ -13,7 +13,7 @@ public record UpdateCarProfileRequest(
         String name,
 
         @NotNull
-        Integer modelGenerationId,
+        Integer modelVersionId,
 
         @Pattern(regexp = "^[A-HJ-NPR-Z0-9]{17}$", message = "Invalid VIN format")
         String vin,

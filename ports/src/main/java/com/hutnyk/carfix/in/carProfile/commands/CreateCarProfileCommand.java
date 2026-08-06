@@ -8,5 +8,5 @@ public record CreateCarProfileCommand(
         String plates,
         LocalDate serviceCertificateDate,
         LocalDate insuranceDate,
-        Integer modelGenerationId
+        Integer modelVersionId
 ) {}

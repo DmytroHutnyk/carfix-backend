@@ -23,5 +23,5 @@ public record CreateCarProfileRequest(
         LocalDate insuranceDate,
 
         @NotNull
-        Integer modelGenerationId
+        Integer modelVersionId
 ) {}

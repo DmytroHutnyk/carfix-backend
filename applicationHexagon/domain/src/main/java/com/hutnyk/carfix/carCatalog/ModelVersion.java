@@ -10,7 +10,7 @@ import lombok.Getter;
 //@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public final class ModelGeneration {
+public final class ModelVersion {
 
     @EqualsAndHashCode.Include
     private final Integer id;
@@ -22,7 +22,7 @@ public final class ModelGeneration {
     private final Integer carModelId;
 
     @Builder
-    private ModelGeneration(
+    private ModelVersion(
             Integer id,
             String name,
             Short startProduction,
@@ -35,13 +35,13 @@ public final class ModelGeneration {
         this.carModelId = Validator.notNull(carModelId, "carModelId");
     }
 
-    public static ModelGeneration of(
+    public static ModelVersion of(
             Integer id,
             String name,
             Short startProduction,
             Short endProduction,
             Integer carModelId) {
-        return ModelGeneration.builder()
+        return ModelVersion.builder()
                 .id(id)
                 .name(name)
                 .startProduction(startProduction)

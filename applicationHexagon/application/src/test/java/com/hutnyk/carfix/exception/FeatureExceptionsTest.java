@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.exception;
 
-import com.hutnyk.carfix.carCatalog.exception.ModelGenerationNotFoundException;
+import com.hutnyk.carfix.carCatalog.exception.ModelVersionNotFoundException;
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
@@ -30,14 +30,14 @@ public class FeatureExceptionsTest {
     }
 
     @Test
-    public void test_model_generation_not_found_keeps_its_message_and_maps_to_not_found() {
+    public void test_model_version_not_found_keeps_its_message_and_maps_to_not_found() {
         //given
-        ModelGenerationNotFoundException exception = new ModelGenerationNotFoundException(42);
+        ModelVersionNotFoundException exception = new ModelVersionNotFoundException(42);
 
         //then
-        assertThat(exception.getMessage()).isEqualTo("Model generation not found: 42");
+        assertThat(exception.getMessage()).isEqualTo("Model version not found: 42");
         assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
-        assertThat(exception.getErrorCode().code()).isEqualTo("MODEL_GENERATION_NOT_FOUND");
+        assertThat(exception.getErrorCode().code()).isEqualTo("MODEL_VERSION_NOT_FOUND");
     }
 
     @Test

@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.carProfile;
 
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
-import com.hutnyk.carfix.carCatalog.exception.ModelGenerationNotFoundException;
+import com.hutnyk.carfix.carCatalog.exception.ModelVersionNotFoundException;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
@@ -36,8 +36,8 @@ public class CarProfileService implements CarProfilePortIn {
 
     @Override
     public CarProfileView createCarProfile(String email, CreateCarProfileCommand cmd) {
-        if (!carCatalogPortOut.existsGenerationById(cmd.modelGenerationId())) {
-            throw new ModelGenerationNotFoundException(cmd.modelGenerationId());
+        if (!carCatalogPortOut.existsVersionById(cmd.modelVersionId())) {
+            throw new ModelVersionNotFoundException(cmd.modelVersionId());
         }
         Customer customer = customerPortOut.loadCustomerByUsername(email);
         UUID customerId = customer.getUser().getId().id();
@@ -51,7 +51,7 @@ public class CarProfileService implements CarProfilePortIn {
                 cmd.insuranceDate(),
                 customer.getUser().getId(),
                 null,
-                cmd.modelGenerationId()
+                cmd.modelVersionId()
         );
         carProfilePortOut.insert(profile);
 
@@ -69,9 +69,9 @@ public class CarProfileService implements CarProfilePortIn {
                 .findByIdAndCustomerId(profileId, customerId)
                 .orElseThrow(() -> new CarProfileNotFoundException(profileId));
 
-        if (!cmd.modelGenerationId().equals(existing.generationId())
-                && !carCatalogPortOut.existsGenerationById(cmd.modelGenerationId())) {
-            throw new ModelGenerationNotFoundException(cmd.modelGenerationId());
+        if (!cmd.modelVersionId().equals(existing.versionId())
+                && !carCatalogPortOut.existsVersionById(cmd.modelVersionId())) {
+            throw new ModelVersionNotFoundException(cmd.modelVersionId());
         }
 
         CarProfile updated = CarProfile.create(
@@ -83,7 +83,7 @@ public class CarProfileService implements CarProfilePortIn {
                 cmd.insuranceDate(),
                 UserId.of(existing.customerId()),
                 existing.fileId(),
-                cmd.modelGenerationId()
+                cmd.modelVersionId()
         );
         carProfilePortOut.update(updated);
 

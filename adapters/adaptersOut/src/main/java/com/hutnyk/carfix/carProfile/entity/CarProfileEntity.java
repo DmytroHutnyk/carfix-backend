@@ -1,6 +1,6 @@
 package com.hutnyk.carfix.carProfile.entity;
 
-import com.hutnyk.carfix.carCatalog.entity.ModelGenerationEntity;
+import com.hutnyk.carfix.carCatalog.entity.ModelVersionEntity;
 import com.hutnyk.carfix.customer.entity.CustomerEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -40,7 +40,7 @@ public class CarProfileEntity {
     private LocalDate insuranceDate;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customerEntity;
 
@@ -48,9 +48,9 @@ public class CarProfileEntity {
 //    private Integer fileId;
 
     @ToString.Exclude
-    @ManyToOne
-    @JoinColumn(name = "model_generation_id", nullable = false)
-    private ModelGenerationEntity modelGenerationEntity;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "model_version_id", nullable = false)
+    private ModelVersionEntity modelVersionEntity;
 
 
 }

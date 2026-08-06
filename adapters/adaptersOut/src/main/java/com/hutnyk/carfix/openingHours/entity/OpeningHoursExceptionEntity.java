@@ -41,7 +41,7 @@ public class OpeningHoursExceptionEntity {
     private String reason;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id", nullable = false)
     private BranchEntity branchEntity;
 }

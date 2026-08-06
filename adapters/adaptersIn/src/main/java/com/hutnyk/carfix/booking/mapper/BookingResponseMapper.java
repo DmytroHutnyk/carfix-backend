@@ -4,10 +4,8 @@ import com.hutnyk.carfix.booking.dto.response.BookingBranchResponse;
 import com.hutnyk.carfix.booking.dto.response.BookingServiceResponse;
 import com.hutnyk.carfix.booking.dto.response.BookingVehicleResponse;
 import com.hutnyk.carfix.booking.dto.response.CustomerBookingResponse;
+import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.in.booking.query.BookingView;
-
-import java.util.Locale;
-import java.util.UUID;
 
 public class BookingResponseMapper {
 
@@ -15,7 +13,7 @@ public class BookingResponseMapper {
         if (v == null) return null;
         return new CustomerBookingResponse(
                 v.id(),
-                reference(v.id()),
+                BookingId.of(v.id()).reference(),
                 v.date(),
                 v.startTime(),
                 v.endTime(),
@@ -40,9 +38,5 @@ public class BookingResponseMapper {
                         .toList(),
                 v.totalPrice()
         );
-    }
-
-    private static String reference(UUID bookingId) {
-        return "BK-" + bookingId.toString().substring(0, 8).toUpperCase(Locale.ROOT);
     }
 }

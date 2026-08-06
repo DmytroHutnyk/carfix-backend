@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum CarCatalogErrorCode implements ErrorCode {
 
-    MODEL_GENERATION_NOT_FOUND(ErrorCategory.NOT_FOUND);
+    MODEL_VERSION_NOT_FOUND(ErrorCategory.NOT_FOUND);
 
     private final ErrorCategory category;
 

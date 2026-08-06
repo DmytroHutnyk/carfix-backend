@@ -36,7 +36,7 @@ public class OpeningHoursEntity {
     private LocalTime closeTime;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id", nullable = false)
     private BranchEntity branchEntity;
 }
