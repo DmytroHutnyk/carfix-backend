@@ -5,6 +5,7 @@ CREATE TABLE service_bays_bookings (
                                        booked_time tsrange  NOT NULL,
                                        date date  NOT NULL,
                                        service_bay_id int  NOT NULL,
+                                       booking_id uuid  NOT NULL,
 
                                        CONSTRAINT gist_booked_time_exclusion_service_bays_bookings
                                            EXCLUDE USING gist (

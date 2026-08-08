@@ -37,3 +37,6 @@ build/
 
 ### macOS ###
 .DS_Store
+
+# local-only seed data
+boot/src/main/resources/db/migration/seed/

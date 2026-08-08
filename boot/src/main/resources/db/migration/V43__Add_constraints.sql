@@ -20,8 +20,6 @@ ALTER TABLE car_brands_branches ADD CONSTRAINT fk_car_brands_branches_car_brands
 ALTER TABLE car_brands_branches ADD CONSTRAINT fk_car_brands_branches_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
 ALTER TABLE branches_files ADD CONSTRAINT fk_branches_files_files FOREIGN KEY (file_id) REFERENCES files (file_id);
 ALTER TABLE branches_files ADD CONSTRAINT fk_branches_files_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
-ALTER TABLE bookings_equipment ADD CONSTRAINT fk_bookings_equipment_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id);
-ALTER TABLE bookings_equipment ADD CONSTRAINT fk_bookings_equipment_equipment FOREIGN KEY (equipment_id) REFERENCES equipment (equipment_id);
 ALTER TABLE branches ADD CONSTRAINT fk_branches_addresses FOREIGN KEY (address_id) REFERENCES addresses (address_id);
 ALTER TABLE branches ADD CONSTRAINT fk_branches_owners FOREIGN KEY (owner_id) REFERENCES owners (user_id);
 ALTER TABLE opening_hours ADD CONSTRAINT fk_opening_hours_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
@@ -30,24 +28,21 @@ ALTER TABLE equipment ADD CONSTRAINT fk_equipment_equipment_types FOREIGN KEY (e
 ALTER TABLE equipment ADD CONSTRAINT fk_equipment_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
 ALTER TABLE equipment_availability ADD CONSTRAINT fk_equipment_availability_equipment FOREIGN KEY (equipment_id) REFERENCES equipment (equipment_id);
 ALTER TABLE equipment_bookings ADD CONSTRAINT fk_equipment_bookings_equipment FOREIGN KEY (equipment_id) REFERENCES equipment (equipment_id);
+ALTER TABLE equipment_bookings ADD CONSTRAINT fk_equipment_bookings_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id);
 ALTER TABLE service_bays ADD CONSTRAINT fk_service_bays_service_bay_types FOREIGN KEY (service_bay_type_id) REFERENCES service_bay_types (service_bay_type_id);
 ALTER TABLE service_bays ADD CONSTRAINT fk_service_bays_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
 ALTER TABLE service_bays_availability ADD CONSTRAINT fk_service_bays_availability_service_bays FOREIGN KEY (service_bay_id) REFERENCES service_bays (service_bay_id);
 ALTER TABLE service_bays_bookings ADD CONSTRAINT fk_service_bays_bookings_service_bays FOREIGN KEY (service_bay_id) REFERENCES service_bays (service_bay_id);
-ALTER TABLE services ADD CONSTRAINT fk_services_service_bays FOREIGN KEY (service_bay_id) REFERENCES service_bays (service_bay_id);
+ALTER TABLE service_bays_bookings ADD CONSTRAINT fk_service_bays_bookings_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id);
+ALTER TABLE services ADD CONSTRAINT fk_services_branches FOREIGN KEY (branch_id) REFERENCES branches (branch_id);
 ALTER TABLE services ADD CONSTRAINT fk_services_service_categories FOREIGN KEY (service_category_id) REFERENCES service_categories (service_category_id);
-ALTER TABLE services_equipment ADD CONSTRAINT fk_services_recourses_recourses FOREIGN KEY (equipment_id) REFERENCES equipment (equipment_id);
-ALTER TABLE services_equipment ADD CONSTRAINT fk_services_equipment_services FOREIGN KEY (service_id) REFERENCES services (service_id);
 ALTER TABLE bookings_services ADD CONSTRAINT fk_bookings_services_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id);
 ALTER TABLE bookings_services ADD CONSTRAINT fk_bookings_services_services FOREIGN KEY (service_id) REFERENCES services (service_id);
-ALTER TABLE roles_services ADD CONSTRAINT fk_roles_services_services FOREIGN KEY (service_id) REFERENCES services (service_id);
-ALTER TABLE roles_services ADD CONSTRAINT fk_roles_services_roles FOREIGN KEY (role_id) REFERENCES roles (role_id);
 ALTER TABLE employees_roles ADD CONSTRAINT fk_employees_roles_employees FOREIGN KEY (user_id) REFERENCES employees (user_id);
 ALTER TABLE employees_roles ADD CONSTRAINT fk_employees_roles_roles FOREIGN KEY (role_id) REFERENCES roles (role_id);
 ALTER TABLE employees_availability ADD CONSTRAINT fk_employees_availability_employees FOREIGN KEY (employee_id) REFERENCES employees (user_id);
 ALTER TABLE employees_bookings ADD CONSTRAINT fk_employees_bookings_employees FOREIGN KEY (employee_id) REFERENCES employees (user_id);
-ALTER TABLE bookings_employees ADD CONSTRAINT fk_bookings_employees_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id);
-ALTER TABLE bookings_employees ADD CONSTRAINT fk_bookings_employees_employees FOREIGN KEY (employee_id) REFERENCES employees (user_id);
+ALTER TABLE employees_bookings ADD CONSTRAINT fk_employees_bookings_bookings FOREIGN KEY (booking_id) REFERENCES bookings (booking_id);
 ALTER TABLE users ADD CONSTRAINT uq_users_address UNIQUE (address_id);
 
 -- A booking can be reviewed at most once.

@@ -5,6 +5,7 @@ CREATE TABLE equipment_bookings (
                                     booked_time tsrange  NOT NULL,
                                     date date  NOT NULL,
                                     equipment_id int  NOT NULL,
+                                    booking_id uuid  NOT NULL,
 
                                     CONSTRAINT gist_booked_time_exclusion_equipment_bookings
                                         EXCLUDE USING gist (
