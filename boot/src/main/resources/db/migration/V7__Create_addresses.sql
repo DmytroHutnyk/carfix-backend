@@ -6,6 +6,9 @@ CREATE TABLE addresses (
     building_number varchar(10)  NOT NULL,
     flat_number varchar(10)  NULL,
     postal_code varchar(10) NOT NULL,
+    latitude decimal(9,6)  NULL,
+    longitude decimal(9,6)  NULL,
+    google_place_id varchar(300)  NULL,
     city_id INT NOT NULL
 );
 
