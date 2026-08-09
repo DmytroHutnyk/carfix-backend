@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -97,7 +98,7 @@ public class SearchAdapterOut implements SearchPortOut {
             "GREATEST(word_similarity(:q, s.name), word_similarity(:q, sc.name)) DESC, s.name";
     private static final String NAME_RANK_ORDER = "s.name";
 
-    private static final String BRANCH_FILTER_TEMPLATE = """
+    private static final String BRANCH_FILTER_BASE = """
             FROM branches b
             JOIN addresses a ON a.address_id = b.address_id
             JOIN cities c ON c.city_id = a.city_id
@@ -105,6 +106,9 @@ public class SearchAdapterOut implements SearchPortOut {
             JOIN countries co ON co.iso = r.countries_iso
             WHERE b.status = 'ACTIVE'
             %s
+            """;
+
+    private static final String SERVICE_MATCH_EXISTS = """
               AND EXISTS (
                   SELECT 1 FROM services s
                   JOIN service_categories sc ON sc.service_category_id = s.service_category_id
@@ -121,7 +125,7 @@ public class SearchAdapterOut implements SearchPortOut {
 
     private static final String PAGE_SELECT = """
             SELECT b.branch_id, b.name, a.street_name, a.building_number, c.name AS city_name,
-                   a.latitude, a.longitude
+                   a.latitude, a.longitude, b.rating, b.review_count
             """;
 
     private static final String ORDER_BY_DISTANCE = """
@@ -133,6 +137,9 @@ public class SearchAdapterOut implements SearchPortOut {
             ORDER BY b.name
             LIMIT :size OFFSET :offset
             """;
+
+    private static final String CATEGORY_NAME_SQL =
+            "SELECT name FROM service_categories WHERE service_category_id = :categoryId";
 
     private static final String PREVIEW_SQL = """
             SELECT branch_id, service_id, name, price, duration_minutes, category_name FROM (
@@ -199,7 +206,8 @@ public class SearchAdapterOut implements SearchPortOut {
         boolean hasCoordinates = query.lat() != null && query.lng() != null;
         String locationFilter = locationFilter(query.city(), query.voivodeship(), query.country())
                 + (query.radiusKm() != null ? BBOX_FILTER : "");
-        String filter = BRANCH_FILTER_TEMPLATE.formatted(locationFilter, matchFragment(query))
+        String filter = BRANCH_FILTER_BASE.formatted(locationFilter)
+                + (hasTextFilter(query) ? SERVICE_MATCH_EXISTS.formatted(matchFragment(query)) : "")
                 + (brandId != null ? BRAND_FILTER : "");
 
         Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + filter);
@@ -236,12 +244,22 @@ public class SearchAdapterOut implements SearchPortOut {
                             hasCoordinates
                                     ? distanceKm(query.lat(), query.lng(), branchLat, branchLng)
                                     : null,
+                            (BigDecimal) row[7],
+                            row[8] != null ? ((Number) row[8]).intValue() : null,
                             matchedServices.getOrDefault(branchId, List.of()));
                 })
                 .toList();
 
         int totalPages = (int) Math.ceil((double) total / query.size());
-        return new WorkshopSearchPage(content, query.page(), query.size(), total, totalPages);
+        return new WorkshopSearchPage(content, query.page(), query.size(), total, totalPages, null);
+    }
+
+    @Override
+    public Optional<String> findCategoryName(Integer categoryId) {
+        List<?> rows = em.createNativeQuery(CATEGORY_NAME_SQL)
+                .setParameter("categoryId", categoryId)
+                .getResultList();
+        return rows.isEmpty() ? Optional.empty() : Optional.of((String) rows.get(0));
     }
 
     @SuppressWarnings("unchecked")
@@ -290,6 +308,10 @@ public class SearchAdapterOut implements SearchPortOut {
         }
     }
 
+    private static boolean hasTextFilter(WorkshopSearchQuery query) {
+        return query.q() != null || query.serviceName() != null || query.categoryId() != null;
+    }
+
     private static String matchFragment(WorkshopSearchQuery query) {
         if (query.serviceName() != null) {
             return MATCH_BY_SERVICE_NAME;
@@ -297,7 +319,10 @@ public class SearchAdapterOut implements SearchPortOut {
         if (query.categoryId() != null) {
             return MATCH_BY_CATEGORY;
         }
-        return MATCH_BY_TEXT;
+        if (query.q() != null) {
+            return MATCH_BY_TEXT;
+        }
+        return "TRUE";
     }
 
     private static void bindFilterParams(Query nativeQuery, WorkshopSearchQuery query, Integer brandId) {
@@ -325,7 +350,7 @@ public class SearchAdapterOut implements SearchPortOut {
             nativeQuery.setParameter("serviceName", query.serviceName());
         } else if (query.categoryId() != null) {
             nativeQuery.setParameter("categoryId", query.categoryId());
-        } else {
+        } else if (query.q() != null) {
             nativeQuery.setParameter("q", query.q());
             nativeQuery.setParameter("minSimilarity", MIN_WORD_SIMILARITY);
         }

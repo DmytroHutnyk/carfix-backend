@@ -14,5 +14,8 @@ public record WorkshopResultView(
         BigDecimal longitude,
         //Nullable — present only when the caller sent lat/lng
         Double distanceKm,
+        //Nullable pair — null = no reviews yet ("New" on the card)
+        BigDecimal rating,
+        Integer reviewCount,
         List<MatchedServiceView> matchedServices
 ) {}

@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.util.Set;
 import java.util.UUID;
 
@@ -42,6 +43,12 @@ public class BranchEntity {
 
     @Column(name = "tz", nullable = false)
     private String tz;
+
+    @Column(name = "rating", precision = 2, scale = 1)
+    private BigDecimal rating;
+
+    @Column(name = "review_count")
+    private Integer reviewCount;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)

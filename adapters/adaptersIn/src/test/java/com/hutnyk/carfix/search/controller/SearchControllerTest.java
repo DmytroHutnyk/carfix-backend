@@ -9,6 +9,7 @@ import com.hutnyk.carfix.error.GlobalExceptionHandler;
 import com.hutnyk.carfix.in.search.SearchPortIn;
 import com.hutnyk.carfix.in.search.query.CategorySuggestionView;
 import com.hutnyk.carfix.in.search.query.MatchedServiceView;
+import com.hutnyk.carfix.in.search.query.SearchEchoView;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsView;
 import com.hutnyk.carfix.in.search.query.ServiceSuggestionView;
@@ -36,10 +37,11 @@ public class SearchControllerTest {
     private static final String EMAIL = "john@example.com";
     private static final UUID BRANCH_ID = UUID.randomUUID();
 
-    private static WorkshopResultView card(Double distanceKm) {
+    private static WorkshopResultView card(Double distanceKm, BigDecimal rating, Integer reviewCount) {
         return new WorkshopResultView(
                 BRANCH_ID, "AutoFix Mokotow", "Pulawska", "45", "Warsaw",
                 new BigDecimal("52.180000"), new BigDecimal("21.020000"), distanceKm,
+                rating, reviewCount,
                 List.of(new MatchedServiceView(9, "Brake pads replacement",
                         new BigDecimal("150.00"), (short) 60, "Brakes")));
     }
@@ -51,6 +53,8 @@ public class SearchControllerTest {
         boolean searchCalled;
         RuntimeException toThrow;
         Double distanceKm = 3.2;
+        BigDecimal rating = new BigDecimal("4.7");
+        Integer reviewCount = 236;
 
         @Override
         public SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query) {
@@ -69,7 +73,8 @@ public class SearchControllerTest {
             if (toThrow != null) {
                 throw toThrow;
             }
-            return new WorkshopSearchPage(List.of(card(distanceKm)), 0, 20, 1, 1);
+            return new WorkshopSearchPage(List.of(card(distanceKm, rating, reviewCount)), 0, 20, 1, 1,
+                    new SearchEchoView("brake", null, null, null, "Warsaw", null, null));
         }
     }
 
@@ -148,9 +153,14 @@ public class SearchControllerTest {
                 .andExpect(jsonPath("$.content[0].name").value("AutoFix Mokotow"))
                 .andExpect(jsonPath("$.content[0].city").value("Warsaw"))
                 .andExpect(jsonPath("$.content[0].distanceKm").value(3.2))
+                .andExpect(jsonPath("$.content[0].rating").value(4.7))
+                .andExpect(jsonPath("$.content[0].reviewCount").value(236))
                 .andExpect(jsonPath("$.content[0].matchedServices[0].price").value(150.00))
                 .andExpect(jsonPath("$.content[0].matchedServices[0].durationMinutes").value(60))
-                .andExpect(jsonPath("$.content[0].matchedServices[0].categoryName").value("Brakes"));
+                .andExpect(jsonPath("$.content[0].matchedServices[0].categoryName").value("Brakes"))
+                .andExpect(jsonPath("$.echo.q").value("brake"))
+                .andExpect(jsonPath("$.echo.city").value("Warsaw"))
+                .andExpect(jsonPath("$.echo.categoryName").doesNotExist());
     }
 
     @Test
@@ -168,6 +178,21 @@ public class SearchControllerTest {
         assertThat(stub.receivedQuery.lat()).isNull();
         assertThat(stub.receivedQuery.lng()).isNull();
         assertThat(stub.receivedQuery.radiusKm()).isNull();
+    }
+
+    @Test
+    public void test_workshops_unrated_branch_serializes_null_rating() throws Exception {
+        //given
+        stub.rating = null;
+        stub.reviewCount = null;
+
+        //when + then
+        mockMvc.perform(get("/api/search/workshops")
+                        .param("q", "brake")
+                        .param("city", "Warsaw"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].rating").doesNotExist())
+                .andExpect(jsonPath("$.content[0].reviewCount").doesNotExist());
     }
 
     @Test
