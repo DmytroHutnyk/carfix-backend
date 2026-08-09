@@ -1,6 +1,8 @@
 package com.hutnyk.carfix.service.entity;
 
+import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.service.ServiceStatus;
+import com.hutnyk.carfix.serviceBay.entity.ServiceBayTypeEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -40,12 +43,29 @@ public class ServiceEntity {
     @Column(name = "status", nullable = false)
     private ServiceStatus status;
 
-    // FK to service_bays(service_bay_id); becomes a @ManyToOne once ServiceBayEntity is mapped.
-    @Column(name = "service_bay_id", nullable = false)
-    private Integer serviceBayId;
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id", nullable = false)
+    private BranchEntity branchEntity;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_category_id", nullable = false)
     private ServiceCategoryEntity serviceCategoryEntity;
+
+    @ToString.Exclude
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "services_service_bay_types",
+            joinColumns = @JoinColumn(name = "service_id"),
+            inverseJoinColumns = @JoinColumn(name = "service_bay_type_id"))
+    private Set<ServiceBayTypeEntity> serviceBayTypes;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "serviceEntity", fetch = FetchType.LAZY)
+    private Set<ServiceEmployeeRequirementEntity> employeeRequirements;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "serviceEntity", fetch = FetchType.LAZY)
+    private Set<ServiceEquipmentRequirementEntity> equipmentRequirements;
 }
