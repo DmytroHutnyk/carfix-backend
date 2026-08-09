@@ -11,11 +11,11 @@ public record WorkshopSearchQuery(
         //Nullable
         Integer categoryId,
 
-        //Nullable — at least one of city/voivodeship/country must be present
+        //Nullable
         String city,
         //Nullable
         String voivodeship,
-        //Nullable
+        //Nullable — 2-letter ISO code, not a country name
         String country,
 
         //Nullable
@@ -28,5 +28,13 @@ public record WorkshopSearchQuery(
         //Nullable
         UUID carProfileId,
         int page,
-        int size
-) {}
+        int size,
+
+        //Nullable on the way in; never null after SearchService normalizes it
+        String sort,
+        //Nullable — this branch is kept in the result set and ordered first
+        UUID pinnedBranchId
+) {
+    public static final String SORT_DISTANCE = "distance";
+    public static final String SORT_NAME = "name";
+}

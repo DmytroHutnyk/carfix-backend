@@ -54,10 +54,13 @@ public class SearchController {
             @RequestParam(name = "carProfileId", required = false) UUID carProfileId,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(50) int size,
+            @RequestParam(name = "sort", required = false) @Size(max = 20) String sort,
+            @RequestParam(name = "pinnedBranchId", required = false) UUID pinnedBranchId,
             @AuthenticationPrincipal UserDetails principal) {
         WorkshopSearchQuery query = new WorkshopSearchQuery(
                 q, serviceName, categoryId, city, voivodeship, country,
-                lat, lng, radiusKm, carProfileId, page, size);
+                lat, lng, radiusKm, carProfileId, page, size,
+                sort, pinnedBranchId);
         String principalEmail = principal != null ? principal.getUsername() : null;
         return ResponseEntity.ok(SearchResponseMapper.toResponse(
                 searchPortIn.searchWorkshops(query, principalEmail)));
