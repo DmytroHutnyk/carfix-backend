@@ -7,5 +7,6 @@ public record WorkshopSearchPageResponse(
         int page,
         int size,
         long totalElements,
-        int totalPages
+        int totalPages,
+        SearchEchoResponse echo
 ) {}

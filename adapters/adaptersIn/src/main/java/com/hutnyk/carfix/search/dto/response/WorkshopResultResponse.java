@@ -13,5 +13,7 @@ public record WorkshopResultResponse(
         BigDecimal latitude,
         BigDecimal longitude,
         Double distanceKm,
+        BigDecimal rating,
+        Integer reviewCount,
         List<MatchedServiceResponse> matchedServices
 ) {}

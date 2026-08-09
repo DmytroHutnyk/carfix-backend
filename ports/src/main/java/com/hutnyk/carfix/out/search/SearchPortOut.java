@@ -8,6 +8,7 @@ import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SearchPortOut {
 
@@ -18,4 +19,6 @@ public interface SearchPortOut {
     List<WorkshopSuggestionView> findWorkshopSuggestions(SearchSuggestionsQuery query, int limit);
 
     WorkshopSearchPage searchWorkshops(WorkshopSearchQuery query, Integer brandId);
+
+    Optional<String> findCategoryName(Integer categoryId);
 }
