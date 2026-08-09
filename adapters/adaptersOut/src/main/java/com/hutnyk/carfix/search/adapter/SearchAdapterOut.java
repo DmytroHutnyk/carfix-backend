@@ -123,6 +123,8 @@ public class SearchAdapterOut implements SearchPortOut {
     private static final String BRANCH_NAME_PREDICATE =
             "word_similarity(:q, b.name) >= :minSimilarity OR b.name ILIKE '%' || :q || '%'";
 
+    private static final String PINNED_PREDICATE = "b.branch_id = :pinnedBranchId";
+
     private static final String BRAND_FILTER = """
               AND EXISTS (
                   SELECT 1 FROM car_brands_branches cb
@@ -135,15 +137,12 @@ public class SearchAdapterOut implements SearchPortOut {
                    a.latitude, a.longitude, b.rating, b.review_count
             """;
 
-    private static final String ORDER_BY_DISTANCE = """
-            ORDER BY (power(a.latitude - :lat, 2) + power((a.longitude - :lng) * :lngScale, 2))
-            LIMIT :size OFFSET :offset
-            """;
-
-    private static final String ORDER_BY_NAME = """
-            ORDER BY b.name
-            LIMIT :size OFFSET :offset
-            """;
+    private static final String DISTANCE_ORDER_EXPR =
+            "(power(a.latitude - :lat, 2) + power((a.longitude - :lng) * :lngScale, 2))";
+    private static final String NAME_ORDER_EXPR = "b.name";
+    /* Boolean DESC puts the match first; a stable order means the pinned row appears on page 0 only. */
+    private static final String PINNED_ORDER_EXPR = "(b.branch_id = :pinnedBranchId) DESC";
+    private static final String PAGE_LIMIT = "\nLIMIT :size OFFSET :offset\n";
 
     private static final String CATEGORY_NAME_SQL =
             "SELECT name FROM service_categories WHERE service_category_id = :categoryId";
@@ -211,24 +210,43 @@ public class SearchAdapterOut implements SearchPortOut {
     @SuppressWarnings("unchecked")
     public WorkshopSearchPage searchWorkshops(WorkshopSearchQuery query, Integer brandId) {
         boolean hasCoordinates = query.lat() != null && query.lng() != null;
+        boolean sortByDistance = WorkshopSearchQuery.SORT_DISTANCE.equals(query.sort()) && hasCoordinates;
+        boolean pinned = query.pinnedBranchId() != null;
+
         String locationFilter = locationFilter(query.city(), query.voivodeship(), query.country())
                 + (query.radiusKm() != null ? BBOX_FILTER : "");
+        String matchFilter = matchFilter(query);
         String filter = BRANCH_FILTER_BASE.formatted(locationFilter)
-                + matchFilter(query)
+                + matchFilter
                 + (brandId != null ? BRAND_FILTER : "");
+
+        /* :pinnedBranchId appears in the filter only when there was a match clause to escape,
+           but it always appears in ORDER BY when pinning — bind exactly where it is used,
+           because binding a parameter absent from the SQL throws. */
+        boolean filterHasPinned = pinned && !matchFilter.isEmpty();
 
         Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + filter);
         bindFilterParams(countQuery, query, brandId);
+        if (filterHasPinned) {
+            countQuery.setParameter("pinnedBranchId", query.pinnedBranchId());
+        }
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         if (total == 0) {
             return WorkshopSearchPage.empty(query.page(), query.size());
         }
 
-        Query pageQuery = em.createNativeQuery(
-                PAGE_SELECT + filter + (hasCoordinates ? ORDER_BY_DISTANCE : ORDER_BY_NAME));
+        String orderBy = "ORDER BY "
+                + (pinned ? PINNED_ORDER_EXPR + ", " : "")
+                + (sortByDistance ? DISTANCE_ORDER_EXPR : NAME_ORDER_EXPR)
+                + PAGE_LIMIT;
+
+        Query pageQuery = em.createNativeQuery(PAGE_SELECT + filter + orderBy);
         bindFilterParams(pageQuery, query, brandId);
-        if (hasCoordinates) {
+        if (pinned) {
+            pageQuery.setParameter("pinnedBranchId", query.pinnedBranchId());
+        }
+        if (sortByDistance) {
             pageQuery.setParameter("lat", query.lat());
             pageQuery.setParameter("lng", query.lng());
             pageQuery.setParameter("lngScale", BigDecimal.valueOf(lngScale(query.lat())));
@@ -345,6 +363,9 @@ public class SearchAdapterOut implements SearchPortOut {
         alternatives.add(SERVICE_MATCH_PREDICATE.formatted(matchFragment(query)));
         if (query.q() != null) {
             alternatives.add(BRANCH_NAME_PREDICATE);
+        }
+        if (query.pinnedBranchId() != null) {
+            alternatives.add(PINNED_PREDICATE);
         }
         return "  AND (" + String.join(" OR ", alternatives) + ")\n";
     }

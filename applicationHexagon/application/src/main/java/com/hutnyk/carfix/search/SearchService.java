@@ -74,13 +74,17 @@ public class SearchService implements SearchPortIn {
         validateGeo(query);
         validatePaging(query);
 
+        boolean hasCoordinates = query.lat() != null && query.lng() != null;
+        String sort = resolveSort(query.sort(), hasCoordinates);
+
         Integer brandId = resolveBrandId(query.carProfileId(), principalEmail);
 
         WorkshopSearchQuery normalized = new WorkshopSearchQuery(
                 q, serviceName, categoryId,
                 city, voivodeship, country,
                 query.lat(), query.lng(), query.radiusKm(),
-                query.carProfileId(), query.page(), query.size());
+                query.carProfileId(), query.page(), query.size(),
+                sort, query.pinnedBranchId());
 
         String categoryName = categoryId != null
                 ? searchPortOut.findCategoryName(categoryId).orElse(null)
@@ -89,6 +93,29 @@ public class SearchService implements SearchPortIn {
                 q, serviceName, categoryId, categoryName, city, voivodeship, country);
 
         return searchPortOut.searchWorkshops(normalized, brandId).withEcho(echo);
+    }
+
+    /**
+     * The order is a fact of the request, so it is resolved once here and the adapter
+     * only reads it. Absent = distance when we have a centre to measure from, else name.
+     */
+    private static String resolveSort(String rawSort, boolean hasCoordinates) {
+        String sort = normalize(rawSort);
+        if (sort == null) {
+            return hasCoordinates ? WorkshopSearchQuery.SORT_DISTANCE : WorkshopSearchQuery.SORT_NAME;
+        }
+        String lower = sort.toLowerCase();
+        if (WorkshopSearchQuery.SORT_NAME.equals(lower)) {
+            return WorkshopSearchQuery.SORT_NAME;
+        }
+        if (WorkshopSearchQuery.SORT_DISTANCE.equals(lower)) {
+            if (!hasCoordinates) {
+                throw new InvalidSearchFilterException("sort=distance requires lat and lng");
+            }
+            return WorkshopSearchQuery.SORT_DISTANCE;
+        }
+        throw new InvalidSearchFilterException("sort must be one of: "
+                + WorkshopSearchQuery.SORT_DISTANCE + ", " + WorkshopSearchQuery.SORT_NAME);
     }
 
     private static void validateGeo(WorkshopSearchQuery query) {

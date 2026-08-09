@@ -165,12 +165,12 @@ public class SearchServiceTest {
 
     private static WorkshopSearchQuery query(String q, String serviceName, Integer categoryId, UUID carProfileId) {
         return new WorkshopSearchQuery(q, serviceName, categoryId, CITY, null, null,
-                null, null, null, carProfileId, 0, 20);
+                null, null, null, carProfileId, 0, 20, null, null);
     }
 
     private static WorkshopSearchQuery geoQuery(String city, BigDecimal lat, BigDecimal lng, Double radiusKm) {
         return new WorkshopSearchQuery("tire", null, null, city, null, null,
-                lat, lng, radiusKm, null, 0, 20);
+                lat, lng, radiusKm, null, 0, 20, null, null);
     }
 
     private static SearchSuggestionsQuery suggestionsQuery(String q) {
@@ -268,7 +268,7 @@ public class SearchServiceTest {
     public void test_search_without_any_filter_is_browse_mode() {
         //given
         WorkshopSearchQuery browse = new WorkshopSearchQuery(null, null, null, null, null, null,
-                null, null, null, null, 0, 20);
+                null, null, null, null, 0, 20, null, null);
 
         //when
         service.searchWorkshops(browse, null);
@@ -308,7 +308,7 @@ public class SearchServiceTest {
     public void test_search_without_location_passes_through() {
         //given
         WorkshopSearchQuery noLocation = new WorkshopSearchQuery("tire", null, null, null, null, null,
-                null, null, null, null, 0, 20);
+                null, null, null, null, 0, 20, null, null);
 
         //when
         service.searchWorkshops(noLocation, null);
@@ -323,7 +323,7 @@ public class SearchServiceTest {
     public void test_search_blank_location_normalized_to_null_passes_through() {
         //given
         WorkshopSearchQuery blankLocation = new WorkshopSearchQuery("tire", null, null, "  ", " ", "",
-                null, null, null, null, 0, 20);
+                null, null, null, null, 0, 20, null, null);
 
         //when
         service.searchWorkshops(blankLocation, null);
@@ -336,7 +336,7 @@ public class SearchServiceTest {
     public void test_search_accepts_voivodeship_only() {
         //given
         WorkshopSearchQuery voivodeshipOnly = new WorkshopSearchQuery("tire", null, null,
-                null, "Masovian Voivodeship", null, null, null, null, null, 0, 20);
+                null, "Masovian Voivodeship", null, null, null, null, null, 0, 20, null, null);
 
         //when
         service.searchWorkshops(voivodeshipOnly, null);
@@ -350,7 +350,7 @@ public class SearchServiceTest {
     public void test_search_accepts_country_only() {
         //given
         WorkshopSearchQuery countryOnly = new WorkshopSearchQuery("tire", null, null,
-                null, null, "Poland", null, null, null, null, 0, 20);
+                null, null, "Poland", null, null, null, null, 0, 20, null, null);
 
         //when
         service.searchWorkshops(countryOnly, null);
@@ -403,7 +403,7 @@ public class SearchServiceTest {
     public void test_search_rejects_page_size_over_the_maximum() {
         //given
         WorkshopSearchQuery oversized = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
-                null, null, null, null, 0, 99);
+                null, null, null, null, 0, 99, null, null);
 
         //when + then
         assertThatThrownBy(() -> service.searchWorkshops(oversized, null))
@@ -415,7 +415,7 @@ public class SearchServiceTest {
     public void test_search_rejects_negative_page() {
         //given
         WorkshopSearchQuery negativePage = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
-                null, null, null, null, -1, 20);
+                null, null, null, null, -1, 20, null, null);
 
         //when + then
         assertThatThrownBy(() -> service.searchWorkshops(negativePage, null))
@@ -501,7 +501,7 @@ public class SearchServiceTest {
     public void test_search_browse_echo_is_all_null() {
         //given
         WorkshopSearchQuery browse = new WorkshopSearchQuery(null, null, null, null, null, null,
-                null, null, null, null, 0, 20);
+                null, null, null, null, 0, 20, null, null);
 
         //when
         WorkshopSearchPage result = service.searchWorkshops(browse, null);
@@ -539,5 +539,91 @@ public class SearchServiceTest {
         assertThat(carProfilePortOut.receivedProfileId).isEqualTo(CAR_PROFILE_ID);
         assertThat(carProfilePortOut.receivedCustomerId).isEqualTo(CUSTOMER_ID.id());
         assertThat(searchPortOut.receivedBrandId).isEqualTo(BRAND_ID);
+    }
+
+    @Test
+    void sort_defaults_to_distance_when_coordinates_are_present() {
+        //given
+        StubSearchPortOut searchPort = new StubSearchPortOut();
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        WorkshopSearchQuery query = geoQuery(CITY, BigDecimal.valueOf(52.2), BigDecimal.valueOf(21.0), null);
+
+        //when
+        service.searchWorkshops(query, null);
+
+        //then
+        assertThat(searchPort.receivedQuery.sort()).isEqualTo(WorkshopSearchQuery.SORT_DISTANCE);
+    }
+
+    @Test
+    void sort_defaults_to_name_without_coordinates() {
+        //given
+        StubSearchPortOut searchPort = new StubSearchPortOut();
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+
+        //when
+        service.searchWorkshops(query("tire", null, null, null), null);
+
+        //then
+        assertThat(searchPort.receivedQuery.sort()).isEqualTo(WorkshopSearchQuery.SORT_NAME);
+    }
+
+    @Test
+    void explicit_name_sort_wins_over_coordinates() {
+        //given
+        StubSearchPortOut searchPort = new StubSearchPortOut();
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
+                BigDecimal.valueOf(52.2), BigDecimal.valueOf(21.0), null, null, 0, 20, "NAME", null);
+
+        //when
+        service.searchWorkshops(query, null);
+
+        //then
+        assertThat(searchPort.receivedQuery.sort()).isEqualTo(WorkshopSearchQuery.SORT_NAME);
+    }
+
+    @Test
+    void distance_sort_without_coordinates_is_rejected() {
+        //given
+        StubSearchPortOut searchPort = new StubSearchPortOut();
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
+                null, null, null, null, 0, 20, "distance", null);
+
+        //when / then
+        assertThatThrownBy(() -> service.searchWorkshops(query, null))
+                .isInstanceOf(InvalidSearchFilterException.class)
+                .hasMessageContaining("lat and lng");
+    }
+
+    @Test
+    void unknown_sort_value_is_rejected() {
+        //given
+        StubSearchPortOut searchPort = new StubSearchPortOut();
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
+                null, null, null, null, 0, 20, "rating", null);
+
+        //when / then
+        assertThatThrownBy(() -> service.searchWorkshops(query, null))
+                .isInstanceOf(InvalidSearchFilterException.class)
+                .hasMessageContaining("sort");
+    }
+
+    @Test
+    void pinned_branch_id_is_passed_through_untouched() {
+        //given
+        StubSearchPortOut searchPort = new StubSearchPortOut();
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        UUID pinned = UUID.randomUUID();
+        WorkshopSearchQuery query = new WorkshopSearchQuery("kowalski", null, null, CITY, null, null,
+                null, null, null, null, 0, 20, null, pinned);
+
+        //when
+        service.searchWorkshops(query, null);
+
+        //then
+        assertThat(searchPort.receivedQuery.pinnedBranchId()).isEqualTo(pinned);
     }
 }
