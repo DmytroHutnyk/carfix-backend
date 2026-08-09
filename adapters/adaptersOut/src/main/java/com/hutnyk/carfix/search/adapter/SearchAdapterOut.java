@@ -1,0 +1,347 @@
+package com.hutnyk.carfix.search.adapter;
+
+import com.hutnyk.carfix.components.PersistenceAdapter;
+import com.hutnyk.carfix.in.search.query.CategorySuggestionView;
+import com.hutnyk.carfix.in.search.query.MatchedServiceView;
+import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
+import com.hutnyk.carfix.in.search.query.ServiceSuggestionView;
+import com.hutnyk.carfix.in.search.query.WorkshopResultView;
+import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
+import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
+import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
+import com.hutnyk.carfix.out.search.SearchPortOut;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import lombok.RequiredArgsConstructor;
+
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@RequiredArgsConstructor
+@PersistenceAdapter
+public class SearchAdapterOut implements SearchPortOut {
+
+    private static final double MIN_WORD_SIMILARITY = 0.35;
+
+    private static final double KM_PER_DEGREE = 111.32;
+    private static final int MAX_MATCHED_SERVICES = 3;
+
+    private final EntityManager em;
+
+    private static final String SERVICE_SUGGESTIONS_SQL = """
+            SELECT s.name, sc.name AS category_name
+            FROM services s
+            JOIN service_categories sc ON sc.service_category_id = s.service_category_id
+            JOIN branches b ON b.branch_id = s.branch_id
+            WHERE s.status = 'ACTIVE' AND b.status = 'ACTIVE'
+              AND (word_similarity(:q, s.name) >= :minSimilarity OR s.name ILIKE '%' || :q || '%')
+            GROUP BY s.name, sc.name
+            ORDER BY MAX(word_similarity(:q, s.name)) DESC, s.name
+            LIMIT :limit
+            """;
+
+    private static final String CATEGORY_SUGGESTIONS_SQL = """
+            SELECT sc.service_category_id, sc.name
+            FROM service_categories sc
+            WHERE word_similarity(:q, sc.name) >= :minSimilarity OR sc.name ILIKE '%' || :q || '%'
+            ORDER BY word_similarity(:q, sc.name) DESC, sc.name
+            LIMIT :limit
+            """;
+
+    private static final String WORKSHOP_SUGGESTIONS_SELECT = """
+            SELECT b.branch_id, b.name
+            FROM branches b
+            """;
+
+    private static final String WORKSHOP_SUGGESTIONS_MATCH = """
+            WHERE b.status = 'ACTIVE'
+              AND (word_similarity(:q, b.name) >= :minSimilarity OR b.name ILIKE '%' || :q || '%')
+            """;
+
+    private static final String WORKSHOP_SUGGESTIONS_ORDER = """
+            ORDER BY word_similarity(:q, b.name) DESC, b.name
+            LIMIT :limit
+            """;
+
+    /**
+     * The administrative chain is what both endpoints filter on, so the two sets stay consistent:
+     * a workshop suggested for a city is the same workshop the results page returns for that city.
+     */
+    private static final String LOCATION_JOINS = """
+            JOIN addresses a ON a.address_id = b.address_id
+            JOIN cities c ON c.city_id = a.city_id
+            JOIN regions r ON r.region_id = c.region_id
+            JOIN countries co ON co.iso = r.countries_iso
+            """;
+
+    private static final String CITY_FILTER = "  AND c.name ILIKE :city\n";
+    private static final String VOIVODESHIP_FILTER = "  AND r.name ILIKE :voivodeship\n";
+    private static final String COUNTRY_FILTER = "  AND co.name ILIKE :country\n";
+
+    private static final String BBOX_FILTER = """
+              AND a.latitude  BETWEEN :latMin AND :latMax
+              AND a.longitude BETWEEN :lngMin AND :lngMax
+            """;
+
+    private static final String MATCH_BY_SERVICE_NAME = "s.name ILIKE :serviceName";
+    private static final String MATCH_BY_CATEGORY = "s.service_category_id = :categoryId";
+    private static final String MATCH_BY_TEXT = """
+            (word_similarity(:q, s.name) >= :minSimilarity OR s.name ILIKE '%' || :q || '%' \
+            OR word_similarity(:q, sc.name) >= :minSimilarity OR sc.name ILIKE '%' || :q || '%')""";
+
+    private static final String TEXT_RANK_ORDER =
+            "GREATEST(word_similarity(:q, s.name), word_similarity(:q, sc.name)) DESC, s.name";
+    private static final String NAME_RANK_ORDER = "s.name";
+
+    private static final String BRANCH_FILTER_TEMPLATE = """
+            FROM branches b
+            JOIN addresses a ON a.address_id = b.address_id
+            JOIN cities c ON c.city_id = a.city_id
+            JOIN regions r ON r.region_id = c.region_id
+            JOIN countries co ON co.iso = r.countries_iso
+            WHERE b.status = 'ACTIVE'
+            %s
+              AND EXISTS (
+                  SELECT 1 FROM services s
+                  JOIN service_categories sc ON sc.service_category_id = s.service_category_id
+                  WHERE s.branch_id = b.branch_id AND s.status = 'ACTIVE' AND %s
+              )
+            """;
+
+    private static final String BRAND_FILTER = """
+              AND EXISTS (
+                  SELECT 1 FROM car_brands_branches cb
+                  WHERE cb.branch_id = b.branch_id AND cb.car_brand_id = :brandId
+              )
+            """;
+
+    private static final String PAGE_SELECT = """
+            SELECT b.branch_id, b.name, a.street_name, a.building_number, c.name AS city_name,
+                   a.latitude, a.longitude
+            """;
+
+    private static final String ORDER_BY_DISTANCE = """
+            ORDER BY (power(a.latitude - :lat, 2) + power((a.longitude - :lng) * :lngScale, 2))
+            LIMIT :size OFFSET :offset
+            """;
+
+    private static final String ORDER_BY_NAME = """
+            ORDER BY b.name
+            LIMIT :size OFFSET :offset
+            """;
+
+    private static final String PREVIEW_SQL = """
+            SELECT branch_id, service_id, name, price, duration_minutes, category_name FROM (
+                SELECT s.branch_id, s.service_id, s.name, s.price, s.duration_minutes,
+                       sc.name AS category_name,
+                       ROW_NUMBER() OVER (PARTITION BY s.branch_id ORDER BY %s) AS rn
+                FROM services s
+                JOIN service_categories sc ON sc.service_category_id = s.service_category_id
+                WHERE s.branch_id IN (:branchIds) AND s.status = 'ACTIVE' AND %s
+            ) ranked WHERE rn <= :maxMatched
+            """;
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<ServiceSuggestionView> findServiceSuggestions(String q, int limit) {
+        List<Object[]> rows = em.createNativeQuery(SERVICE_SUGGESTIONS_SQL)
+                .setParameter("q", q)
+                .setParameter("minSimilarity", MIN_WORD_SIMILARITY)
+                .setParameter("limit", limit)
+                .getResultList();
+        return rows.stream()
+                .map(row -> new ServiceSuggestionView((String) row[0], (String) row[1]))
+                .toList();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<CategorySuggestionView> findCategorySuggestions(String q, int limit) {
+        List<Object[]> rows = em.createNativeQuery(CATEGORY_SUGGESTIONS_SQL)
+                .setParameter("q", q)
+                .setParameter("minSimilarity", MIN_WORD_SIMILARITY)
+                .setParameter("limit", limit)
+                .getResultList();
+        return rows.stream()
+                .map(row -> new CategorySuggestionView(((Number) row[0]).intValue(), (String) row[1]))
+                .toList();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<WorkshopSuggestionView> findWorkshopSuggestions(SearchSuggestionsQuery query, int limit) {
+        String locationFilter = locationFilter(query.city(), query.voivodeship(), query.country());
+        String sql = WORKSHOP_SUGGESTIONS_SELECT
+                + (locationFilter.isEmpty() ? "" : LOCATION_JOINS)
+                + WORKSHOP_SUGGESTIONS_MATCH
+                + locationFilter
+                + WORKSHOP_SUGGESTIONS_ORDER;
+
+        Query nativeQuery = em.createNativeQuery(sql)
+                .setParameter("q", query.q())
+                .setParameter("minSimilarity", MIN_WORD_SIMILARITY)
+                .setParameter("limit", limit);
+        bindLocationParams(nativeQuery, query.city(), query.voivodeship(), query.country());
+
+        List<Object[]> rows = nativeQuery.getResultList();
+        return rows.stream()
+                .map(row -> new WorkshopSuggestionView((UUID) row[0], (String) row[1]))
+                .toList();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public WorkshopSearchPage searchWorkshops(WorkshopSearchQuery query, Integer brandId) {
+        boolean hasCoordinates = query.lat() != null && query.lng() != null;
+        String locationFilter = locationFilter(query.city(), query.voivodeship(), query.country())
+                + (query.radiusKm() != null ? BBOX_FILTER : "");
+        String filter = BRANCH_FILTER_TEMPLATE.formatted(locationFilter, matchFragment(query))
+                + (brandId != null ? BRAND_FILTER : "");
+
+        Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + filter);
+        bindFilterParams(countQuery, query, brandId);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        if (total == 0) {
+            return WorkshopSearchPage.empty(query.page(), query.size());
+        }
+
+        Query pageQuery = em.createNativeQuery(
+                PAGE_SELECT + filter + (hasCoordinates ? ORDER_BY_DISTANCE : ORDER_BY_NAME));
+        bindFilterParams(pageQuery, query, brandId);
+        if (hasCoordinates) {
+            pageQuery.setParameter("lat", query.lat());
+            pageQuery.setParameter("lng", query.lng());
+            pageQuery.setParameter("lngScale", BigDecimal.valueOf(lngScale(query.lat())));
+        }
+        pageQuery.setParameter("size", query.size());
+        pageQuery.setParameter("offset", (long) query.page() * query.size());
+        List<Object[]> branchRows = pageQuery.getResultList();
+
+        List<UUID> branchIds = branchRows.stream().map(row -> (UUID) row[0]).toList();
+        Map<UUID, List<MatchedServiceView>> matchedServices = findMatchedServices(query, branchIds);
+
+        List<WorkshopResultView> content = branchRows.stream()
+                .map(row -> {
+                    UUID branchId = (UUID) row[0];
+                    BigDecimal branchLat = (BigDecimal) row[5];
+                    BigDecimal branchLng = (BigDecimal) row[6];
+                    return new WorkshopResultView(
+                            branchId, (String) row[1], (String) row[2], (String) row[3], (String) row[4],
+                            branchLat, branchLng,
+                            hasCoordinates
+                                    ? distanceKm(query.lat(), query.lng(), branchLat, branchLng)
+                                    : null,
+                            matchedServices.getOrDefault(branchId, List.of()));
+                })
+                .toList();
+
+        int totalPages = (int) Math.ceil((double) total / query.size());
+        return new WorkshopSearchPage(content, query.page(), query.size(), total, totalPages);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<UUID, List<MatchedServiceView>> findMatchedServices(WorkshopSearchQuery query, List<UUID> branchIds) {
+        if (branchIds.isEmpty()) {
+            return Map.of();
+        }
+        String rankOrder = query.q() != null ? TEXT_RANK_ORDER : NAME_RANK_ORDER;
+        Query previewQuery = em.createNativeQuery(PREVIEW_SQL.formatted(rankOrder, matchFragment(query)));
+        bindMatchParams(previewQuery, query);
+        previewQuery.setParameter("branchIds", branchIds);
+        previewQuery.setParameter("maxMatched", MAX_MATCHED_SERVICES);
+        List<Object[]> rows = previewQuery.getResultList();
+
+        return rows.stream().collect(Collectors.groupingBy(
+                row -> (UUID) row[0],
+                LinkedHashMap::new,
+                Collectors.mapping(row -> new MatchedServiceView(
+                        ((Number) row[1]).intValue(), (String) row[2], (BigDecimal) row[3],
+                        ((Number) row[4]).shortValue(), (String) row[5]), Collectors.toList())));
+    }
+
+    private static String locationFilter(String city, String voivodeship, String country) {
+        StringBuilder filter = new StringBuilder();
+        if (city != null) {
+            filter.append(CITY_FILTER);
+        }
+        if (voivodeship != null) {
+            filter.append(VOIVODESHIP_FILTER);
+        }
+        if (country != null) {
+            filter.append(COUNTRY_FILTER);
+        }
+        return filter.toString();
+    }
+
+    private static void bindLocationParams(Query nativeQuery, String city, String voivodeship, String country) {
+        if (city != null) {
+            nativeQuery.setParameter("city", city);
+        }
+        if (voivodeship != null) {
+            nativeQuery.setParameter("voivodeship", voivodeship);
+        }
+        if (country != null) {
+            nativeQuery.setParameter("country", country);
+        }
+    }
+
+    private static String matchFragment(WorkshopSearchQuery query) {
+        if (query.serviceName() != null) {
+            return MATCH_BY_SERVICE_NAME;
+        }
+        if (query.categoryId() != null) {
+            return MATCH_BY_CATEGORY;
+        }
+        return MATCH_BY_TEXT;
+    }
+
+    private static void bindFilterParams(Query nativeQuery, WorkshopSearchQuery query, Integer brandId) {
+        bindLocationParams(nativeQuery, query.city(), query.voivodeship(), query.country());
+        if (query.radiusKm() != null) {
+            bindBoundingBox(nativeQuery, query.lat(), query.lng(), query.radiusKm());
+        }
+        bindMatchParams(nativeQuery, query);
+        if (brandId != null) {
+            nativeQuery.setParameter("brandId", brandId);
+        }
+    }
+
+    private static void bindBoundingBox(Query nativeQuery, BigDecimal lat, BigDecimal lng, double radiusKm) {
+        double deltaLat = radiusKm / KM_PER_DEGREE;
+        double deltaLng = radiusKm / (KM_PER_DEGREE * lngScale(lat));
+        nativeQuery.setParameter("latMin", lat.subtract(BigDecimal.valueOf(deltaLat)));
+        nativeQuery.setParameter("latMax", lat.add(BigDecimal.valueOf(deltaLat)));
+        nativeQuery.setParameter("lngMin", lng.subtract(BigDecimal.valueOf(deltaLng)));
+        nativeQuery.setParameter("lngMax", lng.add(BigDecimal.valueOf(deltaLng)));
+    }
+
+    private static void bindMatchParams(Query nativeQuery, WorkshopSearchQuery query) {
+        if (query.serviceName() != null) {
+            nativeQuery.setParameter("serviceName", query.serviceName());
+        } else if (query.categoryId() != null) {
+            nativeQuery.setParameter("categoryId", query.categoryId());
+        } else {
+            nativeQuery.setParameter("q", query.q());
+            nativeQuery.setParameter("minSimilarity", MIN_WORD_SIMILARITY);
+        }
+    }
+
+    private static double lngScale(BigDecimal lat) {
+        return Math.cos(Math.toRadians(lat.doubleValue()));
+    }
+
+    private static Double distanceKm(BigDecimal lat, BigDecimal lng, BigDecimal branchLat, BigDecimal branchLng) {
+        if (branchLat == null || branchLng == null) {
+            return null;
+        }
+        double deltaLat = branchLat.doubleValue() - lat.doubleValue();
+        double deltaLng = (branchLng.doubleValue() - lng.doubleValue()) * lngScale(lat);
+        double km = KM_PER_DEGREE * Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
+        return Math.round(km * 10.0) / 10.0;
+    }
+}
