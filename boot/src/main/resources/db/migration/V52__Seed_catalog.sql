@@ -17,12 +17,12 @@ SET search_path TO carfix;
 INSERT INTO countries (iso, name) VALUES ('PL', 'Poland');
 
 INSERT INTO regions (name, countries_iso) VALUES
-    ('Mazowieckie',  'PL'),
-    ('Malopolskie',  'PL');
+    ('Masovian Voivodeship',      'PL'),
+    ('Lesser Poland Voivodeship', 'PL');
 
 INSERT INTO cities (name, region_id) VALUES
-    ('Warszawa', (SELECT region_id FROM regions WHERE name = 'Mazowieckie')),
-    ('Krakow',   (SELECT region_id FROM regions WHERE name = 'Malopolskie'));
+    ('Warsaw', (SELECT region_id FROM regions WHERE name = 'Masovian Voivodeship')),
+    ('Kraków', (SELECT region_id FROM regions WHERE name = 'Lesser Poland Voivodeship'));
 
 -- ---------------------------------------------------------------------------
 -- Service categories — the search dimension of decision 2.8.

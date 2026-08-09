@@ -5,13 +5,13 @@ SET search_path TO carfix;
 -- bays, equipment units, employees, services and the requirement slots that
 -- say what each service needs (spec 2.2/2.3/2.4).
 --
--- Seven branches, five in Warszawa and two in Krakow, deliberately unequal:
+-- Seven branches, five in Warsaw and two in Kraków, deliberately unequal:
 --
 --   MOK  AutoSerwis Kowalski Mokotow   full workshop + bodywork booth
 --   WOL  AutoSerwis Kowalski Wola      full workshop
---   POD  AutoSerwis Kowalski Podgorze  full workshop (Krakow)
+--   POD  AutoSerwis Kowalski Podgorze  full workshop (Kraków)
 --   PRA  Opony Express Praga           tyre shop
---   NHU  Opony Express Nowa Huta       tyre shop (Krakow)
+--   NHU  Opony Express Nowa Huta       tyre shop (Kraków)
 --   URY  Diagnostyka Ursynow           diagnostics only
 --   URS  Serwis Ursus                  one bay, one mechanic
 --
@@ -35,18 +35,19 @@ INSERT INTO owners (user_id, business_name, vat_in, regon) VALUES
 
 -- ---------------------------------------------------------------------------
 -- Branch addresses. Coordinates are real district-level positions, so distance
--- sorting and a Warszawa bounding box behave sensibly (decision 2.12).
+-- sorting and an optional radius cut behave sensibly. City/region names are the
+-- English strings Google Places returns, which is what search matches on.
 -- google_place_id stays NULL: nothing here came from the Places API.
 -- ---------------------------------------------------------------------------
 
 INSERT INTO addresses (street_name, building_number, flat_number, postal_code, latitude, longitude, google_place_id, city_id) VALUES
-    ('Pulawska',           '145', NULL, '02-715', 52.179300, 21.024600, NULL, (SELECT city_id FROM cities WHERE name = 'Warszawa')),
-    ('Wielicka',           '28',  NULL, '30-552', 50.042100, 19.962800, NULL, (SELECT city_id FROM cities WHERE name = 'Krakow')),
-    ('Kasprzaka',          '25',  NULL, '01-234', 52.230800, 20.958700, NULL, (SELECT city_id FROM cities WHERE name = 'Warszawa')),
-    ('Grochowska',         '210', NULL, '04-077', 52.245100, 21.088900, NULL, (SELECT city_id FROM cities WHERE name = 'Warszawa')),
-    ('Bulwarowa',          '15',  NULL, '31-751', 50.075600, 20.036800, NULL, (SELECT city_id FROM cities WHERE name = 'Krakow')),
-    ('Pileckiego',         '63',  NULL, '02-781', 52.146900, 21.031400, NULL, (SELECT city_id FROM cities WHERE name = 'Warszawa')),
-    ('Gierdziejewskiego',  '7',   NULL, '02-495', 52.196600, 20.877300, NULL, (SELECT city_id FROM cities WHERE name = 'Warszawa'));
+    ('Pulawska',           '145', NULL, '02-715', 52.179300, 21.024600, NULL, (SELECT city_id FROM cities WHERE name = 'Warsaw')),
+    ('Wielicka',           '28',  NULL, '30-552', 50.042100, 19.962800, NULL, (SELECT city_id FROM cities WHERE name = 'Kraków')),
+    ('Kasprzaka',          '25',  NULL, '01-234', 52.230800, 20.958700, NULL, (SELECT city_id FROM cities WHERE name = 'Warsaw')),
+    ('Grochowska',         '210', NULL, '04-077', 52.245100, 21.088900, NULL, (SELECT city_id FROM cities WHERE name = 'Warsaw')),
+    ('Bulwarowa',          '15',  NULL, '31-751', 50.075600, 20.036800, NULL, (SELECT city_id FROM cities WHERE name = 'Kraków')),
+    ('Pileckiego',         '63',  NULL, '02-781', 52.146900, 21.031400, NULL, (SELECT city_id FROM cities WHERE name = 'Warsaw')),
+    ('Gierdziejewskiego',  '7',   NULL, '02-495', 52.196600, 20.877300, NULL, (SELECT city_id FROM cities WHERE name = 'Warsaw'));
 
 INSERT INTO branches (branch_id, name, phone_number, email, status, tz, address_id, owner_id) VALUES
     ('10000000-0000-4000-8000-000000000001', 'AutoSerwis Kowalski Mokotow',  '+48221234567', 'mokotow@autoserwis-kowalski.pl',  'ACTIVE', 'Europe/Warsaw',
