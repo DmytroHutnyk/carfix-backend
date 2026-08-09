@@ -15,6 +15,7 @@ import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +82,9 @@ public class SearchAdapterOut implements SearchPortOut {
 
     private static final String CITY_FILTER = "  AND c.name ILIKE :city\n";
     private static final String VOIVODESHIP_FILTER = "  AND r.name ILIKE :voivodeship\n";
-    private static final String COUNTRY_FILTER = "  AND co.name ILIKE :country\n";
+    /* ISO, not name: the region selector and every URL carry the 2-letter code, and
+       country names are localized while the code is not. */
+    private static final String COUNTRY_FILTER = "  AND co.iso = :country\n";
 
     private static final String BBOX_FILTER = """
               AND a.latitude  BETWEEN :latMin AND :latMax
@@ -108,13 +111,17 @@ public class SearchAdapterOut implements SearchPortOut {
             %s
             """;
 
-    private static final String SERVICE_MATCH_EXISTS = """
-              AND EXISTS (
-                  SELECT 1 FROM services s
-                  JOIN service_categories sc ON sc.service_category_id = s.service_category_id
-                  WHERE s.branch_id = b.branch_id AND s.status = 'ACTIVE' AND %s
-              )
-            """;
+    private static final String SERVICE_MATCH_PREDICATE = """
+            EXISTS (
+                SELECT 1 FROM services s
+                JOIN service_categories sc ON sc.service_category_id = s.service_category_id
+                WHERE s.branch_id = b.branch_id AND s.status = 'ACTIVE' AND %s
+            )""";
+
+    /* Free text also matches the workshop's own name — a customer typing "Kowalski" means
+       the workshop, not a service. Used raw (never through String.formatted), so a single %. */
+    private static final String BRANCH_NAME_PREDICATE =
+            "word_similarity(:q, b.name) >= :minSimilarity OR b.name ILIKE '%' || :q || '%'";
 
     private static final String BRAND_FILTER = """
               AND EXISTS (
@@ -207,7 +214,7 @@ public class SearchAdapterOut implements SearchPortOut {
         String locationFilter = locationFilter(query.city(), query.voivodeship(), query.country())
                 + (query.radiusKm() != null ? BBOX_FILTER : "");
         String filter = BRANCH_FILTER_BASE.formatted(locationFilter)
-                + (hasTextFilter(query) ? SERVICE_MATCH_EXISTS.formatted(matchFragment(query)) : "")
+                + matchFilter(query)
                 + (brandId != null ? BRAND_FILTER : "");
 
         Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + filter);
@@ -323,6 +330,23 @@ public class SearchAdapterOut implements SearchPortOut {
             return MATCH_BY_TEXT;
         }
         return "TRUE";
+    }
+
+    /**
+     * The whole match clause, or "" when nothing narrows the result set (browse mode).
+     * serviceName and categoryId match services only; free text matches services OR the
+     * branch name.
+     */
+    private static String matchFilter(WorkshopSearchQuery query) {
+        if (!hasTextFilter(query)) {
+            return "";
+        }
+        List<String> alternatives = new ArrayList<>();
+        alternatives.add(SERVICE_MATCH_PREDICATE.formatted(matchFragment(query)));
+        if (query.q() != null) {
+            alternatives.add(BRANCH_NAME_PREDICATE);
+        }
+        return "  AND (" + String.join(" OR ", alternatives) + ")\n";
     }
 
     private static void bindFilterParams(Query nativeQuery, WorkshopSearchQuery query, Integer brandId) {
