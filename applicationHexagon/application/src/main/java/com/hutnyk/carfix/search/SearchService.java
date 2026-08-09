@@ -4,6 +4,7 @@ import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.in.search.SearchPortIn;
+import com.hutnyk.carfix.in.search.query.SearchEchoView;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsView;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
@@ -60,8 +61,8 @@ public class SearchService implements SearchPortIn {
         Integer categoryId = query.categoryId();
 
         int filters = (q != null ? 1 : 0) + (serviceName != null ? 1 : 0) + (categoryId != null ? 1 : 0);
-        if (filters != 1) {
-            throw new InvalidSearchFilterException("exactly one of q, serviceName, categoryId must be provided");
+        if (filters > 1) {
+            throw new InvalidSearchFilterException("at most one of q, serviceName, categoryId may be provided");
         }
         if (q != null && q.length() < MIN_QUERY_LENGTH) {
             throw new InvalidSearchFilterException("q must be at least " + MIN_QUERY_LENGTH + " characters");
@@ -70,9 +71,6 @@ public class SearchService implements SearchPortIn {
         String city = normalize(query.city());
         String voivodeship = normalize(query.voivodeship());
         String country = normalize(query.country());
-        if (city == null && voivodeship == null && country == null) {
-            throw new InvalidSearchFilterException("at least one of city, voivodeship, country must be provided");
-        }
         validateGeo(query);
         validatePaging(query);
 
@@ -84,7 +82,13 @@ public class SearchService implements SearchPortIn {
                 query.lat(), query.lng(), query.radiusKm(),
                 query.carProfileId(), query.page(), query.size());
 
-        return searchPortOut.searchWorkshops(normalized, brandId);
+        String categoryName = categoryId != null
+                ? searchPortOut.findCategoryName(categoryId).orElse(null)
+                : null;
+        SearchEchoView echo = new SearchEchoView(
+                q, serviceName, categoryId, categoryName, city, voivodeship, country);
+
+        return searchPortOut.searchWorkshops(normalized, brandId).withEcho(echo);
     }
 
     private static void validateGeo(WorkshopSearchQuery query) {

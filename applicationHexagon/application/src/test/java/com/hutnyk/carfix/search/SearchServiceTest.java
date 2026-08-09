@@ -97,6 +97,15 @@ public class SearchServiceTest {
             this.brandIdReceived = true;
             return WorkshopSearchPage.empty(query.page(), query.size());
         }
+
+        Optional<String> categoryName = Optional.of("Brakes");
+        Integer receivedCategoryNameId;
+
+        @Override
+        public Optional<String> findCategoryName(Integer categoryId) {
+            this.receivedCategoryNameId = categoryId;
+            return categoryName;
+        }
     }
 
     private static final class StubCustomerPortOut implements CustomerPortOut {
@@ -256,10 +265,19 @@ public class SearchServiceTest {
     }
 
     @Test
-    public void test_search_throws_when_no_filter_given() {
-        //when + then
-        assertThatThrownBy(() -> service.searchWorkshops(query(null, null, null, null), null))
-                .isInstanceOf(InvalidSearchFilterException.class);
+    public void test_search_without_any_filter_is_browse_mode() {
+        //given
+        WorkshopSearchQuery browse = new WorkshopSearchQuery(null, null, null, null, null, null,
+                null, null, null, null, 0, 20);
+
+        //when
+        service.searchWorkshops(browse, null);
+
+        //then
+        assertThat(searchPortOut.receivedQuery.q()).isNull();
+        assertThat(searchPortOut.receivedQuery.serviceName()).isNull();
+        assertThat(searchPortOut.receivedQuery.categoryId()).isNull();
+        assertThat(searchPortOut.receivedQuery.city()).isNull();
     }
 
     @Test
@@ -270,10 +288,13 @@ public class SearchServiceTest {
     }
 
     @Test
-    public void test_search_throws_when_blank_filter_counts_as_absent() {
-        //when + then
-        assertThatThrownBy(() -> service.searchWorkshops(query(null, "   ", null, null), null))
-                .isInstanceOf(InvalidSearchFilterException.class);
+    public void test_search_blank_text_filter_falls_back_to_browse() {
+        //when
+        service.searchWorkshops(query(null, "   ", null, null), null);
+
+        //then
+        assertThat(searchPortOut.receivedQuery.serviceName()).isNull();
+        assertThat(searchPortOut.receivedQuery.city()).isEqualTo(CITY);
     }
 
     @Test
@@ -284,25 +305,31 @@ public class SearchServiceTest {
     }
 
     @Test
-    public void test_search_throws_when_no_location_given() {
+    public void test_search_without_location_passes_through() {
         //given
-        WorkshopSearchQuery noLocation = geoQuery(null, null, null, null);
+        WorkshopSearchQuery noLocation = new WorkshopSearchQuery("tire", null, null, null, null, null,
+                null, null, null, null, 0, 20);
 
-        //when + then
-        assertThatThrownBy(() -> service.searchWorkshops(noLocation, null))
-                .isInstanceOf(InvalidSearchFilterException.class);
-        assertThat(searchPortOut.receivedQuery).isNull();
+        //when
+        service.searchWorkshops(noLocation, null);
+
+        //then
+        assertThat(searchPortOut.receivedQuery.city()).isNull();
+        assertThat(searchPortOut.receivedQuery.voivodeship()).isNull();
+        assertThat(searchPortOut.receivedQuery.country()).isNull();
     }
 
     @Test
-    public void test_search_throws_when_location_is_blank() {
+    public void test_search_blank_location_normalized_to_null_passes_through() {
         //given
         WorkshopSearchQuery blankLocation = new WorkshopSearchQuery("tire", null, null, "  ", " ", "",
                 null, null, null, null, 0, 20);
 
-        //when + then
-        assertThatThrownBy(() -> service.searchWorkshops(blankLocation, null))
-                .isInstanceOf(InvalidSearchFilterException.class);
+        //when
+        service.searchWorkshops(blankLocation, null);
+
+        //then
+        assertThat(searchPortOut.receivedQuery.city()).isNull();
     }
 
     @Test
@@ -432,6 +459,58 @@ public class SearchServiceTest {
         //then
         assertThat(searchPortOut.receivedQuery.q()).isEqualTo("tire");
         assertThat(searchPortOut.receivedQuery.serviceName()).isNull();
+    }
+
+    @Test
+    public void test_search_attaches_echo_of_normalized_filters() {
+        //when
+        WorkshopSearchPage result = service.searchWorkshops(query("  tire  ", null, null, null), null);
+
+        //then
+        assertThat(result.echo().q()).isEqualTo("tire");
+        assertThat(result.echo().city()).isEqualTo(CITY);
+        assertThat(result.echo().categoryId()).isNull();
+        assertThat(result.echo().categoryName()).isNull();
+        assertThat(searchPortOut.receivedCategoryNameId).isNull();
+    }
+
+    @Test
+    public void test_search_category_echo_resolves_category_name() {
+        //when
+        WorkshopSearchPage result = service.searchWorkshops(query(null, null, 7, null), null);
+
+        //then
+        assertThat(searchPortOut.receivedCategoryNameId).isEqualTo(7);
+        assertThat(result.echo().categoryId()).isEqualTo(7);
+        assertThat(result.echo().categoryName()).isEqualTo("Brakes");
+    }
+
+    @Test
+    public void test_search_unknown_category_echoes_null_name() {
+        //given
+        searchPortOut.categoryName = Optional.empty();
+
+        //when
+        WorkshopSearchPage result = service.searchWorkshops(query(null, null, 99, null), null);
+
+        //then
+        assertThat(result.echo().categoryName()).isNull();
+    }
+
+    @Test
+    public void test_search_browse_echo_is_all_null() {
+        //given
+        WorkshopSearchQuery browse = new WorkshopSearchQuery(null, null, null, null, null, null,
+                null, null, null, null, 0, 20);
+
+        //when
+        WorkshopSearchPage result = service.searchWorkshops(browse, null);
+
+        //then
+        assertThat(result.echo().q()).isNull();
+        assertThat(result.echo().serviceName()).isNull();
+        assertThat(result.echo().categoryName()).isNull();
+        assertThat(result.echo().city()).isNull();
     }
 
     @Test
