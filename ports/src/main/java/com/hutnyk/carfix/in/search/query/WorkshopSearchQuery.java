@@ -22,7 +22,7 @@ public record WorkshopSearchQuery(
         BigDecimal lat,
         //Nullable
         BigDecimal lng,
-        //Nullable — requires lat/lng; absent = no radius cut
+        //Nullable — requires lat/lng; present = bbox+country replace the city/voivodeship filters
         Double radiusKm,
 
         //Nullable

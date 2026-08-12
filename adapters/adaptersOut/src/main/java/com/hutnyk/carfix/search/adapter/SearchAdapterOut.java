@@ -213,8 +213,11 @@ public class SearchAdapterOut implements SearchPortOut {
         boolean sortByDistance = WorkshopSearchQuery.SORT_DISTANCE.equals(query.sort()) && hasCoordinates;
         boolean pinned = query.pinnedBranchId() != null;
 
-        String locationFilter = locationFilter(query.city(), query.voivodeship(), query.country())
-                + (query.radiusKm() != null ? BBOX_FILTER : "");
+        /* Radius means "within X km of the point": the bbox replaces city/voivodeship,
+           country stays so a radius near a border keeps to the searched country. */
+        String locationFilter = query.radiusKm() != null
+                ? (query.country() != null ? COUNTRY_FILTER : "") + BBOX_FILTER
+                : locationFilter(query.city(), query.voivodeship(), query.country());
         String matchFilter = matchFilter(query);
         String filter = BRANCH_FILTER_BASE.formatted(locationFilter)
                 + matchFilter
@@ -371,9 +374,13 @@ public class SearchAdapterOut implements SearchPortOut {
     }
 
     private static void bindFilterParams(Query nativeQuery, WorkshopSearchQuery query, Integer brandId) {
-        bindLocationParams(nativeQuery, query.city(), query.voivodeship(), query.country());
         if (query.radiusKm() != null) {
+            if (query.country() != null) {
+                nativeQuery.setParameter("country", query.country());
+            }
             bindBoundingBox(nativeQuery, query.lat(), query.lng(), query.radiusKm());
+        } else {
+            bindLocationParams(nativeQuery, query.city(), query.voivodeship(), query.country());
         }
         bindMatchParams(nativeQuery, query);
         if (brandId != null) {
