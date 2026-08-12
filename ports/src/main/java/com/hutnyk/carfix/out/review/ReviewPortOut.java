@@ -2,6 +2,8 @@ package com.hutnyk.carfix.out.review;
 
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
+import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.review.Review;
 
 import java.util.List;
@@ -26,4 +28,10 @@ public interface ReviewPortOut {
      * domain ({@code BranchRating}), not here — this port only fetches.
      */
     List<Integer> findStarsByBranchId(BranchId branchId);
+
+    /**
+     * One page of a branch's reviews with the reviewer's name, sorted per
+     * {@link BranchReviewsQuery#sort()} (already normalized by the service).
+     */
+    BranchReviewsPage findReviewsPage(BranchReviewsQuery query);
 }

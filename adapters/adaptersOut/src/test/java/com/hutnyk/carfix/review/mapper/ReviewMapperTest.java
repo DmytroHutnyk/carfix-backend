@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
+import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.review.Review;
 import com.hutnyk.carfix.review.ReviewId;
 import com.hutnyk.carfix.review.entity.ReviewEntity;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public class ReviewMapperTest {
@@ -78,5 +80,26 @@ public class ReviewMapperTest {
         //given / when / then
         assertThat(ReviewMapper.toDomain(null)).isNull();
         assertThat(ReviewMapper.toEntity(null, bookingEntity())).isNull();
+    }
+
+    @Test
+    void toBranchReviewView_copies_fields() {
+        //given
+        ReviewEntity entity = new ReviewEntity();
+        entity.setId(REVIEW_ID);
+        entity.setStarsNumber(5);
+        entity.setContents("Excellent service!");
+        entity.setCreatedAt(Instant.parse("2026-01-15T18:30:00Z"));
+
+        //when
+        BranchReviewView view = ReviewMapper.toBranchReviewView(entity, "Jan", "Kowalski");
+
+        //then
+        assertThat(view.reviewId()).isEqualTo(REVIEW_ID);
+        assertThat(view.starsNumber()).isEqualTo(5);
+        assertThat(view.contents()).isEqualTo("Excellent service!");
+        assertThat(view.createdAt()).isEqualTo(Instant.parse("2026-01-15T18:30:00Z"));
+        assertThat(view.customerName()).isEqualTo("Jan");
+        assertThat(view.customerSurname()).isEqualTo("Kowalski");
     }
 }
