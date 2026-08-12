@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -28,6 +29,9 @@ public class ReviewEntity {
 
     @Column(name = "contents")
     private String contents;
+
+    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
+    private Instant createdAt;
 
     // uq_reviews_booking_id makes this one-to-one, but the owning side is still a plain FK column.
     @ToString.Exclude

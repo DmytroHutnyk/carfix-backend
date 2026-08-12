@@ -6,6 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.in.review.commands.AddReviewCommand;
+import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
+import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
+import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.review.ReviewPortOut;
 import com.hutnyk.carfix.review.exception.ReviewAlreadyExistsException;
@@ -56,6 +59,11 @@ public class ReviewServiceTest {
         public List<Integer> findStarsByBranchId(BranchId branchId) {
             return List.copyOf(stars);
         }
+
+        @Override
+        public BranchReviewsPage findReviewsPage(BranchReviewsQuery query) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static final class StubBranchPortOut implements BranchPortOut {
@@ -66,6 +74,16 @@ public class ReviewServiceTest {
         public void updateRating(BranchId branchId, BranchRating rating) {
             this.receivedBranchId = branchId;
             this.receivedRating = rating;
+        }
+
+        @Override
+        public Optional<BranchView> findViewById(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean existsActiveById(BranchId branchId) {
+            throw new UnsupportedOperationException();
         }
     }
 

@@ -50,6 +50,12 @@ public class BranchEntity {
     @Column(name = "review_count")
     private Integer reviewCount;
 
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "cancellation_policy")
+    private String cancellationPolicy;
+
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id", nullable = false)

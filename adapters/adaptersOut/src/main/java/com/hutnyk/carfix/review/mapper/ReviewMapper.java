@@ -2,6 +2,7 @@ package com.hutnyk.carfix.review.mapper;
 
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
+import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.review.Review;
 import com.hutnyk.carfix.review.ReviewId;
 import com.hutnyk.carfix.review.entity.ReviewEntity;
@@ -32,5 +33,19 @@ public final class ReviewMapper {
         entity.setContents(review.getContents());
         entity.setBookingEntity(bookingEntity);
         return entity;
+    }
+
+    public static BranchReviewView toBranchReviewView(
+            ReviewEntity entity, String customerName, String customerSurname) {
+        if (entity == null) {
+            return null;
+        }
+        return new BranchReviewView(
+                entity.getId(),
+                entity.getStarsNumber(),
+                entity.getContents(),
+                entity.getCreatedAt(),
+                customerName,
+                customerSurname);
     }
 }
