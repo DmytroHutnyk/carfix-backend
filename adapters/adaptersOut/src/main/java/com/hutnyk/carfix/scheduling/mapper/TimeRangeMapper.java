@@ -9,6 +9,10 @@ public class TimeRangeMapper {
 
     public static TimeRange toDomain(Range<LocalDateTime> range) {
         if (range == null) return null;
+        if (!range.isLowerBoundClosed() || range.isUpperBoundClosed()) {
+            throw new IllegalStateException(
+                    "Expected a half-open [lower,upper) range but got " + range.asString());
+        }
         return TimeRange.of(range.lower(), range.upper());
     }
 

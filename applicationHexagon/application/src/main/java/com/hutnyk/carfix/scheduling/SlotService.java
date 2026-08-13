@@ -158,6 +158,9 @@ public class SlotService implements SlotPortIn {
         if (new HashSet<>(ids).size() != ids.size()) {
             throw new InvalidSlotQueryException("serviceIds must be distinct");
         }
+        if (query.from() == null || query.to() == null) {
+            throw new InvalidSlotQueryException("from and to are required");
+        }
         if (query.from().isAfter(query.to())) {
             throw new InvalidSlotQueryException("from must not be after to");
         }
