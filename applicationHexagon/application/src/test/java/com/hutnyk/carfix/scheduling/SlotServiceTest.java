@@ -121,15 +121,24 @@ public class SlotServiceTest {
         List<EquipmentBooking> equipmentOccupancy = new ArrayList<>();
         boolean resourcesLoaded = false;
         boolean calendarsLoaded = false;
-        Collection<Integer> lastBayIds;
-        LocalDate lastBayFrom;
-        LocalDate lastBayTo;
-        Collection<UUID> lastEmployeeIds;
-        LocalDate lastEmployeeFrom;
-        LocalDate lastEmployeeTo;
-        Collection<Integer> lastEquipmentIds;
-        LocalDate lastEquipmentFrom;
-        LocalDate lastEquipmentTo;
+        Collection<Integer> lastBayAvailIds;
+        LocalDate lastBayAvailFrom;
+        LocalDate lastBayAvailTo;
+        Collection<Integer> lastBayOccIds;
+        LocalDate lastBayOccFrom;
+        LocalDate lastBayOccTo;
+        Collection<UUID> lastEmployeeAvailIds;
+        LocalDate lastEmployeeAvailFrom;
+        LocalDate lastEmployeeAvailTo;
+        Collection<UUID> lastEmployeeOccIds;
+        LocalDate lastEmployeeOccFrom;
+        LocalDate lastEmployeeOccTo;
+        Collection<Integer> lastEquipmentAvailIds;
+        LocalDate lastEquipmentAvailFrom;
+        LocalDate lastEquipmentAvailTo;
+        Collection<Integer> lastEquipmentOccIds;
+        LocalDate lastEquipmentOccFrom;
+        LocalDate lastEquipmentOccTo;
 
         @Override
         public List<ServiceBay> loadActiveBays(BranchId branchId) {
@@ -151,54 +160,54 @@ public class SlotServiceTest {
         public List<ServiceBayAvailability> loadBayAvailability(
                 Collection<Integer> bayIds, LocalDate from, LocalDate to) {
             calendarsLoaded = true;
-            lastBayIds = bayIds;
-            lastBayFrom = from;
-            lastBayTo = to;
+            lastBayAvailIds = bayIds;
+            lastBayAvailFrom = from;
+            lastBayAvailTo = to;
             return bayAvailability;
         }
 
         @Override
         public List<ServiceBayBooking> loadBayOccupancy(
                 Collection<Integer> bayIds, LocalDate from, LocalDate to) {
-            lastBayIds = bayIds;
-            lastBayFrom = from;
-            lastBayTo = to;
+            lastBayOccIds = bayIds;
+            lastBayOccFrom = from;
+            lastBayOccTo = to;
             return bayOccupancy;
         }
 
         @Override
         public List<EmployeeAvailability> loadEmployeeAvailability(
                 Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
-            lastEmployeeIds = employeeIds;
-            lastEmployeeFrom = from;
-            lastEmployeeTo = to;
+            lastEmployeeAvailIds = employeeIds;
+            lastEmployeeAvailFrom = from;
+            lastEmployeeAvailTo = to;
             return employeeAvailability;
         }
 
         @Override
         public List<EmployeeBooking> loadEmployeeOccupancy(
                 Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
-            lastEmployeeIds = employeeIds;
-            lastEmployeeFrom = from;
-            lastEmployeeTo = to;
+            lastEmployeeOccIds = employeeIds;
+            lastEmployeeOccFrom = from;
+            lastEmployeeOccTo = to;
             return employeeOccupancy;
         }
 
         @Override
         public List<EquipmentAvailability> loadEquipmentAvailability(
                 Collection<Integer> equipmentIds, LocalDate from, LocalDate to) {
-            lastEquipmentIds = equipmentIds;
-            lastEquipmentFrom = from;
-            lastEquipmentTo = to;
+            lastEquipmentAvailIds = equipmentIds;
+            lastEquipmentAvailFrom = from;
+            lastEquipmentAvailTo = to;
             return equipmentAvailability;
         }
 
         @Override
         public List<EquipmentBooking> loadEquipmentOccupancy(
                 Collection<Integer> equipmentIds, LocalDate from, LocalDate to) {
-            lastEquipmentIds = equipmentIds;
-            lastEquipmentFrom = from;
-            lastEquipmentTo = to;
+            lastEquipmentOccIds = equipmentIds;
+            lastEquipmentOccFrom = from;
+            lastEquipmentOccTo = to;
             return equipmentOccupancy;
         }
     }
@@ -326,12 +335,18 @@ public class SlotServiceTest {
         assertThat(slots.getFirst()).isEqualTo(new SlotView(LocalTime.of(9, 0), LocalTime.of(10, 0)));
         assertThat(slots.getLast()).isEqualTo(new SlotView(LocalTime.of(11, 0), LocalTime.of(12, 0)));
         assertThat(slots).hasSize(9);
-        assertThat(availabilityPortOut.lastBayFrom).isEqualTo(TODAY);
-        assertThat(availabilityPortOut.lastBayTo).isEqualTo(TOMORROW);
-        assertThat(availabilityPortOut.lastBayIds).containsExactly(BAY_ID);
-        assertThat(availabilityPortOut.lastEmployeeFrom).isEqualTo(TODAY);
-        assertThat(availabilityPortOut.lastEmployeeTo).isEqualTo(TOMORROW);
-        assertThat(availabilityPortOut.lastEmployeeIds).containsExactly(EMPLOYEE_ID);
+        assertThat(availabilityPortOut.lastBayAvailFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastBayAvailTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastBayAvailIds).containsExactly(BAY_ID);
+        assertThat(availabilityPortOut.lastBayOccFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastBayOccTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastBayOccIds).containsExactly(BAY_ID);
+        assertThat(availabilityPortOut.lastEmployeeAvailFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastEmployeeAvailTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastEmployeeAvailIds).containsExactly(EMPLOYEE_ID);
+        assertThat(availabilityPortOut.lastEmployeeOccFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastEmployeeOccTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastEmployeeOccIds).containsExactly(EMPLOYEE_ID);
     }
 
     @Test
@@ -380,7 +395,12 @@ public class SlotServiceTest {
         assertThat(view.days().getLast().slots()).containsExactly(
                 new SlotView(LocalTime.of(9, 0), LocalTime.of(10, 0)),
                 new SlotView(LocalTime.of(11, 0), LocalTime.of(12, 0)));
-        assertThat(availabilityPortOut.lastEquipmentIds).containsExactly(JACK_ID);
+        assertThat(availabilityPortOut.lastEquipmentAvailIds).containsExactly(JACK_ID);
+        assertThat(availabilityPortOut.lastEquipmentAvailFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastEquipmentAvailTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastEquipmentOccIds).containsExactly(JACK_ID);
+        assertThat(availabilityPortOut.lastEquipmentOccFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastEquipmentOccTo).isEqualTo(TOMORROW);
     }
 
     @Test
