@@ -41,12 +41,15 @@ public final class SlotCalculator {
 
         SortedMap<LocalDateTime, VisitPlan> byStart = new TreeMap<>();
         for (BaySchedule bay : sortedBays) {
+            if (!acceptsEveryService(services, bay)) {
+                continue;
+            }
             for (TimeRange window : bay.free()) {
                 LocalDateTime start = ceilToGrid(max(window.lower(), notBefore));
                 while (!start.plusMinutes(minSpanMinutes).isAfter(window.upper())) {
                     if (!byStart.containsKey(start)) {
                         findPlan(orders, bay, window, start, sortedEmployees, sortedEquipment)
-                                .ifPresent(plan -> byStart.put(plan.start(), plan));
+                                .ifPresent(plan -> byStart.putIfAbsent(plan.start(), plan));
                     }
                     start = start.plusMinutes(GRID_MINUTES);
                 }
@@ -136,6 +139,11 @@ public final class SlotCalculator {
 
         return Optional.of(new SegmentPlan(
                 service.getId(), segmentTime, employeeByRequirementId, equipmentByRequirementId));
+    }
+
+    private static boolean acceptsEveryService(List<Service> services, BaySchedule bay) {
+        return services.stream()
+                .allMatch(service -> service.getServiceBayTypeIds().contains(bay.bayTypeId()));
     }
 
     private static boolean covers(List<TimeRange> free, TimeRange target) {
