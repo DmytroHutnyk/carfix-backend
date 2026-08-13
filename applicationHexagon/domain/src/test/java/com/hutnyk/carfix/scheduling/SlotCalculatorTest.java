@@ -13,13 +13,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 public class SlotCalculatorTest {
 
     private static final BranchId BRANCH_ID = BranchId.genId();
-    private static final UserId ANNA = UserId.genId();
-    private static final UserId JAN = UserId.genId();
+    private static final UserId ANNA =
+            UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    private static final UserId JAN =
+            UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000002"));
     private static final int LIFT = 1;
     private static final int PIT = 2;
     private static final int ALIGNMENT_RIG = 3;
@@ -253,14 +256,116 @@ public class SlotCalculatorTest {
     }
 
     @Test
-    void test_whole_visit_must_fit_one_bay_window() {
-        assertThat(SlotCalculator.computeVisits(
+    void test_whole_visit_must_fit_one_bay_window_across_a_real_gap() {
+        List<VisitPlan> plans = SlotCalculator.computeVisits(
                 List.of(simpleService(1, 60), simpleService(2, 60)),
-                List.of(bay(between(9, 0, 10, 0), between(10, 0, 11, 0))),
-                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0)),
-                        employee(JAN, Set.of(MECHANIC), between(9, 0, 12, 0))),
+                List.of(bay(between(9, 0, 10, 0), between(10, 15, 12, 15))),
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 13, 0)),
+                        employee(JAN, Set.of(MECHANIC), between(9, 0, 13, 0))),
+                List.of(),
+                at(0, 0));
+        assertThat(plans).extracting(VisitPlan::start).containsExactly(at(10, 15));
+    }
+
+    @Test
+    void test_min_span_fits_window_but_real_span_with_gap_does_not() {
+        List<EmployeeSchedule> staff = List.of(
+                employee(ANNA, Set.of(MECHANIC), between(9, 0, 13, 0)),
+                employee(JAN, Set.of(MECHANIC), between(9, 0, 13, 0)));
+
+        assertThat(SlotCalculator.computeVisits(
+                List.of(simpleService(1, 50), simpleService(2, 50)),
+                List.of(bay(between(9, 0, 10, 45))), staff, List.of(), at(0, 0))).isEmpty();
+
+        assertThat(SlotCalculator.computeVisits(
+                List.of(simpleService(1, 50), simpleService(2, 50)),
+                List.of(bay(between(9, 0, 10, 50))), staff, List.of(), at(0, 0)))
+                .extracting(VisitPlan::start).containsExactly(at(9, 0));
+    }
+
+    @Test
+    void test_backtracking_finds_start_greedy_placement_would_drop() {
+        int roleA = 30;
+        int roleB = 31;
+        int roleC = 32;
+        UserId ec = UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000003"));
+        List<Service> services = List.of(
+                service(1, 15, List.of(EmployeeRequirement.of(1, "A", Set.of(roleA))), List.of()),
+                service(2, 15, List.of(EmployeeRequirement.of(2, "B", Set.of(roleB))), List.of()),
+                service(3, 15, List.of(EmployeeRequirement.of(3, "C", Set.of(roleC))), List.of()));
+
+        List<VisitPlan> plans = SlotCalculator.computeVisits(services,
+                List.of(bay(between(9, 0, 12, 0))),
+                List.of(employee(ANNA, Set.of(roleA), between(9, 0, 12, 0)),
+                        employee(JAN, Set.of(roleB), between(9, 0, 12, 0)),
+                        employee(ec, Set.of(roleC), between(10, 0, 10, 15))),
+                List.of(),
+                at(0, 0));
+
+        assertThat(plans).extracting(VisitPlan::start).contains(at(9, 0));
+        assertThat(plans.getFirst().start()).isEqualTo(at(9, 0));
+    }
+
+    @Test
+    void test_two_bays_free_at_the_same_time_yield_one_plan_from_the_lowest_bay() {
+        List<VisitPlan> plans = SlotCalculator.computeVisits(
+                List.of(simpleService(1, 60)),
+                List.of(new BaySchedule(100, LIFT, List.of(between(9, 0, 10, 0))),
+                        new BaySchedule(200, LIFT, List.of(between(9, 0, 10, 0)))),
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0))),
+                List.of(),
+                at(0, 0));
+        assertThat(plans).hasSize(1);
+        assertThat(plans.getFirst().start()).isEqualTo(at(9, 0));
+        assertThat(plans.getFirst().bayId()).isEqualTo(100);
+    }
+
+    @Test
+    void test_second_bay_rescues_starts_the_first_bay_cannot_serve() {
+        List<VisitPlan> plans = SlotCalculator.computeVisits(
+                List.of(simpleService(1, 60)),
+                List.of(new BaySchedule(100, LIFT, List.of(between(10, 0, 12, 0))),
+                        new BaySchedule(200, LIFT, List.of(between(9, 0, 12, 0)))),
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0))),
+                List.of(),
+                at(0, 0));
+        assertThat(plans).hasSize(9);
+        assertThat(plans.getFirst().start()).isEqualTo(at(9, 0));
+        assertThat(plans.getFirst().bayId()).isEqualTo(200);
+        assertThat(plans.stream().filter(p -> p.start().equals(at(10, 0))).findFirst())
+                .get().extracting(VisitPlan::bayId).isEqualTo(100);
+    }
+
+    @Test
+    void test_employee_choice_is_deterministic_by_id() {
+        List<VisitPlan> plans = SlotCalculator.computeVisits(
+                List.of(simpleService(1, 60)),
+                List.of(bay(between(9, 0, 12, 0))),
+                List.of(employee(JAN, Set.of(MECHANIC), between(9, 0, 12, 0)),
+                        employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0))),
+                List.of(),
+                at(0, 0));
+        assertThat(plans).isNotEmpty();
+        assertThat(plans).allSatisfy(plan -> assertThat(
+                plan.segments().getFirst().employeeByRequirementId()).containsEntry(1, ANNA));
+    }
+
+    @Test
+    void test_empty_service_list_yields_no_plans() {
+        assertThat(SlotCalculator.computeVisits(
+                List.of(),
+                List.of(bay(between(9, 0, 12, 0))),
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0))),
                 List.of(),
                 at(0, 0))).isEmpty();
+    }
+
+    @Test
+    void test_ceilToGrid_rolls_over_midnight_and_is_identity_on_grid() {
+        assertThat(SlotCalculator.ceilToGrid(LocalDateTime.of(2026, 8, 14, 23, 50)))
+                .isEqualTo(LocalDateTime.of(2026, 8, 15, 0, 0));
+        assertThat(SlotCalculator.ceilToGrid(at(10, 0))).isEqualTo(at(10, 0));
+        assertThat(SlotCalculator.ceilToGrid(at(10, 0).plusNanos(1))).isEqualTo(at(10, 15));
     }
 
     @Test
