@@ -37,6 +37,7 @@ public class BookingService implements BookingPortIn {
                 .orElseThrow(() -> new BookingNotFoundException(bookingId));
 
         bookingPortOut.update(booking.cancel());
+        bookingPortOut.freeOccupancy(booking.getId());
 
         return bookingPortOut.findViewByIdAndCustomerId(bookingId, customerId)
                 .orElseThrow(() -> new UnexpectedStateException(
