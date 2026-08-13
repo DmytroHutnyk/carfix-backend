@@ -7,6 +7,6 @@ import java.util.Set;
 public record EmployeeSchedule(UserId employeeId, Set<Integer> roleIds, List<TimeRange> free) {
     public EmployeeSchedule {
         roleIds = Set.copyOf(roleIds);
-        free = List.copyOf(free);
+        free = TimeRanges.union(free);
     }
 }

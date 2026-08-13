@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +23,19 @@ public final class SlotCalculator {
     private SlotCalculator() {
     }
 
+    private record SegmentKey(Integer serviceId, LocalDateTime start) {
+    }
+
     public static List<VisitPlan> computeVisits(
             List<Service> services,
             List<BaySchedule> bays,
             List<EmployeeSchedule> employees,
             List<EquipmentSchedule> equipment,
             LocalDateTime notBefore) {
+
+        if (services.isEmpty()) {
+            return List.of();
+        }
 
         List<Service> sortedServices = services.stream()
                 .sorted(Comparator.comparing(Service::getId)).toList();
@@ -41,6 +49,7 @@ public final class SlotCalculator {
         int minSpanMinutes = sortedServices.stream().mapToInt(Service::getDurationMinutes).sum();
         List<List<Service>> orders = permutations(sortedServices);
 
+        Map<SegmentKey, Optional<SegmentPlan>> segmentCache = new HashMap<>();
         SortedMap<LocalDateTime, VisitPlan> byStart = new TreeMap<>();
         for (BaySchedule bay : sortedBays) {
             if (!acceptsEveryService(sortedServices, bay)) {
@@ -50,7 +59,8 @@ public final class SlotCalculator {
                 LocalDateTime start = ceilToGrid(max(window.lower(), notBefore));
                 while (!start.plusMinutes(minSpanMinutes).isAfter(window.upper())) {
                     if (!byStart.containsKey(start)) {
-                        findPlan(orders, bay, window, start, sortedEmployees, sortedEquipment)
+                        findPlan(orders, bay, window, start, sortedEmployees, sortedEquipment,
+                                segmentCache)
                                 .ifPresent(plan -> byStart.putIfAbsent(plan.start(), plan));
                     }
                     start = start.plusMinutes(GRID_MINUTES);
@@ -63,9 +73,11 @@ public final class SlotCalculator {
     private static Optional<VisitPlan> findPlan(List<List<Service>> orders, BaySchedule bay,
                                                 TimeRange window, LocalDateTime visitStart,
                                                 List<EmployeeSchedule> employees,
-                                                List<EquipmentSchedule> equipment) {
+                                                List<EquipmentSchedule> equipment,
+                                                Map<SegmentKey, Optional<SegmentPlan>> cache) {
         for (List<Service> order : orders) {
-            Optional<VisitPlan> plan = tryOrder(order, bay, window, visitStart, employees, equipment);
+            Optional<VisitPlan> plan =
+                    tryOrder(order, bay, window, visitStart, employees, equipment, cache);
             if (plan.isPresent()) {
                 return plan;
             }
@@ -76,33 +88,48 @@ public final class SlotCalculator {
     private static Optional<VisitPlan> tryOrder(List<Service> order, BaySchedule bay,
                                                 TimeRange window, LocalDateTime visitStart,
                                                 List<EmployeeSchedule> employees,
-                                                List<EquipmentSchedule> equipment) {
-        List<SegmentPlan> segments = new ArrayList<>();
-        LocalDateTime prevEnd = visitStart;
-        boolean first = true;
-        for (Service service : order) {
-            List<LocalDateTime> starts = first ? List.of(visitStart) : gridPointsWithin(prevEnd);
-            first = false;
-            SegmentPlan placed = null;
-            for (LocalDateTime segmentStart : starts) {
-                TimeRange segmentTime = TimeRange.of(
-                        segmentStart, segmentStart.plusMinutes(service.getDurationMinutes()));
-                if (!window.contains(segmentTime)) {
-                    continue;
-                }
-                Optional<SegmentPlan> segment = trySegment(service, segmentTime, employees, equipment);
-                if (segment.isPresent()) {
-                    placed = segment.get();
-                    break;
-                }
-            }
-            if (placed == null) {
-                return Optional.empty();
-            }
-            segments.add(placed);
-            prevEnd = placed.time().upper();
+                                                List<EquipmentSchedule> equipment,
+                                                Map<SegmentKey, Optional<SegmentPlan>> cache) {
+        return place(order, 0, visitStart, List.of(), bay, window, employees, equipment, cache);
+    }
+
+    private static Optional<VisitPlan> place(List<Service> order, int index, LocalDateTime prevEnd,
+                                             List<SegmentPlan> placed, BaySchedule bay,
+                                             TimeRange window, List<EmployeeSchedule> employees,
+                                             List<EquipmentSchedule> equipment,
+                                             Map<SegmentKey, Optional<SegmentPlan>> cache) {
+        if (index == order.size()) {
+            return Optional.of(new VisitPlan(bay.bayId(), placed));
         }
-        return Optional.of(new VisitPlan(bay.bayId(), segments));
+        Service service = order.get(index);
+        for (LocalDateTime segmentStart : index == 0 ? List.of(prevEnd) : gridPointsWithin(prevEnd)) {
+            TimeRange segmentTime =
+                    TimeRange.of(segmentStart, segmentStart.plusMinutes(service.getDurationMinutes()));
+            if (!window.contains(segmentTime)) {
+                continue;
+            }
+            Optional<SegmentPlan> segment =
+                    cachedSegment(service, segmentTime, employees, equipment, cache);
+            if (segment.isEmpty()) {
+                continue;
+            }
+            List<SegmentPlan> next = new ArrayList<>(placed);
+            next.add(segment.get());
+            Optional<VisitPlan> plan = place(order, index + 1, segment.get().time().upper(),
+                    next, bay, window, employees, equipment, cache);
+            if (plan.isPresent()) {
+                return plan;
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<SegmentPlan> cachedSegment(Service service, TimeRange segmentTime,
+                                                       List<EmployeeSchedule> employees,
+                                                       List<EquipmentSchedule> equipment,
+                                                       Map<SegmentKey, Optional<SegmentPlan>> cache) {
+        return cache.computeIfAbsent(new SegmentKey(service.getId(), segmentTime.lower()),
+                key -> trySegment(service, segmentTime, employees, equipment));
     }
 
     private static Optional<SegmentPlan> trySegment(Service service, TimeRange segmentTime,

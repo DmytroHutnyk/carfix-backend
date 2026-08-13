@@ -4,6 +4,6 @@ import java.util.List;
 
 public record EquipmentSchedule(Integer equipmentId, Integer equipmentTypeId, List<TimeRange> free) {
     public EquipmentSchedule {
-        free = List.copyOf(free);
+        free = TimeRanges.union(free);
     }
 }
