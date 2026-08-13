@@ -29,6 +29,8 @@ public final class SlotCalculator {
             List<EquipmentSchedule> equipment,
             LocalDateTime notBefore) {
 
+        List<Service> sortedServices = services.stream()
+                .sorted(Comparator.comparing(Service::getId)).toList();
         List<BaySchedule> sortedBays = bays.stream()
                 .sorted(Comparator.comparing(BaySchedule::bayId)).toList();
         List<EmployeeSchedule> sortedEmployees = employees.stream()
@@ -36,12 +38,12 @@ public final class SlotCalculator {
         List<EquipmentSchedule> sortedEquipment = equipment.stream()
                 .sorted(Comparator.comparing(EquipmentSchedule::equipmentId)).toList();
 
-        int minSpanMinutes = services.stream().mapToInt(Service::getDurationMinutes).sum();
-        List<List<Service>> orders = permutations(services);
+        int minSpanMinutes = sortedServices.stream().mapToInt(Service::getDurationMinutes).sum();
+        List<List<Service>> orders = permutations(sortedServices);
 
         SortedMap<LocalDateTime, VisitPlan> byStart = new TreeMap<>();
         for (BaySchedule bay : sortedBays) {
-            if (!acceptsEveryService(services, bay)) {
+            if (!acceptsEveryService(sortedServices, bay)) {
                 continue;
             }
             for (TimeRange window : bay.free()) {
