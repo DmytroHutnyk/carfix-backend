@@ -7,6 +7,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -32,6 +34,15 @@ public class AddressEntity {
 
     @Column(name = "postal_code", nullable = false, length = 10)
     private String postalCode;
+
+    @Column(name = "latitude", precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", precision = 9, scale = 6)
+    private BigDecimal longitude;
+
+    @Column(name = "google_place_id", length = 300)
+    private String googlePlaceId;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)

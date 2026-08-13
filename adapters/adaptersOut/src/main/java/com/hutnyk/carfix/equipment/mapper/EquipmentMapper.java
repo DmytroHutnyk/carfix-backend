@@ -1,0 +1,26 @@
+package com.hutnyk.carfix.equipment.mapper;
+
+import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.equipment.Equipment;
+import com.hutnyk.carfix.equipment.EquipmentType;
+import com.hutnyk.carfix.equipment.entity.EquipmentEntity;
+import com.hutnyk.carfix.equipment.entity.EquipmentTypeEntity;
+
+public class EquipmentMapper {
+
+    public static Equipment toDomain(EquipmentEntity e) {
+        if (e == null) return null;
+        return Equipment.of(
+                e.getId(),
+                e.getName(),
+                e.getNotes(),
+                e.getStatus(),
+                e.getEquipmentTypeEntity().getId(),
+                BranchId.of(e.getBranchEntity().getId()));
+    }
+
+    public static EquipmentType toTypeDomain(EquipmentTypeEntity e) {
+        if (e == null) return null;
+        return EquipmentType.of(e.getId(), e.getName());
+    }
+}

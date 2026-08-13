@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -18,8 +19,35 @@ public class AddressTest {
                 "10",
                 flatNumber,
                 "00-001",
-                1
+                1,
+                null,
+                null,
+                null
         );
+    }
+
+    @Test
+    public void test_of_carries_geo_fields() {
+        //when
+        Address result = Address.of(
+                1, "Marszałkowska", "12", "3A", "00-001", 5,
+                new BigDecimal("52.229676"), new BigDecimal("21.012229"), "ChIJAZ_place_id");
+
+        //then
+        assertThat(result.getLatitude()).isEqualByComparingTo("52.229676");
+        assertThat(result.getLongitude()).isEqualByComparingTo("21.012229");
+        assertThat(result.getGooglePlaceId()).isEqualTo("ChIJAZ_place_id");
+    }
+
+    @Test
+    public void test_of_allows_null_geo_fields() {
+        //when
+        Address result = Address.of(1, "Marszałkowska", "12", null, "00-001", 5, null, null, null);
+
+        //then
+        assertThat(result.getLatitude()).isNull();
+        assertThat(result.getLongitude()).isNull();
+        assertThat(result.getGooglePlaceId()).isNull();
     }
 
     @ParameterizedTest

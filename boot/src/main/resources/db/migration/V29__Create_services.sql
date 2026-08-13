@@ -7,7 +7,7 @@ CREATE TABLE services (
                           duration_minutes smallint  NOT NULL,
                           price decimal(7,2)  NOT NULL,
                           status text  NOT NULL,
-                          service_bay_id int  NOT NULL,
+                          branch_id uuid  NOT NULL,
                           service_category_id int  NOT NULL,
 
                           CONSTRAINT check_services_status
