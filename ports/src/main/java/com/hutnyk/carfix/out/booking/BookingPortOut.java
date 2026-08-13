@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.out.booking;
 
 import com.hutnyk.carfix.booking.Booking;
+import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.in.booking.query.BookingView;
 
 import java.util.List;
@@ -12,4 +13,5 @@ public interface BookingPortOut {
     Optional<BookingView> findViewByIdAndCustomerId(UUID bookingId, UUID customerId);
     Optional<Booking> findByIdAndCustomerId(UUID bookingId, UUID customerId);
     Booking update(Booking booking);
+    void freeOccupancy(BookingId bookingId);
 }

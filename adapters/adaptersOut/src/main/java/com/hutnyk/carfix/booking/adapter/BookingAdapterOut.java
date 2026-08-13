@@ -1,13 +1,17 @@
 package com.hutnyk.carfix.booking.adapter;
 
 import com.hutnyk.carfix.booking.Booking;
+import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.booking.mapper.BookingMapper;
 import com.hutnyk.carfix.booking.repository.BookingRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
+import com.hutnyk.carfix.employee.repository.EmployeeBookingRepository;
+import com.hutnyk.carfix.equipment.repository.EquipmentBookingRepository;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.booking.query.BookingView;
 import com.hutnyk.carfix.out.booking.BookingPortOut;
+import com.hutnyk.carfix.serviceBay.repository.ServiceBayBookingRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -19,6 +23,9 @@ import java.util.UUID;
 public class BookingAdapterOut implements BookingPortOut {
 
     private final BookingRepository bookingRepository;
+    private final ServiceBayBookingRepository serviceBayBookingRepository;
+    private final EmployeeBookingRepository employeeBookingRepository;
+    private final EquipmentBookingRepository equipmentBookingRepository;
 
     @Override
     public List<BookingView> findAllViewsByCustomerId(UUID customerId) {
@@ -46,5 +53,13 @@ public class BookingAdapterOut implements BookingPortOut {
                         "Booking row missing on update: " + booking.getId().id()));
         BookingMapper.updateEntity(entity, booking);
         return BookingMapper.toDomain(bookingRepository.save(entity));
+    }
+
+    @Override
+    public void freeOccupancy(BookingId bookingId) {
+        UUID id = bookingId.id();
+        serviceBayBookingRepository.deleteAllByBookingEntityId(id);
+        employeeBookingRepository.deleteAllByBookingEntityId(id);
+        equipmentBookingRepository.deleteAllByBookingEntityId(id);
     }
 }

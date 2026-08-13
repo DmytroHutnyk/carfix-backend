@@ -101,6 +101,7 @@ public class BookingServiceTest {
         Booking stored;
         Booking updated;
         UUID requestedCustomerId;
+        BookingId freedOccupancyFor;
 
         @Override
         public List<BookingView> findAllViewsByCustomerId(UUID customerId) {
@@ -123,6 +124,11 @@ public class BookingServiceTest {
         public Booking update(Booking booking) {
             this.updated = booking;
             return booking;
+        }
+
+        @Override
+        public void freeOccupancy(BookingId bookingId) {
+            this.freedOccupancyFor = bookingId;
         }
     }
 
@@ -147,6 +153,7 @@ public class BookingServiceTest {
         assertThat(bookingPortOut.updated.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(bookingPortOut.updated.getId().id()).isEqualTo(BOOKING_ID);
         assertThat(result.status()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(bookingPortOut.freedOccupancyFor).isEqualTo(BookingId.of(BOOKING_ID));
     }
 
     @Test
@@ -156,6 +163,7 @@ public class BookingServiceTest {
         assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
                 .isInstanceOf(BookingNotFoundException.class);
         assertThat(bookingPortOut.updated).isNull();
+        assertThat(bookingPortOut.freedOccupancyFor).isNull();
     }
 
     @Test
@@ -165,5 +173,6 @@ public class BookingServiceTest {
         assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
                 .isInstanceOf(BookingCancellationNotAllowedException.class);
         assertThat(bookingPortOut.updated).isNull();
+        assertThat(bookingPortOut.freedOccupancyFor).isNull();
     }
 }
