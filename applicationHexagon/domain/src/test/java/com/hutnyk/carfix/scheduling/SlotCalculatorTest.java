@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.scheduling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.service.EmployeeRequirement;
@@ -289,6 +290,54 @@ public class SlotCalculatorTest {
                 List.of(), at(0, 0)))
                 .extracting(VisitPlan::start)
                 .containsExactly(at(9, 0), at(9, 15), at(9, 30), at(9, 45), at(10, 0));
+    }
+
+    @Test
+    void test_service_order_is_canonical_regardless_of_input_order() {
+        Service first = service(1, 50,
+                List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(MECHANIC))), List.of());
+        Service second = service(2, 60,
+                List.of(EmployeeRequirement.of(2, "Senior", Set.of(SENIOR))), List.of());
+        List<BaySchedule> bays = List.of(bay(between(9, 0, 12, 0)));
+        List<EmployeeSchedule> staff = List.of(
+                employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0)),
+                employee(JAN, Set.of(SENIOR), between(9, 0, 12, 0)));
+
+        List<VisitPlan> ascending = SlotCalculator.computeVisits(
+                List.of(first, second), bays, staff, List.of(), at(0, 0));
+        List<VisitPlan> descending = SlotCalculator.computeVisits(
+                List.of(second, first), bays, staff, List.of(), at(0, 0));
+
+        assertThat(ascending).isNotEmpty();
+        assertThat(descending).extracting(VisitPlan::start)
+                .containsExactlyElementsOf(ascending.stream().map(VisitPlan::start).toList());
+        assertThat(descending).extracting(VisitPlan::end)
+                .containsExactlyElementsOf(ascending.stream().map(VisitPlan::end).toList());
+        assertThat(ascending.getFirst().segments()).extracting(SegmentPlan::serviceId)
+                .containsExactly(1, 2);
+        assertThat(descending.getFirst().segments()).extracting(SegmentPlan::serviceId)
+                .containsExactly(1, 2);
+    }
+
+    @Test
+    void test_same_mechanic_serves_every_segment_of_a_chain() {
+        Service first = service(1, 60,
+                List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(MECHANIC))), List.of());
+        Service second = service(2, 60,
+                List.of(EmployeeRequirement.of(2, "Mechanic", Set.of(MECHANIC))), List.of());
+
+        List<VisitPlan> plans = SlotCalculator.computeVisits(
+                List.of(first, second),
+                List.of(bay(between(9, 0, 12, 0))),
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0))),
+                List.of(),
+                at(0, 0));
+
+        assertThat(plans).isNotEmpty();
+        VisitPlan plan = plans.getFirst();
+        assertThat(plan.segments()).hasSize(2);
+        assertThat(plan.segments().get(0).employeeByRequirementId()).containsExactly(entry(1, ANNA));
+        assertThat(plan.segments().get(1).employeeByRequirementId()).containsExactly(entry(2, ANNA));
     }
 
     @Test
