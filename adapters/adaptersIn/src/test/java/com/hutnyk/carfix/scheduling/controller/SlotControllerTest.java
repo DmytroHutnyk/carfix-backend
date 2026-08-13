@@ -16,6 +16,7 @@ import com.hutnyk.carfix.in.scheduling.query.BranchSlotsView;
 import com.hutnyk.carfix.in.scheduling.query.DaySlotsView;
 import com.hutnyk.carfix.in.scheduling.query.SlotView;
 import com.hutnyk.carfix.scheduling.exception.InvalidSlotQueryException;
+import com.hutnyk.carfix.scheduling.exception.ServiceNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -33,12 +34,16 @@ public class SlotControllerTest {
     private static class StubSlotPortIn implements SlotPortIn {
         BranchSlotsQuery receivedQuery;
         CarFixException toThrow;
+        BranchSlotsView toReturn;
 
         @Override
         public BranchSlotsView getSlots(BranchSlotsQuery query) {
             this.receivedQuery = query;
             if (toThrow != null) {
                 throw toThrow;
+            }
+            if (toReturn != null) {
+                return toReturn;
             }
             return new BranchSlotsView(true, List.of(
                     new DaySlotsView(LocalDate.of(2026, 8, 14), List.of(
@@ -116,6 +121,78 @@ public class SlotControllerTest {
                         .param("serviceIds", "3")
                         .param("from", "14-08-2026")
                         .param("to", "2026-08-15"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void test_unchainable_returns_200_with_all_empty_days() throws Exception {
+        stub.toReturn = new BranchSlotsView(false, List.of(
+                new DaySlotsView(LocalDate.of(2026, 8, 14), List.of()),
+                new DaySlotsView(LocalDate.of(2026, 8, 15), List.of())));
+        mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/slots")
+                        .param("serviceIds", "3,7")
+                        .param("from", "2026-08-14")
+                        .param("to", "2026-08-15"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chainable").value(false))
+                .andExpect(jsonPath("$.days.length()").value(2))
+                .andExpect(jsonPath("$.days[0].date").value("2026-08-14"))
+                .andExpect(jsonPath("$.days[0].slots").isEmpty())
+                .andExpect(jsonPath("$.days[1].slots").isEmpty());
+    }
+
+    @Test
+    public void test_service_not_found_maps_to_404() throws Exception {
+        stub.toThrow = new ServiceNotFoundException(List.of(3, 7));
+        mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/slots")
+                        .param("serviceIds", "3,7")
+                        .param("from", "2026-08-14")
+                        .param("to", "2026-08-14"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SERVICE_NOT_FOUND"));
+    }
+
+    @Test
+    public void test_more_than_three_service_ids_is_400() throws Exception {
+        mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/slots")
+                        .param("serviceIds", "1,2,3,4")
+                        .param("from", "2026-08-14")
+                        .param("to", "2026-08-14"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void test_non_numeric_service_id_is_400() throws Exception {
+        mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/slots")
+                        .param("serviceIds", "abc")
+                        .param("from", "2026-08-14")
+                        .param("to", "2026-08-14"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void test_empty_service_ids_is_400() throws Exception {
+        mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/slots")
+                        .param("serviceIds", "")
+                        .param("from", "2026-08-14")
+                        .param("to", "2026-08-14"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void test_malformed_branch_id_is_400() throws Exception {
+        mockMvc.perform(get("/api/branches/not-a-uuid/slots")
+                        .param("serviceIds", "3")
+                        .param("from", "2026-08-14")
+                        .param("to", "2026-08-14"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void test_missing_to_param_is_400() throws Exception {
+        mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/slots")
+                        .param("serviceIds", "3")
+                        .param("from", "2026-08-14"))
                 .andExpect(status().isBadRequest());
     }
 }
