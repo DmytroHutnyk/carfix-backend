@@ -35,22 +35,24 @@ public class SearchService implements SearchPortIn {
     private final CarProfilePortOut carProfilePortOut;
 
     /**
-     * Only the workshops group is location-bound.
+     * Only the workshops group is location- and brand-bound.
      */
     @Override
     @Transactional(readOnly = true)
-    public SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query) {
+    public SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query, String principalEmail) {
         String q = normalize(query.q());
         if (q == null || q.length() < MIN_QUERY_LENGTH) {
             return SearchSuggestionsView.empty();
         }
+        Integer brandId = resolveBrandId(query.carProfileId(), principalEmail);
         SearchSuggestionsQuery workshopQuery = new SearchSuggestionsQuery(
-                q, normalize(query.city()), normalize(query.voivodeship()), normalize(query.country()));
+                q, normalize(query.city()), normalize(query.voivodeship()), normalize(query.country()),
+                query.carProfileId());
 
         return new SearchSuggestionsView(
                 searchPortOut.findServiceSuggestions(q, SUGGESTION_LIMIT),
                 searchPortOut.findCategorySuggestions(q, SUGGESTION_LIMIT),
-                searchPortOut.findWorkshopSuggestions(workshopQuery, SUGGESTION_LIMIT));
+                searchPortOut.findWorkshopSuggestions(workshopQuery, brandId, SUGGESTION_LIMIT));
     }
 
     @Override

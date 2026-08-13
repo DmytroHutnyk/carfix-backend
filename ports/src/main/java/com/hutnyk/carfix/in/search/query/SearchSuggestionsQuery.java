@@ -1,5 +1,7 @@
 package com.hutnyk.carfix.in.search.query;
 
+import java.util.UUID;
+
 public record SearchSuggestionsQuery(
         String q,
         //Nullable
@@ -7,5 +9,7 @@ public record SearchSuggestionsQuery(
         //Nullable
         String voivodeship,
         //Nullable
-        String country
+        String country,
+        //Nullable
+        UUID carProfileId
 ) {}

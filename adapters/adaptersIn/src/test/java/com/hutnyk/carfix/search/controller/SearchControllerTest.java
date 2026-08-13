@@ -48,6 +48,7 @@ public class SearchControllerTest {
 
     private static final class StubSearchPortIn implements SearchPortIn {
         SearchSuggestionsQuery receivedSuggestionsQuery;
+        String receivedSuggestionsPrincipalEmail;
         WorkshopSearchQuery receivedQuery;
         String receivedPrincipalEmail;
         boolean searchCalled;
@@ -57,8 +58,9 @@ public class SearchControllerTest {
         Integer reviewCount = 236;
 
         @Override
-        public SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query) {
+        public SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query, String principalEmail) {
             this.receivedSuggestionsQuery = query;
+            this.receivedSuggestionsPrincipalEmail = principalEmail;
             return new SearchSuggestionsView(
                     List.of(new ServiceSuggestionView("Tire Replacement", "Tires")),
                     List.of(new CategorySuggestionView(4, "Tires")),
@@ -137,6 +139,25 @@ public class SearchControllerTest {
         assertThat(stub.receivedSuggestionsQuery.city()).isNull();
         assertThat(stub.receivedSuggestionsQuery.voivodeship()).isNull();
         assertThat(stub.receivedSuggestionsQuery.country()).isNull();
+        assertThat(stub.receivedSuggestionsQuery.carProfileId()).isNull();
+        assertThat(stub.receivedSuggestionsPrincipalEmail).isNull();
+    }
+
+    @Test
+    public void test_suggestions_passes_car_profile_and_principal() throws Exception {
+        //given
+        authenticate();
+        UUID carProfileId = UUID.randomUUID();
+
+        //when
+        mockMvc.perform(get("/api/search/suggestions")
+                        .param("q", "tire")
+                        .param("carProfileId", carProfileId.toString()))
+                .andExpect(status().isOk());
+
+        //then
+        assertThat(stub.receivedSuggestionsQuery.carProfileId()).isEqualTo(carProfileId);
+        assertThat(stub.receivedSuggestionsPrincipalEmail).isEqualTo(EMAIL);
     }
 
     @Test

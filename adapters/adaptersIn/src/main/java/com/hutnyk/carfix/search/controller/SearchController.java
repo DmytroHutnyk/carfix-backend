@@ -35,9 +35,13 @@ public class SearchController {
             @RequestParam(name = "q") @Size(max = 100) String q,
             @RequestParam(name = "city", required = false) @Size(max = 100) String city,
             @RequestParam(name = "voivodeship", required = false) @Size(max = 100) String voivodeship,
-            @RequestParam(name = "country", required = false) @Size(max = 100) String country) {
-        SearchSuggestionsQuery query = new SearchSuggestionsQuery(q, city, voivodeship, country);
-        return ResponseEntity.ok(SearchResponseMapper.toResponse(searchPortIn.getSuggestions(query)));
+            @RequestParam(name = "country", required = false) @Size(max = 100) String country,
+            @RequestParam(name = "carProfileId", required = false) UUID carProfileId,
+            @AuthenticationPrincipal UserDetails principal) {
+        SearchSuggestionsQuery query = new SearchSuggestionsQuery(q, city, voivodeship, country, carProfileId);
+        String principalEmail = principal != null ? principal.getUsername() : null;
+        return ResponseEntity.ok(SearchResponseMapper.toResponse(
+                searchPortIn.getSuggestions(query, principalEmail)));
     }
 
     @GetMapping("/workshops")
