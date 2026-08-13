@@ -69,6 +69,8 @@ public class SearchServiceTest {
         boolean brandIdReceived;
         String receivedServiceQ;
         SearchSuggestionsQuery receivedWorkshopQuery;
+        Integer receivedWorkshopBrandId;
+        boolean workshopBrandIdReceived;
 
         @Override
         public List<ServiceSuggestionView> findServiceSuggestions(String q, int limit) {
@@ -84,9 +86,12 @@ public class SearchServiceTest {
         }
 
         @Override
-        public List<WorkshopSuggestionView> findWorkshopSuggestions(SearchSuggestionsQuery query, int limit) {
+        public List<WorkshopSuggestionView> findWorkshopSuggestions(
+                SearchSuggestionsQuery query, Integer brandId, int limit) {
             suggestionCalls.add("workshops:" + query.q() + ":" + limit);
             this.receivedWorkshopQuery = query;
+            this.receivedWorkshopBrandId = brandId;
+            this.workshopBrandIdReceived = true;
             return List.of(new WorkshopSuggestionView(UUID.randomUUID(), "TireMax"));
         }
 
@@ -174,13 +179,13 @@ public class SearchServiceTest {
     }
 
     private static SearchSuggestionsQuery suggestionsQuery(String q) {
-        return new SearchSuggestionsQuery(q, null, null, null);
+        return new SearchSuggestionsQuery(q, null, null, null, null);
     }
 
     @Test
     public void test_suggestions_short_query_returns_empty_without_port_call() {
         //when
-        SearchSuggestionsView result = service.getSuggestions(suggestionsQuery(" t "));
+        SearchSuggestionsView result = service.getSuggestions(suggestionsQuery(" t "), null);
 
         //then
         assertThat(result.services()).isEmpty();
@@ -192,7 +197,7 @@ public class SearchServiceTest {
     @Test
     public void test_suggestions_null_query_returns_empty_without_port_call() {
         //when
-        SearchSuggestionsView result = service.getSuggestions(suggestionsQuery(null));
+        SearchSuggestionsView result = service.getSuggestions(suggestionsQuery(null), null);
 
         //then
         assertThat(result.services()).isEmpty();
@@ -202,7 +207,7 @@ public class SearchServiceTest {
     @Test
     public void test_suggestions_trims_and_queries_three_groups() {
         //when
-        SearchSuggestionsView result = service.getSuggestions(suggestionsQuery("  tire "));
+        SearchSuggestionsView result = service.getSuggestions(suggestionsQuery("  tire "), null);
 
         //then
         assertThat(searchPortOut.suggestionCalls)
@@ -215,7 +220,7 @@ public class SearchServiceTest {
     @Test
     public void test_suggestions_normalizes_query_before_delegating() {
         //when
-        service.getSuggestions(suggestionsQuery("  tire "));
+        service.getSuggestions(suggestionsQuery("  tire "), null);
 
         //then
         assertThat(searchPortOut.receivedServiceQ).isEqualTo("tire");
@@ -226,10 +231,10 @@ public class SearchServiceTest {
     public void test_suggestions_passes_location_to_workshops_only() {
         //given
         SearchSuggestionsQuery located =
-                new SearchSuggestionsQuery(" tire ", CITY, "Masovian Voivodeship", "Poland");
+                new SearchSuggestionsQuery(" tire ", CITY, "Masovian Voivodeship", "Poland", null);
 
         //when
-        service.getSuggestions(located);
+        service.getSuggestions(located, null);
 
         //then
         assertThat(searchPortOut.receivedServiceQ).isEqualTo("tire");
@@ -242,10 +247,10 @@ public class SearchServiceTest {
     @Test
     public void test_suggestions_normalizes_blank_location_to_null() {
         //given
-        SearchSuggestionsQuery blankLocation = new SearchSuggestionsQuery("tire", CITY, "  ", null);
+        SearchSuggestionsQuery blankLocation = new SearchSuggestionsQuery("tire", CITY, "  ", null, null);
 
         //when
-        service.getSuggestions(blankLocation);
+        service.getSuggestions(blankLocation, null);
 
         //then
         assertThat(searchPortOut.receivedWorkshopQuery.city()).isEqualTo(CITY);
@@ -256,12 +261,62 @@ public class SearchServiceTest {
     @Test
     public void test_suggestions_without_location_still_queries_all_groups() {
         //when
-        service.getSuggestions(suggestionsQuery("tire"));
+        service.getSuggestions(suggestionsQuery("tire"), null);
 
         //then
         assertThat(searchPortOut.receivedWorkshopQuery.city()).isNull();
         assertThat(searchPortOut.suggestionCalls)
                 .containsExactly("services:tire:5", "categories:tire:5", "workshops:tire:5");
+    }
+
+    @Test
+    public void test_suggestions_without_car_profile_passes_null_brand() {
+        //when
+        service.getSuggestions(suggestionsQuery("tire"), null);
+
+        //then
+        assertThat(searchPortOut.workshopBrandIdReceived).isTrue();
+        assertThat(searchPortOut.receivedWorkshopBrandId).isNull();
+    }
+
+    @Test
+    public void test_suggestions_with_owned_car_profile_passes_its_brand_to_workshops_only() {
+        //given
+        SearchSuggestionsQuery withCar =
+                new SearchSuggestionsQuery("tire", null, null, null, CAR_PROFILE_ID);
+
+        //when
+        service.getSuggestions(withCar, EMAIL);
+
+        //then
+        assertThat(carProfilePortOut.receivedProfileId).isEqualTo(CAR_PROFILE_ID);
+        assertThat(carProfilePortOut.receivedCustomerId).isEqualTo(CUSTOMER_ID.id());
+        assertThat(searchPortOut.receivedWorkshopBrandId).isEqualTo(BRAND_ID);
+        assertThat(searchPortOut.suggestionCalls)
+                .containsExactly("services:tire:5", "categories:tire:5", "workshops:tire:5");
+    }
+
+    @Test
+    public void test_suggestions_with_car_profile_and_anonymous_caller_throws_not_found() {
+        //given
+        SearchSuggestionsQuery withCar =
+                new SearchSuggestionsQuery("tire", null, null, null, CAR_PROFILE_ID);
+
+        //when + then
+        assertThatThrownBy(() -> service.getSuggestions(withCar, null))
+                .isInstanceOf(CarProfileNotFoundException.class);
+    }
+
+    @Test
+    public void test_suggestions_with_car_profile_not_owned_throws_not_found() {
+        //given
+        carProfilePortOut.found = Optional.empty();
+        SearchSuggestionsQuery withCar =
+                new SearchSuggestionsQuery("tire", null, null, null, CAR_PROFILE_ID);
+
+        //when + then
+        assertThatThrownBy(() -> service.getSuggestions(withCar, EMAIL))
+                .isInstanceOf(CarProfileNotFoundException.class);
     }
 
     @Test
