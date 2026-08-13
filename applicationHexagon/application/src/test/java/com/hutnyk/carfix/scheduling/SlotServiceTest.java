@@ -54,7 +54,9 @@ public class SlotServiceTest {
             TODAY.atTime(10, 7).atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
     private static final BranchId BRANCH_ID = BranchId.genId();
     private static final UUID EMPLOYEE_ID = UUID.randomUUID();
+    private static final UUID SENIOR_ID = UUID.randomUUID();
     private static final int MECHANIC = 10;
+    private static final int SENIOR = 11;
     private static final int LIFT = 1;
     private static final int JACK_TYPE = 20;
     private static final int BAY_ID = 100;
@@ -64,6 +66,12 @@ public class SlotServiceTest {
         return Service.of(id, "Service " + id, null, (short) 60, BigDecimal.TEN,
                 ServiceStatus.ACTIVE, BRANCH_ID, 1, bayTypes,
                 List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(MECHANIC))), List.of());
+    }
+
+    private static Service seniorService(int id, Set<Integer> bayTypes) {
+        return Service.of(id, "Service " + id, null, (short) 60, BigDecimal.TEN,
+                ServiceStatus.ACTIVE, BRANCH_ID, 1, bayTypes,
+                List.of(EmployeeRequirement.of(2, "Senior", Set.of(SENIOR))), List.of());
     }
 
     private static Service serviceNeedingJack(int id) {
@@ -110,8 +118,18 @@ public class SlotServiceTest {
         List<EmployeeAvailability> employeeAvailability = new ArrayList<>();
         List<EmployeeBooking> employeeOccupancy = new ArrayList<>();
         List<EquipmentAvailability> equipmentAvailability = new ArrayList<>();
+        List<EquipmentBooking> equipmentOccupancy = new ArrayList<>();
         boolean resourcesLoaded = false;
         boolean calendarsLoaded = false;
+        Collection<Integer> lastBayIds;
+        LocalDate lastBayFrom;
+        LocalDate lastBayTo;
+        Collection<UUID> lastEmployeeIds;
+        LocalDate lastEmployeeFrom;
+        LocalDate lastEmployeeTo;
+        Collection<Integer> lastEquipmentIds;
+        LocalDate lastEquipmentFrom;
+        LocalDate lastEquipmentTo;
 
         @Override
         public List<ServiceBay> loadActiveBays(BranchId branchId) {
@@ -133,37 +151,55 @@ public class SlotServiceTest {
         public List<ServiceBayAvailability> loadBayAvailability(
                 Collection<Integer> bayIds, LocalDate from, LocalDate to) {
             calendarsLoaded = true;
+            lastBayIds = bayIds;
+            lastBayFrom = from;
+            lastBayTo = to;
             return bayAvailability;
         }
 
         @Override
         public List<ServiceBayBooking> loadBayOccupancy(
                 Collection<Integer> bayIds, LocalDate from, LocalDate to) {
+            lastBayIds = bayIds;
+            lastBayFrom = from;
+            lastBayTo = to;
             return bayOccupancy;
         }
 
         @Override
         public List<EmployeeAvailability> loadEmployeeAvailability(
                 Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+            lastEmployeeIds = employeeIds;
+            lastEmployeeFrom = from;
+            lastEmployeeTo = to;
             return employeeAvailability;
         }
 
         @Override
         public List<EmployeeBooking> loadEmployeeOccupancy(
                 Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+            lastEmployeeIds = employeeIds;
+            lastEmployeeFrom = from;
+            lastEmployeeTo = to;
             return employeeOccupancy;
         }
 
         @Override
         public List<EquipmentAvailability> loadEquipmentAvailability(
                 Collection<Integer> equipmentIds, LocalDate from, LocalDate to) {
+            lastEquipmentIds = equipmentIds;
+            lastEquipmentFrom = from;
+            lastEquipmentTo = to;
             return equipmentAvailability;
         }
 
         @Override
         public List<EquipmentBooking> loadEquipmentOccupancy(
                 Collection<Integer> equipmentIds, LocalDate from, LocalDate to) {
-            return List.of();
+            lastEquipmentIds = equipmentIds;
+            lastEquipmentFrom = from;
+            lastEquipmentTo = to;
+            return equipmentOccupancy;
         }
     }
 
@@ -290,6 +326,69 @@ public class SlotServiceTest {
         assertThat(slots.getFirst()).isEqualTo(new SlotView(LocalTime.of(9, 0), LocalTime.of(10, 0)));
         assertThat(slots.getLast()).isEqualTo(new SlotView(LocalTime.of(11, 0), LocalTime.of(12, 0)));
         assertThat(slots).hasSize(9);
+        assertThat(availabilityPortOut.lastBayFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastBayTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastBayIds).containsExactly(BAY_ID);
+        assertThat(availabilityPortOut.lastEmployeeFrom).isEqualTo(TODAY);
+        assertThat(availabilityPortOut.lastEmployeeTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastEmployeeIds).containsExactly(EMPLOYEE_ID);
+    }
+
+    @Test
+    void test_availability_outside_the_queried_range_contributes_no_day_and_no_slot() {
+        seedHappyPath();
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                9, TimeRange.of(TOMORROW.plusDays(10).atTime(9, 0), TOMORROW.plusDays(10).atTime(12, 0)),
+                TOMORROW.plusDays(10), 1, BAY_ID));
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TOMORROW));
+        assertThat(view.days()).extracting(d -> d.date()).containsExactly(TODAY, TOMORROW);
+        assertThat(view.days().getLast().slots()).hasSize(9);
+    }
+
+    @Test
+    void test_two_chained_services_sharing_a_bay_type_yield_combined_slots() {
+        servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)), seniorService(2, Set.of(LIFT)));
+        availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EMPLOYEE_ID, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(SENIOR_ID, Set.of(SENIOR)));
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, BAY_ID));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2,
+                UserId.of(EMPLOYEE_ID)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                2, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 3,
+                UserId.of(SENIOR_ID)));
+
+        BranchSlotsView view = slotService.getSlots(query(List.of(1, 2), TODAY, TOMORROW));
+
+        assertThat(view.chainable()).isTrue();
+        List<SlotView> slots = view.days().getLast().slots();
+        assertThat(slots).hasSize(5);
+        assertThat(slots.getFirst()).isEqualTo(new SlotView(LocalTime.of(9, 0), LocalTime.of(11, 0)));
+        assertThat(slots.getLast()).isEqualTo(new SlotView(LocalTime.of(10, 0), LocalTime.of(12, 0)));
+    }
+
+    @Test
+    void test_equipment_occupancy_carves_out_overlapping_slots() {
+        seedHappyPath();
+        seedJack(TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)));
+        availabilityPortOut.equipmentOccupancy.add(EquipmentBooking.of(
+                1, TimeRange.of(TOMORROW.atTime(10, 0), TOMORROW.atTime(11, 0)),
+                TOMORROW, JACK_ID, BookingId.genId()));
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TOMORROW));
+        assertThat(view.days().getLast().slots()).containsExactly(
+                new SlotView(LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                new SlotView(LocalTime.of(11, 0), LocalTime.of(12, 0)));
+        assertThat(availabilityPortOut.lastEquipmentIds).containsExactly(JACK_ID);
+    }
+
+    @Test
+    void test_null_from_or_to_rejected() {
+        assertThatThrownBy(() -> slotService.getSlots(query(List.of(1), null, TODAY)))
+                .isInstanceOf(InvalidSlotQueryException.class);
+        assertThatThrownBy(() -> slotService.getSlots(query(List.of(1), TODAY, null)))
+                .isInstanceOf(InvalidSlotQueryException.class);
     }
 
     @Test
@@ -359,7 +458,7 @@ public class SlotServiceTest {
     }
 
     @Test
-    void test_suspended_bay_type_mismatch_filtered_out() {
+    void test_bay_of_non_matching_type_yields_no_slots() {
         seedHappyPath();
         availabilityPortOut.bays.clear();
         availabilityPortOut.bays.add(ServiceBay.of(100, "Wrong type", ServiceBayStatus.ACTIVE, null, LIFT + 1, BRANCH_ID));

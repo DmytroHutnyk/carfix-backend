@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.scheduling.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.scheduling.TimeRange;
 import io.hypersistence.utils.hibernate.type.range.Range;
@@ -49,6 +50,16 @@ public class TimeRangeMapperTest {
 
         //then
         assertThat(result).isEqualTo(original);
+    }
+
+    @Test
+    public void test_toDomain_rejects_ranges_that_are_not_half_open() {
+        assertThatThrownBy(() -> TimeRangeMapper.toDomain(Range.closed(NINE, SEVENTEEN)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> TimeRangeMapper.toDomain(Range.open(NINE, SEVENTEEN)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> TimeRangeMapper.toDomain(Range.openClosed(NINE, SEVENTEEN)))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
