@@ -16,7 +16,7 @@ public interface SearchPortOut {
 
     List<CategorySuggestionView> findCategorySuggestions(String q, int limit);
 
-    List<WorkshopSuggestionView> findWorkshopSuggestions(SearchSuggestionsQuery query, int limit);
+    List<WorkshopSuggestionView> findWorkshopSuggestions(SearchSuggestionsQuery query, Integer brandId, int limit);
 
     WorkshopSearchPage searchWorkshops(WorkshopSearchQuery query, Integer brandId);
 

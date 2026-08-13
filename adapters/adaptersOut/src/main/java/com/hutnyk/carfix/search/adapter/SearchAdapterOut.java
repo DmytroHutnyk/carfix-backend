@@ -186,12 +186,14 @@ public class SearchAdapterOut implements SearchPortOut {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<WorkshopSuggestionView> findWorkshopSuggestions(SearchSuggestionsQuery query, int limit) {
+    public List<WorkshopSuggestionView> findWorkshopSuggestions(
+            SearchSuggestionsQuery query, Integer brandId, int limit) {
         String locationFilter = locationFilter(query.city(), query.voivodeship(), query.country());
         String sql = WORKSHOP_SUGGESTIONS_SELECT
                 + (locationFilter.isEmpty() ? "" : LOCATION_JOINS)
                 + WORKSHOP_SUGGESTIONS_MATCH
                 + locationFilter
+                + (brandId != null ? BRAND_FILTER : "")
                 + WORKSHOP_SUGGESTIONS_ORDER;
 
         Query nativeQuery = em.createNativeQuery(sql)
@@ -199,6 +201,9 @@ public class SearchAdapterOut implements SearchPortOut {
                 .setParameter("minSimilarity", MIN_WORD_SIMILARITY)
                 .setParameter("limit", limit);
         bindLocationParams(nativeQuery, query.city(), query.voivodeship(), query.country());
+        if (brandId != null) {
+            nativeQuery.setParameter("brandId", brandId);
+        }
 
         List<Object[]> rows = nativeQuery.getResultList();
         return rows.stream()

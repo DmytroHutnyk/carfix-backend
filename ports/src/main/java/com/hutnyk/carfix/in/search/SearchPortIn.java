@@ -7,10 +7,7 @@ import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 
 public interface SearchPortIn {
 
-    SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query);
+    SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query, String principalEmail);
 
-    /**
-     * @param principalEmail the authenticated username, or {@code null} for anonymous callers
-     */
     WorkshopSearchPage searchWorkshops(WorkshopSearchQuery query, String principalEmail);
 }
