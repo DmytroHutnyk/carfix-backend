@@ -20,6 +20,8 @@ public class SlotCalculatorTest {
     private static final UserId ANNA = UserId.genId();
     private static final UserId JAN = UserId.genId();
     private static final int LIFT = 1;
+    private static final int PIT = 2;
+    private static final int ALIGNMENT_RIG = 3;
     private static final int MECHANIC = 10;
     private static final int SENIOR = 11;
     private static final int JACK_TYPE = 20;
@@ -46,8 +48,18 @@ public class SlotCalculatorTest {
                 List.of());
     }
 
+    private static Service mechanicService(int id, int durationMinutes, Set<Integer> bayTypeIds) {
+        return Service.of(id, "Service " + id, null, (short) durationMinutes,
+                BigDecimal.TEN, ServiceStatus.ACTIVE, BRANCH_ID, 1, bayTypeIds,
+                List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(MECHANIC))), List.of());
+    }
+
     private static BaySchedule bay(TimeRange... free) {
         return new BaySchedule(100, LIFT, List.of(free));
+    }
+
+    private static BaySchedule bayOfType(int bayTypeId, TimeRange... free) {
+        return new BaySchedule(100, bayTypeId, List.of(free));
     }
 
     private static EmployeeSchedule employee(UserId id, Set<Integer> roles, TimeRange... free) {
@@ -248,5 +260,53 @@ public class SlotCalculatorTest {
                         employee(JAN, Set.of(MECHANIC), between(9, 0, 12, 0))),
                 List.of(),
                 at(0, 0))).isEmpty();
+    }
+
+    @Test
+    void test_bay_of_unacceptable_type_yields_empty() {
+        assertThat(SlotCalculator.computeVisits(
+                List.of(simpleService(1, 60)),
+                List.of(bayOfType(PIT, between(9, 0, 12, 0))),
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0))),
+                List.of(),
+                at(0, 0))).isEmpty();
+    }
+
+    @Test
+    void test_bay_type_must_be_accepted_by_every_service_not_just_one() {
+        List<Service> services = List.of(
+                mechanicService(1, 60, Set.of(LIFT, PIT)),
+                mechanicService(2, 60, Set.of(PIT, ALIGNMENT_RIG)));
+        List<EmployeeSchedule> staff =
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0)));
+
+        assertThat(SlotCalculator.computeVisits(services,
+                List.of(bayOfType(LIFT, between(9, 0, 12, 0))), staff,
+                List.of(), at(0, 0))).isEmpty();
+
+        assertThat(SlotCalculator.computeVisits(services,
+                List.of(bayOfType(PIT, between(9, 0, 12, 0))), staff,
+                List.of(), at(0, 0)))
+                .extracting(VisitPlan::start)
+                .containsExactly(at(9, 0), at(9, 15), at(9, 30), at(9, 45), at(10, 0));
+    }
+
+    @Test
+    void test_chain_accepts_gap_of_exactly_15_minutes() {
+        List<VisitPlan> plans = SlotCalculator.computeVisits(
+                List.of(service(1, 60,
+                                List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(MECHANIC))), List.of()),
+                        service(2, 60,
+                                List.of(EmployeeRequirement.of(2, "Senior", Set.of(SENIOR))), List.of())),
+                List.of(bay(between(9, 0, 11, 15))),
+                List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 10, 0)),
+                        employee(JAN, Set.of(SENIOR), between(10, 15, 11, 15))),
+                List.of(),
+                at(0, 0));
+        assertThat(plans).extracting(VisitPlan::start).containsExactly(at(9, 0));
+        VisitPlan plan = plans.getFirst();
+        assertThat(plan.segments().get(0).time()).isEqualTo(between(9, 0, 10, 0));
+        assertThat(plan.segments().get(1).time()).isEqualTo(between(10, 15, 11, 15));
+        assertThat(plan.end()).isEqualTo(at(11, 15));
     }
 }
