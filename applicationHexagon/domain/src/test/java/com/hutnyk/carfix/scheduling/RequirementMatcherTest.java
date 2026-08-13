@@ -64,5 +64,23 @@ public class RequirementMatcherTest {
     void test_deterministic_same_input_same_assignment() {
         List<List<String>> input = List.of(List.of("a", "b"), List.of("a", "c"));
         assertThat(RequirementMatcher.match(input)).isEqualTo(RequirementMatcher.match(input));
+        assertThat(RequirementMatcher.match(input)).contains(Map.of(0, "b", 1, "a"));
+    }
+
+    @Test
+    void test_duplicate_candidate_counts_as_one_resource() {
+        assertThat(RequirementMatcher.match(List.of(List.of("jan", "jan"))))
+                .contains(Map.of(0, "jan"));
+        assertThat(RequirementMatcher.match(List.of(List.of("jan", "jan"), List.of("jan"))))
+                .isEmpty();
+    }
+
+    @Test
+    void test_two_level_augmenting_chain_reassigns_both_holders() {
+        assertThat(RequirementMatcher.match(List.of(
+                List.of("a", "e"),
+                List.of("b", "a"),
+                List.of("b"))))
+                .contains(Map.of(0, "e", 1, "a", 2, "b"));
     }
 }
