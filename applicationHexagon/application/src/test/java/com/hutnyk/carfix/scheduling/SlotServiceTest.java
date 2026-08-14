@@ -16,6 +16,7 @@ import com.hutnyk.carfix.equipment.EquipmentStatus;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.in.scheduling.query.BranchSlotsQuery;
 import com.hutnyk.carfix.in.scheduling.query.BranchSlotsView;
+import com.hutnyk.carfix.in.scheduling.query.DaySlotsView;
 import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
 import com.hutnyk.carfix.in.scheduling.query.SlotView;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
@@ -34,6 +35,7 @@ import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
 import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -48,10 +50,12 @@ import org.junit.jupiter.api.Test;
 
 public class SlotServiceTest {
 
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
+    private static final ZoneId KYIV = ZoneId.of("Europe/Kyiv");
     private static final LocalDate TODAY = LocalDate.of(2026, 8, 13);
     private static final LocalDate TOMORROW = TODAY.plusDays(1);
     private static final Clock CLOCK = Clock.fixed(
-            TODAY.atTime(10, 7).atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+            TODAY.atTime(10, 7).atZone(WARSAW).toInstant(), ZoneId.systemDefault());
     private static final BranchId BRANCH_ID = BranchId.genId();
     private static final UUID EMPLOYEE_ID = UUID.randomUUID();
     private static final UUID SENIOR_ID = UUID.randomUUID();
@@ -83,10 +87,16 @@ public class SlotServiceTest {
 
     private static class StubBranchPortOut implements BranchPortOut {
         boolean exists = true;
+        ZoneId zone = WARSAW;
 
         @Override
         public boolean existsActiveById(BranchId branchId) {
             return exists;
+        }
+
+        @Override
+        public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
+            return exists ? Optional.of(zone) : Optional.empty();
         }
 
         @Override
@@ -422,6 +432,40 @@ public class SlotServiceTest {
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TODAY));
         assertThat(view.days().getFirst().slots().getFirst().startTime())
                 .isEqualTo(LocalTime.of(10, 15));
+    }
+
+    @Test
+    void test_from_is_past_in_the_branch_zone_but_not_in_warsaw() {
+        Instant boundary = TODAY.atTime(23, 30).atZone(WARSAW).toInstant();
+        assertThat(boundary.atZone(WARSAW).toLocalDate()).isEqualTo(TODAY);
+        assertThat(boundary.atZone(KYIV).toLocalDate()).isEqualTo(TOMORROW);
+        SlotService service = new SlotService(branchPortOut, servicePortOut, availabilityPortOut,
+                Clock.fixed(boundary, ZoneId.systemDefault()));
+        seedHappyPath();
+
+        branchPortOut.zone = KYIV;
+        assertThatThrownBy(() -> service.getSlots(query(List.of(1), TODAY, TODAY)))
+                .isInstanceOf(InvalidSlotQueryException.class);
+
+        branchPortOut.zone = WARSAW;
+        assertThat(service.getSlots(query(List.of(1), TODAY, TODAY)).days())
+                .extracting(DaySlotsView::date).containsExactly(TODAY);
+    }
+
+    @Test
+    void test_today_clamp_uses_the_branch_local_now() {
+        assertThat(CLOCK.instant().atZone(WARSAW).toLocalTime()).isEqualTo(LocalTime.of(10, 7));
+        assertThat(CLOCK.instant().atZone(KYIV).toLocalTime()).isEqualTo(LocalTime.of(11, 7));
+        branchPortOut.zone = KYIV;
+        seedHappyPath();
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 1, BAY_ID));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 2, UserId.of(EMPLOYEE_ID)));
+
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TODAY));
+
+        assertThat(view.days().getFirst().slots().getFirst().startTime()).isEqualTo(LocalTime.of(11, 15));
     }
 
     @Test
