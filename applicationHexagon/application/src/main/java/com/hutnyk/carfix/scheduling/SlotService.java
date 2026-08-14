@@ -28,6 +28,7 @@ import com.hutnyk.carfix.user.UserId;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,10 +57,14 @@ public class SlotService implements SlotPortIn {
     @Override
     @Transactional(readOnly = true)
     public BranchSlotsView getSlots(BranchSlotsQuery query) {
-        validate(query);
+        validateShape(query);
         BranchId branchId = BranchId.of(query.branchId());
-        if (!branchPortOut.existsActiveById(branchId)) {
-            throw new BranchNotFoundException(query.branchId());
+        ZoneId branchZone = branchPortOut.findActiveBranchZone(branchId)
+                .orElseThrow(() -> new BranchNotFoundException(query.branchId()));
+        Clock branchClock = clock.withZone(branchZone);
+        LocalDate today = LocalDate.now(branchClock);
+        if (query.from().isBefore(today)) {
+            throw new InvalidSlotQueryException("from must not be in the past");
         }
         List<Service> services = loadServices(query.serviceIds(), branchId);
         List<LocalDate> dates = query.from().datesUntil(query.to().plusDays(1)).toList();
@@ -117,8 +122,7 @@ public class SlotService implements SlotPortIn {
                 EquipmentBooking::getDate, EquipmentBooking::getEquipmentId,
                 EquipmentBooking::getBookedTime);
 
-        LocalDateTime now = LocalDateTime.now(clock);
-        LocalDate today = LocalDate.now(clock);
+        LocalDateTime now = LocalDateTime.now(branchClock);
         List<DaySlotsView> days = new ArrayList<>();
         for (LocalDate date : dates) {
             List<BaySchedule> baySchedules = bays.stream()
@@ -147,7 +151,7 @@ public class SlotService implements SlotPortIn {
         return new BranchSlotsView(true, List.copyOf(days));
     }
 
-    private void validate(BranchSlotsQuery query) {
+    private void validateShape(BranchSlotsQuery query) {
         List<Integer> ids = query.serviceIds();
         if (ids == null || ids.isEmpty()) {
             throw new InvalidSlotQueryException("at least one serviceId is required");
@@ -166,9 +170,6 @@ public class SlotService implements SlotPortIn {
         }
         if (ChronoUnit.DAYS.between(query.from(), query.to()) + 1 > MAX_RANGE_DAYS) {
             throw new InvalidSlotQueryException("date range must be at most " + MAX_RANGE_DAYS + " days");
-        }
-        if (query.from().isBefore(LocalDate.now(clock))) {
-            throw new InvalidSlotQueryException("from must not be in the past");
         }
     }
 
