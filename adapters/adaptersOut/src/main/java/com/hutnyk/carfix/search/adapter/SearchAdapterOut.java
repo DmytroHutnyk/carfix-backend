@@ -279,12 +279,19 @@ public class SearchAdapterOut implements SearchPortOut {
                                     : null,
                             (BigDecimal) row[7],
                             row[8] != null ? ((Number) row[8]).intValue() : null,
-                            matchedServices.getOrDefault(branchId, List.of()));
+                            matchedServices.getOrDefault(branchId, List.of()),
+                            null, null);
                 })
                 .toList();
 
         int totalPages = (int) Math.ceil((double) total / query.size());
         return new WorkshopSearchPage(content, query.page(), query.size(), total, totalPages, null);
+    }
+
+    @Override
+    public List<WorkshopResultView> findAvailabilityCandidates(
+            WorkshopSearchQuery query, Integer brandId, int limit) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

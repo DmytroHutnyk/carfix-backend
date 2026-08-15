@@ -86,13 +86,13 @@ public class SearchService implements SearchPortIn {
                 city, voivodeship, country,
                 query.lat(), query.lng(), query.radiusKm(),
                 query.carProfileId(), query.page(), query.size(),
-                sort, query.pinnedBranchId());
+                sort, query.pinnedBranchId(), query.availability());
 
         String categoryName = categoryId != null
                 ? searchPortOut.findCategoryName(categoryId).orElse(null)
                 : null;
         SearchEchoView echo = new SearchEchoView(
-                q, serviceName, categoryId, categoryName, city, voivodeship, country);
+                q, serviceName, categoryId, categoryName, city, voivodeship, country, null);
 
         return searchPortOut.searchWorkshops(normalized, brandId).withEcho(echo);
     }

@@ -32,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -70,6 +71,21 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
                 .stream()
                 .map(EquipmentMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Map<BranchId, List<ServiceBay>> loadActiveBaysByBranch(Collection<BranchId> branchIds) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<BranchId, List<EmployeeCandidateView>> loadActiveEmployeesByBranch(Collection<BranchId> branchIds) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<BranchId, List<Equipment>> loadActiveEquipmentByBranch(Collection<BranchId> branchIds) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

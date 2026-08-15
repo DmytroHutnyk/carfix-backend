@@ -43,7 +43,8 @@ public class SearchControllerTest {
                 new BigDecimal("52.180000"), new BigDecimal("21.020000"), distanceKm,
                 rating, reviewCount,
                 List.of(new MatchedServiceView(9, "Brake pads replacement",
-                        new BigDecimal("150.00"), (short) 60, "Brakes")));
+                        new BigDecimal("150.00"), (short) 60, "Brakes")),
+                "Europe/Warsaw", null);
     }
 
     private static final class StubSearchPortIn implements SearchPortIn {
@@ -76,7 +77,7 @@ public class SearchControllerTest {
                 throw toThrow;
             }
             return new WorkshopSearchPage(List.of(card(distanceKm, rating, reviewCount)), 0, 20, 1, 1,
-                    new SearchEchoView("brake", null, null, null, "Warsaw", null, null));
+                    new SearchEchoView("brake", null, null, null, "Warsaw", null, null, null));
         }
     }
 

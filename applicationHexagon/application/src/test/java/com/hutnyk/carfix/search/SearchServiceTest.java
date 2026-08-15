@@ -12,6 +12,7 @@ import com.hutnyk.carfix.in.search.query.CategorySuggestionView;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsView;
 import com.hutnyk.carfix.in.search.query.ServiceSuggestionView;
+import com.hutnyk.carfix.in.search.query.WorkshopResultView;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
@@ -103,6 +104,12 @@ public class SearchServiceTest {
             return WorkshopSearchPage.empty(query.page(), query.size());
         }
 
+        @Override
+        public List<WorkshopResultView> findAvailabilityCandidates(
+                WorkshopSearchQuery query, Integer brandId, int limit) {
+            throw new UnsupportedOperationException();
+        }
+
         Optional<String> categoryName = Optional.of("Brakes");
         Integer receivedCategoryNameId;
 
@@ -170,12 +177,12 @@ public class SearchServiceTest {
 
     private static WorkshopSearchQuery query(String q, String serviceName, Integer categoryId, UUID carProfileId) {
         return new WorkshopSearchQuery(q, serviceName, categoryId, CITY, null, null,
-                null, null, null, carProfileId, 0, 20, null, null);
+                null, null, null, carProfileId, 0, 20, null, null, null);
     }
 
     private static WorkshopSearchQuery geoQuery(String city, BigDecimal lat, BigDecimal lng, Double radiusKm) {
         return new WorkshopSearchQuery("tire", null, null, city, null, null,
-                lat, lng, radiusKm, null, 0, 20, null, null);
+                lat, lng, radiusKm, null, 0, 20, null, null, null);
     }
 
     private static SearchSuggestionsQuery suggestionsQuery(String q) {
@@ -323,7 +330,7 @@ public class SearchServiceTest {
     public void test_search_without_any_filter_is_browse_mode() {
         //given
         WorkshopSearchQuery browse = new WorkshopSearchQuery(null, null, null, null, null, null,
-                null, null, null, null, 0, 20, null, null);
+                null, null, null, null, 0, 20, null, null, null);
 
         //when
         service.searchWorkshops(browse, null);
@@ -363,7 +370,7 @@ public class SearchServiceTest {
     public void test_search_without_location_passes_through() {
         //given
         WorkshopSearchQuery noLocation = new WorkshopSearchQuery("tire", null, null, null, null, null,
-                null, null, null, null, 0, 20, null, null);
+                null, null, null, null, 0, 20, null, null, null);
 
         //when
         service.searchWorkshops(noLocation, null);
@@ -378,7 +385,7 @@ public class SearchServiceTest {
     public void test_search_blank_location_normalized_to_null_passes_through() {
         //given
         WorkshopSearchQuery blankLocation = new WorkshopSearchQuery("tire", null, null, "  ", " ", "",
-                null, null, null, null, 0, 20, null, null);
+                null, null, null, null, 0, 20, null, null, null);
 
         //when
         service.searchWorkshops(blankLocation, null);
@@ -391,7 +398,7 @@ public class SearchServiceTest {
     public void test_search_accepts_voivodeship_only() {
         //given
         WorkshopSearchQuery voivodeshipOnly = new WorkshopSearchQuery("tire", null, null,
-                null, "Masovian Voivodeship", null, null, null, null, null, 0, 20, null, null);
+                null, "Masovian Voivodeship", null, null, null, null, null, 0, 20, null, null, null);
 
         //when
         service.searchWorkshops(voivodeshipOnly, null);
@@ -405,7 +412,7 @@ public class SearchServiceTest {
     public void test_search_accepts_country_only() {
         //given
         WorkshopSearchQuery countryOnly = new WorkshopSearchQuery("tire", null, null,
-                null, null, "Poland", null, null, null, null, 0, 20, null, null);
+                null, null, "Poland", null, null, null, null, 0, 20, null, null, null);
 
         //when
         service.searchWorkshops(countryOnly, null);
@@ -458,7 +465,7 @@ public class SearchServiceTest {
     public void test_search_rejects_page_size_over_the_maximum() {
         //given
         WorkshopSearchQuery oversized = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
-                null, null, null, null, 0, 99, null, null);
+                null, null, null, null, 0, 99, null, null, null);
 
         //when + then
         assertThatThrownBy(() -> service.searchWorkshops(oversized, null))
@@ -470,7 +477,7 @@ public class SearchServiceTest {
     public void test_search_rejects_negative_page() {
         //given
         WorkshopSearchQuery negativePage = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
-                null, null, null, null, -1, 20, null, null);
+                null, null, null, null, -1, 20, null, null, null);
 
         //when + then
         assertThatThrownBy(() -> service.searchWorkshops(negativePage, null))
@@ -556,7 +563,7 @@ public class SearchServiceTest {
     public void test_search_browse_echo_is_all_null() {
         //given
         WorkshopSearchQuery browse = new WorkshopSearchQuery(null, null, null, null, null, null,
-                null, null, null, null, 0, 20, null, null);
+                null, null, null, null, 0, 20, null, null, null);
 
         //when
         WorkshopSearchPage result = service.searchWorkshops(browse, null);
@@ -629,7 +636,7 @@ public class SearchServiceTest {
         StubSearchPortOut searchPort = new StubSearchPortOut();
         SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
         WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
-                BigDecimal.valueOf(52.2), BigDecimal.valueOf(21.0), null, null, 0, 20, "NAME", null);
+                BigDecimal.valueOf(52.2), BigDecimal.valueOf(21.0), null, null, 0, 20, "NAME", null, null);
 
         //when
         service.searchWorkshops(query, null);
@@ -644,7 +651,7 @@ public class SearchServiceTest {
         StubSearchPortOut searchPort = new StubSearchPortOut();
         SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
         WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
-                null, null, null, null, 0, 20, "distance", null);
+                null, null, null, null, 0, 20, "distance", null, null);
 
         //when / then
         assertThatThrownBy(() -> service.searchWorkshops(query, null))
@@ -658,7 +665,7 @@ public class SearchServiceTest {
         StubSearchPortOut searchPort = new StubSearchPortOut();
         SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
         WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
-                null, null, null, null, 0, 20, "rating", null);
+                null, null, null, null, 0, 20, "rating", null, null);
 
         //when / then
         assertThatThrownBy(() -> service.searchWorkshops(query, null))
@@ -673,7 +680,7 @@ public class SearchServiceTest {
         SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
         UUID pinned = UUID.randomUUID();
         WorkshopSearchQuery query = new WorkshopSearchQuery("kowalski", null, null, CITY, null, null,
-                null, null, null, null, 0, 20, null, pinned);
+                null, null, null, null, 0, 20, null, pinned, null);
 
         //when
         service.searchWorkshops(query, null);

@@ -64,7 +64,7 @@ public class SearchController {
         WorkshopSearchQuery query = new WorkshopSearchQuery(
                 q, serviceName, categoryId, city, voivodeship, country,
                 lat, lng, radiusKm, carProfileId, page, size,
-                sort, pinnedBranchId);
+                sort, pinnedBranchId, null);
         String principalEmail = principal != null ? principal.getUsername() : null;
         return ResponseEntity.ok(SearchResponseMapper.toResponse(
                 searchPortIn.searchWorkshops(query, principalEmail)));
