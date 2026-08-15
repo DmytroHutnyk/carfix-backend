@@ -58,6 +58,7 @@ public class SlotService implements SlotPortIn {
     @Transactional(readOnly = true)
     public BranchSlotsView getSlots(BranchSlotsQuery query) {
         validateShape(query);
+
         BranchId branchId = BranchId.of(query.branchId());
         ZoneId branchZone = branchPortOut.findActiveBranchZone(branchId)
                 .orElseThrow(() -> new BranchNotFoundException(query.branchId()));
@@ -66,6 +67,7 @@ public class SlotService implements SlotPortIn {
         if (query.from().isBefore(today)) {
             throw new InvalidSlotQueryException("from must not be in the past");
         }
+
         List<Service> services = loadServices(query.serviceIds(), branchId);
         List<LocalDate> dates = query.from().datesUntil(query.to().plusDays(1)).toList();
 
@@ -97,27 +99,27 @@ public class SlotService implements SlotPortIn {
         LocalDate from = query.from();
         LocalDate to = query.to();
 
-        Map<LocalDate, Map<Integer, List<TimeRange>>> bayAvail = byDateAndResource(
+        Map<LocalDate, Map<Integer, List<TimeRange>>> bayAvailability = byDateAndResource(
                 availabilityPortOut.loadBayAvailability(bayIds, from, to),
                 ServiceBayAvailability::getDate, ServiceBayAvailability::getServiceBayId,
                 ServiceBayAvailability::getAvailableTime);
-        Map<LocalDate, Map<Integer, List<TimeRange>>> bayOcc = byDateAndResource(
+        Map<LocalDate, Map<Integer, List<TimeRange>>> bayOccupancy = byDateAndResource(
                 availabilityPortOut.loadBayOccupancy(bayIds, from, to),
                 ServiceBayBooking::getDate, ServiceBayBooking::getServiceBayId,
                 ServiceBayBooking::getBookedTime);
-        Map<LocalDate, Map<UserId, List<TimeRange>>> employeeAvail = byDateAndResource(
+        Map<LocalDate, Map<UserId, List<TimeRange>>> employeeAvailability = byDateAndResource(
                 availabilityPortOut.loadEmployeeAvailability(employeeIds, from, to),
                 EmployeeAvailability::getDate, EmployeeAvailability::getEmployeeId,
                 EmployeeAvailability::getAvailableTime);
-        Map<LocalDate, Map<UserId, List<TimeRange>>> employeeOcc = byDateAndResource(
+        Map<LocalDate, Map<UserId, List<TimeRange>>> employeeOccupancy = byDateAndResource(
                 availabilityPortOut.loadEmployeeOccupancy(employeeIds, from, to),
                 EmployeeBooking::getDate, EmployeeBooking::getEmployeeId,
                 EmployeeBooking::getBookedTime);
-        Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentAvail = byDateAndResource(
+        Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentAvailability = byDateAndResource(
                 availabilityPortOut.loadEquipmentAvailability(equipmentIds, from, to),
                 EquipmentAvailability::getDate, EquipmentAvailability::getEquipmentId,
                 EquipmentAvailability::getAvailableTime);
-        Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentOcc = byDateAndResource(
+        Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentOccupancy = byDateAndResource(
                 availabilityPortOut.loadEquipmentOccupancy(equipmentIds, from, to),
                 EquipmentBooking::getDate, EquipmentBooking::getEquipmentId,
                 EquipmentBooking::getBookedTime);
@@ -127,17 +129,17 @@ public class SlotService implements SlotPortIn {
         for (LocalDate date : dates) {
             List<BaySchedule> baySchedules = bays.stream()
                     .map(b -> new BaySchedule(b.getId(), b.getServiceBayTypeId(),
-                            freeOf(bayAvail, bayOcc, date, b.getId())))
+                            freeOf(bayAvailability, bayOccupancy, date, b.getId())))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EmployeeSchedule> employeeSchedules = relevantEmployees.stream()
                     .map(e -> new EmployeeSchedule(UserId.of(e.employeeId()), e.roleIds(),
-                            freeOf(employeeAvail, employeeOcc, date, UserId.of(e.employeeId()))))
+                            freeOf(employeeAvailability, employeeOccupancy, date, UserId.of(e.employeeId()))))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EquipmentSchedule> equipmentSchedules = relevantEquipment.stream()
                     .map(e -> new EquipmentSchedule(e.getId(), e.getEquipmentTypeId(),
-                            freeOf(equipmentAvail, equipmentOcc, date, e.getId())))
+                            freeOf(equipmentAvailability, equipmentOccupancy, date, e.getId())))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
 
@@ -189,6 +191,11 @@ public class SlotService implements SlotPortIn {
         return common;
     }
 
+    // Check before loading any schedules: can this branch do the job at all?
+    // Every employee requirement must be matched by at least one active employee (shared role).
+    // Does not look at time, and the same employee may cover several requirements here,
+    // RequirementMatcher later forces a different person per requirement, per segment.
+    // False means no slot can exist on any date, so we skip the availability queries.
     private static boolean staffable(List<Service> services, List<EmployeeCandidateView> employees) {
         return services.stream()
                 .flatMap(s -> s.getEmployeeRequirements().stream())
@@ -196,6 +203,7 @@ public class SlotService implements SlotPortIn {
                         .anyMatch(e -> !Collections.disjoint(e.roleIds(), req.getRoleIds())));
     }
 
+    // Same quick check for equipment, matched by type instead of role.
     private static boolean equippable(List<Service> services, List<Equipment> equipment) {
         return services.stream()
                 .flatMap(s -> s.getEquipmentRequirements().stream())
