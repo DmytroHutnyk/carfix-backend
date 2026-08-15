@@ -19,6 +19,9 @@ import com.hutnyk.carfix.in.scheduling.query.BranchSlotsView;
 import com.hutnyk.carfix.in.scheduling.query.DaySlotsView;
 import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
 import com.hutnyk.carfix.in.scheduling.query.SlotView;
+import com.hutnyk.carfix.openingHours.DayOfWeek;
+import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
@@ -41,6 +44,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -83,6 +87,12 @@ public class SlotServiceTest {
                 ServiceStatus.ACTIVE, BRANCH_ID, 1, Set.of(LIFT),
                 List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(MECHANIC))),
                 List.of(EquipmentRequirement.of(1, "Jack", Set.of(JACK_TYPE))));
+    }
+
+    private static List<OpeningHours> allWeek(LocalTime open, LocalTime close) {
+        return Arrays.stream(DayOfWeek.values())
+                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .toList();
     }
 
     private static class StubBranchPortOut implements BranchPortOut {
@@ -149,6 +159,11 @@ public class SlotServiceTest {
         Collection<Integer> lastEquipmentOccIds;
         LocalDate lastEquipmentOccFrom;
         LocalDate lastEquipmentOccTo;
+        List<OpeningHours> openingHours = new ArrayList<>(allWeek(LocalTime.of(6, 0), LocalTime.of(22, 0)));
+        List<OpeningHoursException> openingHoursExceptions = new ArrayList<>();
+        boolean openingHoursLoaded = false;
+        LocalDate lastExceptionsFrom;
+        LocalDate lastExceptionsTo;
 
         @Override
         public List<ServiceBay> loadActiveBays(BranchId branchId) {
@@ -219,6 +234,19 @@ public class SlotServiceTest {
             lastEquipmentOccFrom = from;
             lastEquipmentOccTo = to;
             return equipmentOccupancy;
+        }
+
+        @Override
+        public List<OpeningHours> loadOpeningHours(BranchId branchId) {
+            openingHoursLoaded = true;
+            return openingHours;
+        }
+
+        @Override
+        public List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to) {
+            lastExceptionsFrom = from;
+            lastExceptionsTo = to;
+            return openingHoursExceptions;
         }
     }
 

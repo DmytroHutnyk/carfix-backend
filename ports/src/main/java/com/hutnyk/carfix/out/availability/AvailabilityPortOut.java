@@ -7,6 +7,8 @@ import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
 import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
@@ -35,4 +37,10 @@ public interface AvailabilityPortOut {
     List<EquipmentAvailability> loadEquipmentAvailability(Collection<Integer> equipmentIds, LocalDate from, LocalDate to);
 
     List<EquipmentBooking> loadEquipmentOccupancy(Collection<Integer> equipmentIds, LocalDate from, LocalDate to);
+
+    /** The branch's weekly opening_hours rows (all weekdays it has rows for). */
+    List<OpeningHours> loadOpeningHours(BranchId branchId);
+
+    /** Per-date overrides of the weekly hours whose date lies in [from, to] (both inclusive). */
+    List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to);
 }
