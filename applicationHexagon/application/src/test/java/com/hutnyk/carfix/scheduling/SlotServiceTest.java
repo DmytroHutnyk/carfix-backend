@@ -558,4 +558,128 @@ public class SlotServiceTest {
         assertThat(view.chainable()).isTrue();
         assertThat(view.days()).allSatisfy(day -> assertThat(day.slots()).isEmpty());
     }
+
+    private static List<OpeningHours> monToFri(LocalTime open, LocalTime close) {
+        return List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
+                .stream()
+                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .toList();
+    }
+
+    private void seedDay(LocalDate date, LocalTime from, LocalTime to) {
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                10, TimeRange.of(date.atTime(from), date.atTime(to)), date, 1, BAY_ID));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                11, TimeRange.of(date.atTime(from), date.atTime(to)), date, 2, UserId.of(EMPLOYEE_ID)));
+    }
+
+    private static List<LocalTime> starts(BranchSlotsView view, LocalDate date) {
+        return view.days().stream()
+                .filter(d -> d.date().equals(date))
+                .findFirst().orElseThrow()
+                .slots().stream().map(SlotView::startTime).toList();
+    }
+
+    @Test
+    void test_week_of_closed_days_returns_empty_days_without_loading_anything_else() {
+        //given
+        seedHappyPath();
+        LocalDate saturday = TOMORROW.plusDays(1);
+        LocalDate sunday = TOMORROW.plusDays(2);
+        seedDay(saturday, LocalTime.of(9, 0), LocalTime.of(12, 0));
+        availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
+        //when
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), saturday, sunday));
+        //then
+        assertThat(view.chainable()).isTrue();
+        assertThat(view.days()).extracting(DaySlotsView::date).containsExactly(saturday, sunday);
+        assertThat(view.days()).allSatisfy(day -> assertThat(day.slots()).isEmpty());
+        assertThat(availabilityPortOut.openingHoursLoaded).isTrue();
+        assertThat(availabilityPortOut.resourcesLoaded).isFalse();
+        assertThat(availabilityPortOut.calendarsLoaded).isFalse();
+    }
+
+    @Test
+    void test_closed_days_inside_the_range_are_empty_while_open_days_keep_their_slots() {
+        //given
+        seedHappyPath();
+        LocalDate saturday = TOMORROW.plusDays(1);
+        seedDay(saturday, LocalTime.of(9, 0), LocalTime.of(12, 0));
+        availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
+        //when
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, saturday));
+        //then
+        assertThat(starts(view, TOMORROW)).startsWith(LocalTime.of(9, 0)).endsWith(LocalTime.of(11, 0));
+        assertThat(starts(view, saturday)).isEmpty();
+    }
+
+    @Test
+    void test_closed_exception_empties_a_weekly_open_day() {
+        //given
+        seedHappyPath();
+        availabilityPortOut.openingHoursExceptions.add(OpeningHoursException.of(
+                null, TOMORROW, null, null, false, "inventory", BRANCH_ID));
+        //when
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW.plusDays(1)));
+        //then
+        assertThat(starts(view, TOMORROW)).isEmpty();
+        assertThat(availabilityPortOut.lastExceptionsFrom).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastExceptionsTo).isEqualTo(TOMORROW.plusDays(1));
+    }
+
+    @Test
+    void test_open_exception_opens_a_weekly_closed_day() {
+        //given
+        servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)));
+        availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EMPLOYEE_ID, Set.of(MECHANIC)));
+        LocalDate saturday = TOMORROW.plusDays(1);
+        seedDay(saturday, LocalTime.of(9, 0), LocalTime.of(12, 0));
+        availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
+        availabilityPortOut.openingHoursExceptions.add(OpeningHoursException.of(
+                null, saturday, LocalTime.of(9, 0), LocalTime.of(12, 0), true, null, BRANCH_ID));
+        //when
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), saturday, saturday));
+        //then
+        assertThat(starts(view, saturday)).hasSize(9)
+                .startsWith(LocalTime.of(9, 0)).endsWith(LocalTime.of(11, 0));
+    }
+
+    @Test
+    void test_opening_hours_clip_resource_availability() {
+        //given
+        seedHappyPath();
+        availabilityPortOut.openingHours = new ArrayList<>(
+                allWeek(LocalTime.of(10, 0), LocalTime.of(11, 30)));
+        //when
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW));
+        //then
+        assertThat(starts(view, TOMORROW))
+                .containsExactly(LocalTime.of(10, 0), LocalTime.of(10, 15), LocalTime.of(10, 30));
+    }
+
+    @Test
+    void test_visit_cannot_span_a_closed_break_between_two_opening_windows() {
+        //given
+        seedHappyPath();
+        availabilityPortOut.openingHours = new ArrayList<>();
+        availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(10, 0), BRANCH_ID));
+        availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(11, 0), LocalTime.of(12, 0), BRANCH_ID));
+        //when
+        BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW));
+        //then
+        assertThat(starts(view, TOMORROW)).containsExactly(LocalTime.of(9, 0), LocalTime.of(11, 0));
+    }
+
+    @Test
+    void test_unchainable_pair_is_reported_before_the_calendar_is_consulted() {
+        //given
+        servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)), service(2, Set.of(LIFT + 1)));
+        availabilityPortOut.openingHours = new ArrayList<>();
+        //when
+        BranchSlotsView view = slotService.getSlots(query(List.of(1, 2), TOMORROW, TOMORROW));
+        //then
+        assertThat(view.chainable()).isFalse();
+        assertThat(availabilityPortOut.openingHoursLoaded).isFalse();
+    }
 }

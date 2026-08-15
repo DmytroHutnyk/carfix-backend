@@ -14,6 +14,7 @@ import com.hutnyk.carfix.in.scheduling.query.BranchSlotsView;
 import com.hutnyk.carfix.in.scheduling.query.DaySlotsView;
 import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
 import com.hutnyk.carfix.in.scheduling.query.SlotView;
+import com.hutnyk.carfix.openingHours.OpeningCalendar;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
@@ -33,6 +34,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,6 +76,22 @@ public class SlotService implements SlotPortIn {
         Set<Integer> commonBayTypes = commonBayTypes(services);
         if (commonBayTypes.isEmpty()) {
             return new BranchSlotsView(branchZone.getId(), false, emptyDays(dates));
+        }
+
+        // Branch opening hours bound every day: a closed day gets no slot math at all, and an open
+        // day only offers time inside its opening window (weekly rows, or that date's exceptions).
+        OpeningCalendar calendar = OpeningCalendar.of(
+                availabilityPortOut.loadOpeningHours(branchId),
+                availabilityPortOut.loadOpeningHoursExceptions(branchId, query.from(), query.to()));
+        Map<LocalDate, List<TimeRange>> openByDate = new LinkedHashMap<>();
+        for (LocalDate date : dates) {
+            List<TimeRange> open = calendar.openRanges(date);
+            if (!open.isEmpty()) {
+                openByDate.put(date, open);
+            }
+        }
+        if (openByDate.isEmpty()) {
+            return new BranchSlotsView(branchZone.getId(), true, emptyDays(dates));
         }
 
         List<ServiceBay> bays = availabilityPortOut.loadActiveBays(branchId).stream()
@@ -127,19 +145,24 @@ public class SlotService implements SlotPortIn {
         LocalDateTime now = LocalDateTime.now(branchClock);
         List<DaySlotsView> days = new ArrayList<>();
         for (LocalDate date : dates) {
+            List<TimeRange> open = openByDate.get(date);
+            if (open == null) {
+                days.add(new DaySlotsView(date, List.of()));
+                continue;
+            }
             List<BaySchedule> baySchedules = bays.stream()
                     .map(b -> new BaySchedule(b.getId(), b.getServiceBayTypeId(),
-                            freeOf(bayAvailability, bayOccupancy, date, b.getId())))
+                            freeOf(bayAvailability, bayOccupancy, date, b.getId(), open)))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EmployeeSchedule> employeeSchedules = relevantEmployees.stream()
                     .map(e -> new EmployeeSchedule(UserId.of(e.employeeId()), e.roleIds(),
-                            freeOf(employeeAvailability, employeeOccupancy, date, UserId.of(e.employeeId()))))
+                            freeOf(employeeAvailability, employeeOccupancy, date, UserId.of(e.employeeId()), open)))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EquipmentSchedule> equipmentSchedules = relevantEquipment.stream()
                     .map(e -> new EquipmentSchedule(e.getId(), e.getEquipmentTypeId(),
-                            freeOf(equipmentAvailability, equipmentOccupancy, date, e.getId())))
+                            freeOf(equipmentAvailability, equipmentOccupancy, date, e.getId(), open)))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
 
@@ -236,9 +259,11 @@ public class SlotService implements SlotPortIn {
     private static <K> List<TimeRange> freeOf(
             Map<LocalDate, Map<K, List<TimeRange>>> avail,
             Map<LocalDate, Map<K, List<TimeRange>>> occ,
-            LocalDate date, K resourceId) {
-        return TimeRanges.free(
-                avail.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of()),
-                occ.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of()));
+            LocalDate date, K resourceId, List<TimeRange> open) {
+        return TimeRanges.intersect(
+                TimeRanges.free(
+                        avail.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of()),
+                        occ.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of())),
+                open);
     }
 }
