@@ -176,9 +176,11 @@ public class BookingServiceTest {
 
     private static final class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
+        boolean loaded;
 
         @Override
         public List<Service> loadByIds(Collection<Integer> serviceIds) {
+            this.loaded = true;
             return toReturn;
         }
     }
@@ -408,15 +410,15 @@ public class BookingServiceTest {
     }
 
     @Test
-    public void createBookingConflictsForAPastStartInTheBranchZone() {
+    public void createBookingRejectsAPastStartBeforeLoadingAnything() {
         seedBookableTomorrow();
-        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
-                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 1, BAY_ID));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 2, UserId.of(ANNA)));
 
         assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TODAY, LocalTime.of(9, 0))))
-                .isInstanceOf(SlotNotAvailableException.class);
+                .isInstanceOf(InvalidBookingRequestException.class)
+                .hasMessageContaining("past");
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TODAY.minusDays(1), LocalTime.of(9, 0))))
+                .isInstanceOf(InvalidBookingRequestException.class);
+        assertThat(servicePortOut.loaded).isFalse();
         assertThat(bookingPortOut.inserted).isNull();
     }
 

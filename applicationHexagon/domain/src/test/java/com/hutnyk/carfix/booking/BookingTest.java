@@ -22,6 +22,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -31,7 +32,6 @@ import java.util.UUID;
 
 public class BookingTest {
 
-    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
     private static final BranchId BRANCH_ID = BranchId.genId();
     private static final UserId ANNA = UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
@@ -104,7 +104,7 @@ public class BookingTest {
         CarProfileId carProfileId = CarProfileId.genId();
 
         Booking booking = Booking.schedule(id, BRANCH_ID, carProfileId, plan(date),
-                List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), WARSAW);
+                List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), LocalDateTime.of(2030, 6, 12, 8, 0));
 
         assertThat(booking.getId()).isEqualTo(id);
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.SCHEDULED);
@@ -121,14 +121,35 @@ public class BookingTest {
     @Test
     public void scheduleRejectsAPlanWhoseServiceIsNotInTheChain() {
         assertThatThrownBy(() -> Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(),
-                plan(LocalDate.of(2030, 6, 12)), List.of(service(11, 50, "120.00")), WARSAW))
+                plan(LocalDate.of(2030, 6, 12)), List.of(service(11, 50, "120.00")), LocalDateTime.of(2030, 6, 12, 8, 0)))
                 .isInstanceOf(UnexpectedStateException.class);
     }
 
     @Test
     public void scheduleRejectsAStartInThePast() {
         assertThatThrownBy(() -> Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(),
-                plan(LocalDate.of(2020, 6, 12)), List.of(service(11, 50, "120.00"), service(27, 90, "300.00")), WARSAW))
+                plan(LocalDate.of(2020, 6, 12)), List.of(service(11, 50, "120.00"), service(27, 90, "300.00")), LocalDateTime.of(2030, 6, 12, 8, 0)))
+                .isInstanceOf(DomainObjectValidationException.class);
+    }
+
+    @Test
+    public void scheduleAcceptsAStartEqualToNow() {
+        //given
+        LocalDate date = LocalDate.of(2030, 6, 12);
+        //when
+        Booking booking = Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(), plan(date),
+                List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), date.atTime(9, 0));
+        //then
+        assertThat(booking.getStartTime()).isEqualTo(LocalTime.of(9, 0));
+    }
+
+    @Test
+    public void scheduleRejectsAStartOneMinuteBeforeNow() {
+        //given
+        LocalDate date = LocalDate.of(2030, 6, 12);
+        //when //then
+        assertThatThrownBy(() -> Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(), plan(date),
+                List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), date.atTime(9, 1)))
                 .isInstanceOf(DomainObjectValidationException.class);
     }
 

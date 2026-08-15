@@ -18,6 +18,7 @@ import lombok.With;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -95,8 +96,8 @@ public final class Booking {
 
     /**
      * Creates a brand-new booking from a feasible visit plan: the span is the plan's span, every
-     * segment snapshots the service's current price, and the start must not be in the past
-     * (in the branch's zone).
+     * segment snapshots the service's current price, and the start must not be before {@code now},
+     * the branch's wall-clock now.
      */
     public static Booking schedule(
             BookingId id,
@@ -104,7 +105,7 @@ public final class Booking {
             CarProfileId carProfileId,
             VisitPlan plan,
             List<Service> services,
-            ZoneId branchZone) {
+            LocalDateTime now) {
         notNull(plan, "plan");
         if (plan.segments().isEmpty()) {
             throw new DomainObjectValidationException(
@@ -117,7 +118,9 @@ public final class Booking {
                 .toList();
         LocalDate date = plan.start().toLocalDate();
         LocalTime startTime = plan.start().toLocalTime();
-        notInPast(date, startTime, branchZone, "date");
+        if (plan.start().isBefore(notNull(now, "now"))) {
+            throw new DomainObjectValidationException(ValidationErrorType.DATE_IN_PAST, "date", date);
+        }
         return Booking.builder()
                 .id(id)
                 .date(date)

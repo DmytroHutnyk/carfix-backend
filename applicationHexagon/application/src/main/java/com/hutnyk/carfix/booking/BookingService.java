@@ -82,15 +82,19 @@ public class BookingService implements BookingPortIn {
         BranchId branchId = BranchId.of(cmd.branchId());
         ZoneId branchZone = branchPortOut.findActiveBranchZone(branchId)
                 .orElseThrow(() -> new BranchNotFoundException(cmd.branchId()));
-        List<Service> services = scheduleLoader.loadServices(cmd.serviceIds(), branchId);
+        LocalDateTime now = LocalDateTime.now(clock.withZone(branchZone));
 
         LocalDateTime start = cmd.date().atTime(cmd.startTime());
-        LocalDateTime now = LocalDateTime.now(clock.withZone(branchZone));
+        if (start.isBefore(now)) {
+            throw new InvalidBookingRequestException("startTime", "start must not be in the past");
+        }
+
+        List<Service> services = scheduleLoader.loadServices(cmd.serviceIds(), branchId);
         VisitPlan plan = planVisit(branchId, services, start, now)
                 .orElseThrow(() -> new SlotNotAvailableException(cmd.date(), cmd.startTime()));
 
         Booking booking = Booking.schedule(
-                BookingId.genId(), branchId, CarProfileId.of(cmd.carProfileId()), plan, services, branchZone);
+                BookingId.genId(), branchId, CarProfileId.of(cmd.carProfileId()), plan, services, now);
         bookingPortOut.insert(booking, BookingOccupancy.of(booking.getId(), plan));
 
         return bookingPortOut.findViewByIdAndCustomerId(booking.getId().id(), customerId)
