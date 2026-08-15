@@ -37,6 +37,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -44,7 +45,10 @@ import java.util.UUID;
 @PersistenceAdapter
 public class BookingAdapterOut implements BookingPortOut {
 
-    private static final String EXCLUSION_VIOLATION_SQL_STATE = "23P01";
+    /* 23P01 exclusion_violation: the GiST constraint said no. 40P01 deadlock_detected / 40001
+       serialization_failure: Postgres aborted us while two writers waited on each other's rows —
+       equally "somebody else got there first", never a defect to 500 on. */
+    private static final Set<String> LOST_RACE_SQL_STATES = Set.of("23P01", "40P01", "40001");
     private static final int MAX_CAUSE_DEPTH = 20;
 
     private final EntityManager entityManager;
@@ -107,7 +111,7 @@ public class BookingAdapterOut implements BookingPortOut {
             }
             entityManager.flush();
         } catch (RuntimeException e) {
-            if (isExclusionViolation(e)) {
+            if (isLostSlotRace(e)) {
                 /* An expected race, not a defect: warn without a stack trace, but name the constraint
                    so a systematic collision is still visible in the log. */
                 log.warn("Booking {} for {} {} lost the slot race: {}",
@@ -135,11 +139,14 @@ public class BookingAdapterOut implements BookingPortOut {
         equipmentBookingRepository.deleteAllByBookingEntityId(id);
     }
 
-    /* Postgres reports an EXCLUDE violation as SQLSTATE 23P01. Hibernate wraps it in a
+    /* Postgres reports a lost race as one of a few SQLSTATEs. Hibernate wraps it in a
        ConstraintViolationException, Spring may wrap that again — walk the chain to the SQLException. */
-    static boolean isExclusionViolation(Throwable t) {
+    static boolean isLostSlotRace(Throwable t) {
         for (Throwable c : causeChain(t)) {
-            if (c instanceof SQLException sql && EXCLUSION_VIOLATION_SQL_STATE.equals(sql.getSQLState())) {
+            /* Set.of rejects a null lookup with an NPE, and a SQLState is nullable — an unrelated
+               driver failure must not blow up the handler that is inspecting it. */
+            if (c instanceof SQLException sql && sql.getSQLState() != null
+                    && LOST_RACE_SQL_STATES.contains(sql.getSQLState())) {
                 return true;
             }
         }
@@ -155,7 +162,8 @@ public class BookingAdapterOut implements BookingPortOut {
                 constraint = hibernate.getConstraintName();
             }
             if (c instanceof SQLException sql) {
-                return constraint == null ? sql.getMessage() : constraint + ": " + sql.getMessage();
+                return (constraint == null ? "" : constraint + ": ")
+                        + "SQLSTATE " + sql.getSQLState() + " " + sql.getMessage();
             }
         }
         return String.valueOf(t);

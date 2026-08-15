@@ -24,8 +24,8 @@ public class BookingAdapterOutTest {
         Throwable spring = new DataIntegrityViolationException("could not execute statement", new ConstraintViolationException(
                 "could not execute statement", sqlState("23P01"), "gist_time_exclusion_employees_bookings"));
 
-        assertThat(BookingAdapterOut.isExclusionViolation(hibernate)).isTrue();
-        assertThat(BookingAdapterOut.isExclusionViolation(spring)).isTrue();
+        assertThat(BookingAdapterOut.isLostSlotRace(hibernate)).isTrue();
+        assertThat(BookingAdapterOut.isLostSlotRace(spring)).isTrue();
     }
 
     @Test
@@ -33,9 +33,9 @@ public class BookingAdapterOutTest {
         Throwable unique = new PersistenceException(new ConstraintViolationException(
                 "duplicate key", sqlState("23505"), "bookings_services_pk"));
 
-        assertThat(BookingAdapterOut.isExclusionViolation(unique)).isFalse();
-        assertThat(BookingAdapterOut.isExclusionViolation(new IllegalStateException("boom"))).isFalse();
-        assertThat(BookingAdapterOut.isExclusionViolation(null)).isFalse();
+        assertThat(BookingAdapterOut.isLostSlotRace(unique)).isFalse();
+        assertThat(BookingAdapterOut.isLostSlotRace(new IllegalStateException("boom"))).isFalse();
+        assertThat(BookingAdapterOut.isLostSlotRace(null)).isFalse();
     }
 
     @Test
@@ -45,6 +45,19 @@ public class BookingAdapterOutTest {
         first.initCause(second);
 
         assertTimeoutPreemptively(Duration.ofSeconds(5),
-                () -> assertThat(BookingAdapterOut.isExclusionViolation(first)).isFalse());
+                () -> assertThat(BookingAdapterOut.isLostSlotRace(first)).isFalse());
+    }
+
+    @Test
+    public void treatsDeadlockAndSerializationFailuresAsALostRace() {
+        assertThat(BookingAdapterOut.isLostSlotRace(new PersistenceException(sqlState("40P01")))).isTrue();
+        assertThat(BookingAdapterOut.isLostSlotRace(new PersistenceException(sqlState("40001")))).isTrue();
+        assertThat(BookingAdapterOut.isLostSlotRace(new PersistenceException(sqlState("23505")))).isFalse();
+    }
+
+    @Test
+    public void survivesASqlExceptionThatCarriesNoSqlState() {
+        assertThat(BookingAdapterOut.isLostSlotRace(new PersistenceException(new SQLException("connection reset"))))
+                .isFalse();
     }
 }

@@ -73,4 +73,36 @@ public class BookingOccupancyTest {
                 .extracting(EquipmentBooking::getEquipmentId, EquipmentBooking::getBookedTime)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple(500, TimeRange.of(at(9, 0), at(9, 50))));
     }
+
+    @Test
+    public void employeeRowsAreOrderedByEmployeeThenStartAcrossSegments() {
+        //given
+        SegmentPlan first = new SegmentPlan(11, TimeRange.of(at(9, 0), at(9, 50)), Map.of(1, JAN), Map.of());
+        SegmentPlan second = new SegmentPlan(27, TimeRange.of(at(10, 0), at(11, 30)), Map.of(2, JAN, 3, ANNA), Map.of());
+        //when
+        BookingOccupancy occupancy = BookingOccupancy.of(BOOKING_ID, new VisitPlan(100, List.of(first, second)));
+        //then
+        assertThat(occupancy.employees())
+                .extracting(EmployeeBooking::getEmployeeId, e -> e.getBookedTime().lower())
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(ANNA, at(10, 0)),
+                        org.assertj.core.groups.Tuple.tuple(JAN, at(9, 0)),
+                        org.assertj.core.groups.Tuple.tuple(JAN, at(10, 0)));
+    }
+
+    @Test
+    public void equipmentRowsAreOrderedByUnitThenStartAcrossSegments() {
+        //given
+        SegmentPlan first = new SegmentPlan(11, TimeRange.of(at(9, 0), at(9, 50)), Map.of(1, ANNA), Map.of(7, 700, 8, 500));
+        SegmentPlan second = new SegmentPlan(27, TimeRange.of(at(10, 0), at(11, 30)), Map.of(2, ANNA), Map.of(9, 500));
+        //when
+        BookingOccupancy occupancy = BookingOccupancy.of(BOOKING_ID, new VisitPlan(100, List.of(first, second)));
+        //then
+        assertThat(occupancy.equipment())
+                .extracting(EquipmentBooking::getEquipmentId, e -> e.getBookedTime().lower())
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(500, at(9, 0)),
+                        org.assertj.core.groups.Tuple.tuple(500, at(10, 0)),
+                        org.assertj.core.groups.Tuple.tuple(700, at(9, 0)));
+    }
 }
