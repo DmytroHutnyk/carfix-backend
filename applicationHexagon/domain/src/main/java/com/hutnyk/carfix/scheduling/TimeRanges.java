@@ -32,6 +32,23 @@ public final class TimeRanges {
         return List.copyOf(merged);
     }
 
+    /**
+     * Time present in BOTH lists. Each list is unioned first, so callers may pass raw,
+     * unsorted, overlapping pieces. Result is merged and ascending; empty when nothing overlaps.
+     */
+    public static List<TimeRange> intersect(List<TimeRange> a, List<TimeRange> b) {
+        List<TimeRange> mergedB = union(b);
+        List<TimeRange> result = new ArrayList<>();
+        for (TimeRange x : union(a)) {
+            for (TimeRange y : mergedB) {
+                x.intersect(y).ifPresent(result::add);
+            }
+        }
+        // Both inputs are disjoint and ascending after union, so the pairwise overlaps come out
+        // disjoint and ascending too — no second merge needed.
+        return List.copyOf(result);
+    }
+
     public static List<TimeRange> subtractAll(List<TimeRange> base, List<TimeRange> cuts) {
         List<TimeRange> result = union(base);
         for (TimeRange cut : cuts) {
