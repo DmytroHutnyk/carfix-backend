@@ -11,7 +11,7 @@ public class SlotResponseMapper {
         if (view == null) {
             return null;
         }
-        return new BranchSlotsResponse(view.chainable(), view.days().stream()
+        return new BranchSlotsResponse(view.tz(), view.chainable(), view.days().stream()
                 .map(day -> new DaySlotsResponse(day.date(), day.slots().stream()
                         .map(slot -> new SlotResponse(slot.startTime(), slot.endTime()))
                         .toList()))

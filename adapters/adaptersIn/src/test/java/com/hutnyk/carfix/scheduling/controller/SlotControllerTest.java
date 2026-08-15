@@ -45,7 +45,7 @@ public class SlotControllerTest {
             if (toReturn != null) {
                 return toReturn;
             }
-            return new BranchSlotsView(true, List.of(
+            return new BranchSlotsView("Europe/Warsaw", true, List.of(
                     new DaySlotsView(LocalDate.of(2026, 8, 14), List.of(
                             new SlotView(LocalTime.of(9, 0), LocalTime.of(10, 45)))),
                     new DaySlotsView(LocalDate.of(2026, 8, 15), List.of())));
@@ -71,6 +71,7 @@ public class SlotControllerTest {
                         .param("from", "2026-08-14")
                         .param("to", "2026-08-15"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tz").value("Europe/Warsaw"))
                 .andExpect(jsonPath("$.chainable").value(true))
                 .andExpect(jsonPath("$.days[0].date").value("2026-08-14"))
                 .andExpect(jsonPath("$.days[0].slots[0].startTime").value("09:00"))
@@ -126,7 +127,7 @@ public class SlotControllerTest {
 
     @Test
     public void test_unchainable_returns_200_with_all_empty_days() throws Exception {
-        stub.toReturn = new BranchSlotsView(false, List.of(
+        stub.toReturn = new BranchSlotsView("Europe/Warsaw", false, List.of(
                 new DaySlotsView(LocalDate.of(2026, 8, 14), List.of()),
                 new DaySlotsView(LocalDate.of(2026, 8, 15), List.of())));
         mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/slots")
