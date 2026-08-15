@@ -71,7 +71,7 @@ public class SlotService implements SlotPortIn {
 
         Set<Integer> commonBayTypes = commonBayTypes(services);
         if (commonBayTypes.isEmpty()) {
-            return new BranchSlotsView(false, emptyDays(dates));
+            return new BranchSlotsView(branchZone.getId(), false, emptyDays(dates));
         }
 
         List<ServiceBay> bays = availabilityPortOut.loadActiveBays(branchId).stream()
@@ -81,7 +81,7 @@ public class SlotService implements SlotPortIn {
         List<Equipment> equipment = availabilityPortOut.loadActiveEquipment(branchId);
 
         if (bays.isEmpty() || !staffable(services, employees) || !equippable(services, equipment)) {
-            return new BranchSlotsView(true, emptyDays(dates));
+            return new BranchSlotsView(branchZone.getId(), true, emptyDays(dates));
         }
 
         List<EmployeeCandidateView> relevantEmployees = employees.stream()
@@ -148,7 +148,7 @@ public class SlotService implements SlotPortIn {
                     .map(p -> new SlotView(p.start().toLocalTime(), p.end().toLocalTime()))
                     .toList()));
         }
-        return new BranchSlotsView(true, List.copyOf(days));
+        return new BranchSlotsView(branchZone.getId(), true, List.copyOf(days));
     }
 
     private void validateShape(BranchSlotsQuery query) {
