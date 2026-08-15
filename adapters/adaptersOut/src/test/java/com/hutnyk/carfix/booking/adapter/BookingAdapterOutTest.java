@@ -3,13 +3,21 @@ package com.hutnyk.carfix.booking.adapter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
+import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.employee.repository.EmployeeBookingRepository;
+import com.hutnyk.carfix.equipment.repository.EquipmentBookingRepository;
+import com.hutnyk.carfix.serviceBay.repository.ServiceBayBookingRepository;
 import jakarta.persistence.PersistenceException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 public class BookingAdapterOutTest {
 
@@ -59,5 +67,35 @@ public class BookingAdapterOutTest {
     public void survivesASqlExceptionThatCarriesNoSqlState() {
         assertThat(BookingAdapterOut.isLostSlotRace(new PersistenceException(new SQLException("connection reset"))))
                 .isFalse();
+    }
+
+    private static <T> T recordingRepository(Class<T> type, List<String> calls) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, (proxy, method, args) -> {
+            if ("deleteAllByBookingEntityId".equals(method.getName())) {
+                calls.add(type.getSimpleName() + ":" + args[0]);
+                return null;
+            }
+            if ("toString".equals(method.getName())) return type.getSimpleName();
+            if ("hashCode".equals(method.getName())) return System.identityHashCode(proxy);
+            if ("equals".equals(method.getName())) return proxy == args[0];
+            throw new UnsupportedOperationException(method.getName());
+        }));
+    }
+
+    @Test
+    public void freeOccupancyDeletesFromAllThreeOccupancyTablesByBookingId() {
+        List<String> calls = new ArrayList<>();
+        BookingAdapterOut adapter = new BookingAdapterOut(null, null,
+                recordingRepository(ServiceBayBookingRepository.class, calls),
+                recordingRepository(EmployeeBookingRepository.class, calls),
+                recordingRepository(EquipmentBookingRepository.class, calls));
+        UUID id = UUID.randomUUID();
+
+        adapter.freeOccupancy(BookingId.of(id));
+
+        assertThat(calls).containsExactlyInAnyOrder(
+                "ServiceBayBookingRepository:" + id,
+                "EmployeeBookingRepository:" + id,
+                "EquipmentBookingRepository:" + id);
     }
 }

@@ -152,9 +152,11 @@ public class BookingServiceTest {
 
     private static final class StubBranchPortOut implements BranchPortOut {
         boolean exists = true;
+        BranchId lastZoneBranchId;
 
         @Override
         public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
+            this.lastZoneBranchId = branchId;
             return exists ? Optional.of(WARSAW) : Optional.empty();
         }
 
@@ -177,10 +179,12 @@ public class BookingServiceTest {
     private static final class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
         boolean loaded;
+        Collection<Integer> lastLoadByIds;
 
         @Override
         public List<Service> loadByIds(Collection<Integer> serviceIds) {
             this.loaded = true;
+            this.lastLoadByIds = serviceIds;
             return toReturn;
         }
     }
@@ -196,15 +200,84 @@ public class BookingServiceTest {
         List<EquipmentAvailability> equipmentAvailability = new ArrayList<>();
         List<EquipmentBooking> equipmentOccupancy = new ArrayList<>();
 
-        @Override public List<ServiceBay> loadActiveBays(BranchId branchId) { return bays; }
-        @Override public List<EmployeeCandidateView> loadActiveEmployees(BranchId branchId) { return employees; }
-        @Override public List<Equipment> loadActiveEquipment(BranchId branchId) { return equipment; }
-        @Override public List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) { return bayAvailability; }
-        @Override public List<ServiceBayBooking> loadBayOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) { return bayOccupancy; }
-        @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> ids, LocalDate from, LocalDate to) { return employeeAvailability; }
-        @Override public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> ids, LocalDate from, LocalDate to) { return employeeOccupancy; }
-        @Override public List<EquipmentAvailability> loadEquipmentAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) { return equipmentAvailability; }
-        @Override public List<EquipmentBooking> loadEquipmentOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) { return equipmentOccupancy; }
+        BranchId lastBaysBranchId;
+        BranchId lastEmployeesBranchId;
+        BranchId lastEquipmentBranchId;
+        Collection<Integer> lastBayAvailIds;
+        LocalDate lastBayAvailFrom;
+        LocalDate lastBayAvailTo;
+        Collection<Integer> lastBayOccIds;
+        LocalDate lastBayOccFrom;
+        LocalDate lastBayOccTo;
+        Collection<UUID> lastEmployeeAvailIds;
+        LocalDate lastEmployeeAvailFrom;
+        LocalDate lastEmployeeAvailTo;
+        Collection<UUID> lastEmployeeOccIds;
+        LocalDate lastEmployeeOccFrom;
+        LocalDate lastEmployeeOccTo;
+        Collection<Integer> lastEquipmentAvailIds;
+        LocalDate lastEquipmentAvailFrom;
+        LocalDate lastEquipmentAvailTo;
+        Collection<Integer> lastEquipmentOccIds;
+        LocalDate lastEquipmentOccFrom;
+        LocalDate lastEquipmentOccTo;
+
+        @Override public List<ServiceBay> loadActiveBays(BranchId branchId) {
+            this.lastBaysBranchId = branchId;
+            return bays;
+        }
+
+        @Override public List<EmployeeCandidateView> loadActiveEmployees(BranchId branchId) {
+            this.lastEmployeesBranchId = branchId;
+            return employees;
+        }
+
+        @Override public List<Equipment> loadActiveEquipment(BranchId branchId) {
+            this.lastEquipmentBranchId = branchId;
+            return equipment;
+        }
+
+        @Override public List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) {
+            this.lastBayAvailIds = ids;
+            this.lastBayAvailFrom = from;
+            this.lastBayAvailTo = to;
+            return bayAvailability;
+        }
+
+        @Override public List<ServiceBayBooking> loadBayOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) {
+            this.lastBayOccIds = ids;
+            this.lastBayOccFrom = from;
+            this.lastBayOccTo = to;
+            return bayOccupancy;
+        }
+
+        @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> ids, LocalDate from, LocalDate to) {
+            this.lastEmployeeAvailIds = ids;
+            this.lastEmployeeAvailFrom = from;
+            this.lastEmployeeAvailTo = to;
+            return employeeAvailability;
+        }
+
+        @Override public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> ids, LocalDate from, LocalDate to) {
+            this.lastEmployeeOccIds = ids;
+            this.lastEmployeeOccFrom = from;
+            this.lastEmployeeOccTo = to;
+            return employeeOccupancy;
+        }
+
+        @Override public List<EquipmentAvailability> loadEquipmentAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) {
+            this.lastEquipmentAvailIds = ids;
+            this.lastEquipmentAvailFrom = from;
+            this.lastEquipmentAvailTo = to;
+            return equipmentAvailability;
+        }
+
+        @Override public List<EquipmentBooking> loadEquipmentOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) {
+            this.lastEquipmentOccIds = ids;
+            this.lastEquipmentOccFrom = from;
+            this.lastEquipmentOccTo = to;
+            return equipmentOccupancy;
+        }
     }
 
     private static Booking booking(BookingStatus status) {
@@ -462,5 +535,51 @@ public class BookingServiceTest {
                 .isInstanceOf(BookingCancellationNotAllowedException.class);
         assertThat(bookingPortOut.updated).isNull();
         assertThat(bookingPortOut.freedOccupancyFor).isNull();
+    }
+
+    @Test
+    public void createBookingLoadsExactlyTheBookingDayForTheChainResources() {
+        seedBookableTomorrow();
+
+        service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 15)));
+
+        assertThat(branchPortOut.lastZoneBranchId).isEqualTo(BRANCH_ID);
+        assertThat(servicePortOut.lastLoadByIds).containsExactly(1);
+        assertThat(availabilityPortOut.lastBaysBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastEmployeesBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastEquipmentBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastBayAvailIds).containsExactly(BAY_ID);
+        assertThat(availabilityPortOut.lastBayAvailFrom).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastBayAvailTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastBayOccIds).containsExactly(BAY_ID);
+        assertThat(availabilityPortOut.lastEmployeeAvailIds).containsExactly(ANNA);
+        assertThat(availabilityPortOut.lastEmployeeAvailFrom).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastEmployeeAvailTo).isEqualTo(TOMORROW);
+        assertThat(availabilityPortOut.lastEmployeeOccIds).containsExactly(ANNA);
+        assertThat(availabilityPortOut.lastEquipmentAvailIds).isEmpty();
+    }
+
+    @Test
+    public void createBookingWithTwoServicesWritesTwoSegmentsAndOccupancyPerSegment() {
+        seedBookableTomorrow();
+        servicePortOut.toReturn = List.of(service(1, Set.of(LIFT), "150.00"), service(2, Set.of(LIFT), "80.00"));
+
+        service.createBooking(EMAIL, command(List.of(1, 2), TOMORROW, LocalTime.of(9, 0)));
+
+        Booking booked = bookingPortOut.inserted;
+        assertThat(booked.getStartTime()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(booked.getEndTime()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(booked.getSegments()).extracting(BookingSegment::serviceId, BookingSegment::startTime, BookingSegment::endTime)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(1, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                        org.assertj.core.groups.Tuple.tuple(2, LocalTime.of(10, 0), LocalTime.of(11, 0)));
+        BookingOccupancy occupancy = bookingPortOut.insertedOccupancy;
+        assertThat(occupancy.bays()).hasSize(1);
+        assertThat(occupancy.bays().getFirst().getBookedTime())
+                .isEqualTo(TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(11, 0)));
+        assertThat(occupancy.employees()).extracting(e -> e.getBookedTime().lower())
+                .containsExactly(TOMORROW.atTime(9, 0), TOMORROW.atTime(10, 0));
+        assertThat(occupancy.employees()).allSatisfy(e -> assertThat(e.getEmployeeId()).isEqualTo(UserId.of(ANNA)));
+        assertThat(occupancy.equipment()).isEmpty();
     }
 }
