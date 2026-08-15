@@ -15,7 +15,6 @@ import com.hutnyk.carfix.service.ServiceStatus;
 import com.hutnyk.carfix.service.repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
 
-import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,11 +52,5 @@ public class BranchAdapterOut implements BranchPortOut {
     @Override
     public boolean existsActiveById(BranchId branchId) {
         return branchRepository.existsByIdAndStatus(branchId.id(), BranchStatus.ACTIVE);
-    }
-
-    @Override
-    public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
-        return branchRepository.findTzByIdAndStatus(branchId.id(), BranchStatus.ACTIVE)
-                .map(ZoneId::of);
     }
 }

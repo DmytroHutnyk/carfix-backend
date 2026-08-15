@@ -3,6 +3,7 @@ package com.hutnyk.carfix.booking.entity;
 import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carProfile.entity.CarProfileEntity;
+import com.hutnyk.carfix.service.entity.ServiceEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -52,6 +53,9 @@ public class BookingEntity {
     private CarProfileEntity carProfileEntity;
 
     @ToString.Exclude
-    @OneToMany(mappedBy = "bookingEntity", fetch = FetchType.LAZY)
-    private Set<BookingSegmentEntity> segments;
+    @ManyToMany
+    @JoinTable(name = "bookings_services",
+            joinColumns = @JoinColumn(name = "booking_id"),
+            inverseJoinColumns = @JoinColumn(name = "service_id"))
+    private Set<ServiceEntity> serviceEntities;
 }

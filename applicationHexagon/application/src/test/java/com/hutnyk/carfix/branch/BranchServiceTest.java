@@ -16,7 +16,6 @@ import com.hutnyk.carfix.review.Review;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,11 +51,6 @@ public class BranchServiceTest {
         @Override
         public boolean existsActiveById(BranchId branchId) {
             return branchExists;
-        }
-
-        @Override
-        public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
-            throw new UnsupportedOperationException();
         }
     }
 

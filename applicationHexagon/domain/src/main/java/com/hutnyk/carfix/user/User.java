@@ -5,6 +5,7 @@ import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.util.Validator;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.Set;
 
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -26,11 +27,7 @@ public final class User {
     private final LocalDate dateOfBirth;
 
     //Nullable
-    @With(AccessLevel.PRIVATE)
     private final Integer addressId;
-
-    //Nullable
-    private final Integer preferredCityId;
 
     @Builder
     private User(
@@ -42,8 +39,7 @@ public final class User {
             UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
-            Integer addressId,
-            Integer preferredCityId) {
+            Integer addressId) {
         this.id = Validator.notNull(id, "id");
         this.name = Validator.notBlank(name, "name");
         this.surname = Validator.notBlank(surname, "surname");
@@ -53,7 +49,6 @@ public final class User {
         this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
-        this.preferredCityId = preferredCityId;
     }
 
     public static User of(
@@ -65,8 +60,7 @@ public final class User {
             UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
-            Integer addressId,
-            Integer preferredCityId){
+            Integer addressId){
         return User.builder()
                 .id(id)
                 .name(name)
@@ -77,16 +71,7 @@ public final class User {
                 .passwordHash(passwordHash)
                 .dateOfBirth(dateOfBirth)
                 .addressId(addressId)
-                .preferredCityId(preferredCityId)
                 .build();
-    }
-
-    public User linkAddress(Integer addressId) {
-        return withAddressId(Validator.notNull(addressId, "addressId"));
-    }
-
-    public User unlinkAddress() {
-        return withAddressId(null);
     }
 
     private static LocalDate validateBirthDate(LocalDate date){

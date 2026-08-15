@@ -9,8 +9,6 @@ public record UserCoreResponse(
         String phoneCountryCode,
         String phoneNumber,
         String email,
-        LocalDate dateOfBirth,
-        AddressResponse address,
-        LocationResponse preferredLocation
+        LocalDate dateOfBirth
 ) {
 }
