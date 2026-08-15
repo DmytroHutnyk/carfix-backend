@@ -11,7 +11,9 @@ import com.hutnyk.carfix.service.ServiceStatus;
 import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -462,5 +464,66 @@ public class SlotCalculatorTest {
         assertThat(plan.segments().get(0).time()).isEqualTo(between(9, 0, 10, 0));
         assertThat(plan.segments().get(1).time()).isEqualTo(between(10, 15, 11, 15));
         assertThat(plan.end()).isEqualTo(at(11, 15));
+    }
+
+    @Test
+    void test_planVisit_matches_computeVisits_entry_at_that_start() {
+        List<Service> chain = List.of(simpleService(1, 60), simpleService(2, 30));
+        List<BaySchedule> bays = List.of(bay(between(9, 0, 12, 0)));
+        List<EmployeeSchedule> employees = List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0)));
+
+        VisitPlan listed = SlotCalculator.computeVisits(chain, bays, employees, List.of(), at(0, 0)).stream()
+                .filter(p -> p.start().equals(at(9, 30)))
+                .findFirst().orElseThrow();
+        Optional<VisitPlan> planned = SlotCalculator.planVisit(chain, bays, employees, List.of(), at(9, 30), at(0, 0));
+
+        assertThat(planned).contains(listed);
+        assertThat(planned.get().segments()).hasSize(2);
+        assertThat(planned.get().end()).isEqualTo(at(11, 0));
+    }
+
+    @Test
+    void test_planVisit_rejects_off_grid_past_and_unfitting_starts() {
+        List<Service> chain = List.of(simpleService(1, 60));
+        List<BaySchedule> bays = List.of(bay(between(9, 0, 12, 0)));
+        List<EmployeeSchedule> employees = List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0)));
+
+        assertThat(SlotCalculator.planVisit(chain, bays, employees, List.of(), at(9, 20), at(0, 0))).isEmpty();
+        assertThat(SlotCalculator.planVisit(chain, bays, employees, List.of(), at(9, 0), at(9, 1))).isEmpty();
+        assertThat(SlotCalculator.planVisit(chain, bays, employees, List.of(), at(11, 15), at(0, 0))).isEmpty();
+        assertThat(SlotCalculator.planVisit(chain, bays, employees, List.of(), at(8, 45), at(0, 0))).isEmpty();
+        assertThat(SlotCalculator.planVisit(List.of(), bays, employees, List.of(), at(9, 0), at(0, 0))).isEmpty();
+        assertThat(SlotCalculator.planVisit(chain, bays, employees, List.of(), at(11, 0), at(0, 0))).isPresent();
+    }
+
+    @Test
+    void test_planVisit_picks_the_lowest_id_bay_that_fits() {
+        List<Service> chain = List.of(simpleService(1, 60));
+        BaySchedule lowerBay = new BaySchedule(100, LIFT, List.of(between(9, 0, 12, 0)));
+        BaySchedule higherBay = new BaySchedule(200, LIFT, List.of(between(9, 0, 12, 0)));
+        List<EmployeeSchedule> employees = List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 12, 0)));
+
+        Optional<VisitPlan> plan = SlotCalculator.planVisit(chain, List.of(higherBay, lowerBay), employees, List.of(),
+                at(9, 0), at(0, 0));
+
+        assertThat(plan).isPresent();
+        assertThat(plan.get().bayId()).isEqualTo(100);
+    }
+
+    @Test
+    void test_isOnGrid_accepts_only_exact_quarter_hours() {
+        assertThat(SlotCalculator.isOnGrid(LocalTime.of(10, 0))).isTrue();
+        assertThat(SlotCalculator.isOnGrid(LocalTime.of(10, 15))).isTrue();
+        assertThat(SlotCalculator.isOnGrid(LocalTime.of(10, 20))).isFalse();
+        assertThat(SlotCalculator.isOnGrid(LocalTime.of(10, 0, 30))).isFalse();
+    }
+
+    @Test
+    void test_planVisit_needs_a_free_employee_for_the_whole_segment() {
+        List<Service> chain = List.of(simpleService(1, 60));
+        List<BaySchedule> bays = List.of(bay(between(9, 0, 12, 0)));
+        List<EmployeeSchedule> employees = List.of(employee(ANNA, Set.of(MECHANIC), between(9, 0, 9, 45)));
+
+        assertThat(SlotCalculator.planVisit(chain, bays, employees, List.of(), at(9, 0), at(0, 0))).isEmpty();
     }
 }

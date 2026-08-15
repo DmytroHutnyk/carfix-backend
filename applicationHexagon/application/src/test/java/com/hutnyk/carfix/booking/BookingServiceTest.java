@@ -1,18 +1,47 @@
 package com.hutnyk.carfix.booking;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
+import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
+import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
 import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
+import com.hutnyk.carfix.carProfile.CarProfile;
 import com.hutnyk.carfix.carProfile.CarProfileId;
+import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
+import com.hutnyk.carfix.employee.EmployeeAvailability;
+import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.equipment.Equipment;
+import com.hutnyk.carfix.equipment.EquipmentAvailability;
+import com.hutnyk.carfix.equipment.EquipmentBooking;
+import com.hutnyk.carfix.in.booking.commands.CreateBookingCommand;
 import com.hutnyk.carfix.in.booking.query.BookingServiceView;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
+import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
+import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.booking.BookingPortOut;
+import com.hutnyk.carfix.out.branch.BranchPortOut;
+import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
+import com.hutnyk.carfix.out.service.ServicePortOut;
+import com.hutnyk.carfix.review.BranchRating;
+import com.hutnyk.carfix.scheduling.TimeRange;
+import com.hutnyk.carfix.scheduling.exception.ServiceNotFoundException;
+import com.hutnyk.carfix.service.EmployeeRequirement;
+import com.hutnyk.carfix.service.Service;
+import com.hutnyk.carfix.service.ServiceStatus;
+import com.hutnyk.carfix.serviceBay.ServiceBay;
+import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
+import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
+import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -21,11 +50,16 @@ import com.hutnyk.carfix.user.UserRole;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public class BookingServiceTest {
@@ -33,6 +67,18 @@ public class BookingServiceTest {
     private static final String EMAIL = "john@example.com";
     private static final UserId CUSTOMER_ID = UserId.genId();
     private static final UUID BOOKING_ID = UUID.randomUUID();
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
+    private static final LocalDate TODAY = LocalDate.of(2030, 6, 12);
+    private static final LocalDate TOMORROW = TODAY.plusDays(1);
+    private static final Clock CLOCK = Clock.fixed(
+            TODAY.atTime(10, 7).atZone(WARSAW).toInstant(), ZoneId.of("UTC"));
+    private static final BranchId BRANCH_ID = BranchId.genId();
+    private static final UUID CAR_PROFILE_ID = UUID.randomUUID();
+    private static final UUID ANNA = UUID.randomUUID();
+    private static final int LIFT = 1;
+    private static final int PIT = 2;
+    private static final int MECHANIC = 10;
+    private static final int BAY_ID = 100;
 
     private static Customer customer() {
         return Customer.of(
@@ -50,6 +96,12 @@ public class BookingServiceTest {
                 CustomerStatus.ACTIVE);
     }
 
+    private static Service service(int id, Set<Integer> bayTypes, String price) {
+        return Service.of(id, "Service " + id, null, (short) 60, new BigDecimal(price),
+                ServiceStatus.ACTIVE, BRANCH_ID, 1, bayTypes,
+                List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(MECHANIC))), List.of());
+    }
+
     private static final class StubCustomerPortOut implements CustomerPortOut {
         @Override
         public Customer insertCustomer(Customer c) {
@@ -62,6 +114,97 @@ public class BookingServiceTest {
         }
     }
 
+    private static final class StubCarProfilePortOut implements CarProfilePortOut {
+        boolean owned = true;
+        UUID requestedCustomerId;
+
+        @Override
+        public boolean existsByIdAndCustomerId(UUID profileId, UUID customerId) {
+            this.requestedCustomerId = customerId;
+            return owned;
+        }
+
+        @Override
+        public List<CarProfileView> findAllByCustomerId(UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<CarProfileView> findByIdAndCustomerId(UUID profileId, UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CarProfile insert(CarProfile profile) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CarProfile update(CarProfile profile) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteById(UUID profileId) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static final class StubBranchPortOut implements BranchPortOut {
+        boolean exists = true;
+
+        @Override
+        public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
+            return exists ? Optional.of(WARSAW) : Optional.empty();
+        }
+
+        @Override
+        public boolean existsActiveById(BranchId branchId) {
+            return exists;
+        }
+
+        @Override
+        public void updateRating(BranchId branchId, BranchRating rating) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<BranchView> findViewById(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static final class StubServicePortOut implements ServicePortOut {
+        List<Service> toReturn = List.of();
+
+        @Override
+        public List<Service> loadByIds(Collection<Integer> serviceIds) {
+            return toReturn;
+        }
+    }
+
+    private static final class StubAvailabilityPortOut implements AvailabilityPortOut {
+        List<ServiceBay> bays = new ArrayList<>();
+        List<EmployeeCandidateView> employees = new ArrayList<>();
+        List<Equipment> equipment = new ArrayList<>();
+        List<ServiceBayAvailability> bayAvailability = new ArrayList<>();
+        List<ServiceBayBooking> bayOccupancy = new ArrayList<>();
+        List<EmployeeAvailability> employeeAvailability = new ArrayList<>();
+        List<EmployeeBooking> employeeOccupancy = new ArrayList<>();
+        List<EquipmentAvailability> equipmentAvailability = new ArrayList<>();
+        List<EquipmentBooking> equipmentOccupancy = new ArrayList<>();
+
+        @Override public List<ServiceBay> loadActiveBays(BranchId branchId) { return bays; }
+        @Override public List<EmployeeCandidateView> loadActiveEmployees(BranchId branchId) { return employees; }
+        @Override public List<Equipment> loadActiveEquipment(BranchId branchId) { return equipment; }
+        @Override public List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) { return bayAvailability; }
+        @Override public List<ServiceBayBooking> loadBayOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) { return bayOccupancy; }
+        @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> ids, LocalDate from, LocalDate to) { return employeeAvailability; }
+        @Override public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> ids, LocalDate from, LocalDate to) { return employeeOccupancy; }
+        @Override public List<EquipmentAvailability> loadEquipmentAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) { return equipmentAvailability; }
+        @Override public List<EquipmentBooking> loadEquipmentOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) { return equipmentOccupancy; }
+    }
+
     private static Booking booking(BookingStatus status) {
         return Booking.of(
                 BookingId.of(BOOKING_ID),
@@ -70,7 +213,8 @@ public class BookingServiceTest {
                 LocalTime.of(10, 0),
                 LocalTime.of(11, 30),
                 BranchId.genId(),
-                CarProfileId.genId());
+                CarProfileId.genId(),
+                List.of());
     }
 
     private static BookingView view(BookingStatus status) {
@@ -100,6 +244,8 @@ public class BookingServiceTest {
     private static final class StubBookingPortOut implements BookingPortOut {
         Booking stored;
         Booking updated;
+        Booking inserted;
+        BookingOccupancy insertedOccupancy;
         UUID requestedCustomerId;
         BookingId freedOccupancyFor;
 
@@ -111,6 +257,10 @@ public class BookingServiceTest {
 
         @Override
         public Optional<BookingView> findViewByIdAndCustomerId(UUID bookingId, UUID customerId) {
+            this.requestedCustomerId = customerId;
+            if (inserted != null && inserted.getId().id().equals(bookingId)) {
+                return Optional.of(view(BookingStatus.SCHEDULED));
+            }
             return stored == null ? Optional.empty() : Optional.of(view(BookingStatus.CANCELLED));
         }
 
@@ -118,6 +268,12 @@ public class BookingServiceTest {
         public Optional<Booking> findByIdAndCustomerId(UUID bookingId, UUID customerId) {
             this.requestedCustomerId = customerId;
             return Optional.ofNullable(stored);
+        }
+
+        @Override
+        public void insert(Booking booking, BookingOccupancy occupancy) {
+            this.inserted = booking;
+            this.insertedOccupancy = occupancy;
         }
 
         @Override
@@ -133,7 +289,26 @@ public class BookingServiceTest {
     }
 
     private final StubBookingPortOut bookingPortOut = new StubBookingPortOut();
-    private final BookingService service = new BookingService(new StubCustomerPortOut(), bookingPortOut);
+    private final StubCarProfilePortOut carProfilePortOut = new StubCarProfilePortOut();
+    private final StubBranchPortOut branchPortOut = new StubBranchPortOut();
+    private final StubServicePortOut servicePortOut = new StubServicePortOut();
+    private final StubAvailabilityPortOut availabilityPortOut = new StubAvailabilityPortOut();
+    private final BookingService service = new BookingService(new StubCustomerPortOut(), bookingPortOut,
+            carProfilePortOut, branchPortOut, servicePortOut, availabilityPortOut, CLOCK);
+
+    private static CreateBookingCommand command(List<Integer> serviceIds, LocalDate date, LocalTime start) {
+        return new CreateBookingCommand(BRANCH_ID.id(), CAR_PROFILE_ID, serviceIds, date, start);
+    }
+
+    private void seedBookableTomorrow() {
+        servicePortOut.toReturn = List.of(service(1, Set.of(LIFT), "150.00"));
+        availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, BAY_ID));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2, UserId.of(ANNA)));
+    }
 
     @Test
     public void getMyBookingsResolvesCustomerAndReturnsViews() {
@@ -142,6 +317,117 @@ public class BookingServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().branchName()).isEqualTo("SpeedCare Wola");
         assertThat(bookingPortOut.requestedCustomerId).isEqualTo(CUSTOMER_ID.id());
+    }
+
+    @Test
+    public void createBookingInsertsSpanSegmentsAndOccupancyThenReturnsTheView() {
+        seedBookableTomorrow();
+
+        BookingView result = service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 15)));
+
+        assertThat(result.status()).isEqualTo(BookingStatus.SCHEDULED);
+        assertThat(carProfilePortOut.requestedCustomerId).isEqualTo(CUSTOMER_ID.id());
+        assertThat(bookingPortOut.requestedCustomerId).isEqualTo(CUSTOMER_ID.id());
+
+        Booking inserted = bookingPortOut.inserted;
+        assertThat(inserted.getStatus()).isEqualTo(BookingStatus.SCHEDULED);
+        assertThat(inserted.getDate()).isEqualTo(TOMORROW);
+        assertThat(inserted.getStartTime()).isEqualTo(LocalTime.of(9, 15));
+        assertThat(inserted.getEndTime()).isEqualTo(LocalTime.of(10, 15));
+        assertThat(inserted.getBranchId()).isEqualTo(BRANCH_ID);
+        assertThat(inserted.getCarProfileId()).isEqualTo(CarProfileId.of(CAR_PROFILE_ID));
+        assertThat(inserted.getSegments()).containsExactly(
+                BookingSegment.of(1, LocalTime.of(9, 15), LocalTime.of(10, 15), new BigDecimal("150.00")));
+
+        BookingOccupancy occupancy = bookingPortOut.insertedOccupancy;
+        assertThat(occupancy.bays()).extracting(ServiceBayBooking::getServiceBayId).containsExactly(BAY_ID);
+        assertThat(occupancy.bays().getFirst().getBookedTime())
+                .isEqualTo(TimeRange.of(TOMORROW.atTime(9, 15), TOMORROW.atTime(10, 15)));
+        assertThat(occupancy.bays().getFirst().getBookingId()).isEqualTo(inserted.getId());
+        assertThat(occupancy.employees()).extracting(EmployeeBooking::getEmployeeId).containsExactly(UserId.of(ANNA));
+        assertThat(occupancy.equipment()).isEmpty();
+    }
+
+    @Test
+    public void createBookingRejectsAForeignCarProfileBeforeTouchingSchedules() {
+        seedBookableTomorrow();
+        carProfilePortOut.owned = false;
+        branchPortOut.exists = false;
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(CarProfileNotFoundException.class);
+        assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingRejectsUnknownBranchAndForeignService() {
+        seedBookableTomorrow();
+        branchPortOut.exists = false;
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(BranchNotFoundException.class);
+
+        branchPortOut.exists = true;
+        servicePortOut.toReturn = List.of();
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(ServiceNotFoundException.class);
+        assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingRejectsBadShapeWithFourHundred() {
+        seedBookableTomorrow();
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 20))))
+                .isInstanceOf(InvalidBookingRequestException.class);
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1, 2, 3, 4), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(InvalidBookingRequestException.class);
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1, 1), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(InvalidBookingRequestException.class);
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(InvalidBookingRequestException.class);
+        assertThatExceptionOfType(InvalidBookingRequestException.class)
+                .isThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), null, LocalTime.of(9, 0))))
+                .extracting(InvalidBookingRequestException::getFieldName)
+                .isEqualTo("date");
+        assertThatExceptionOfType(InvalidBookingRequestException.class)
+                .isThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, null)))
+                .extracting(InvalidBookingRequestException::getFieldName)
+                .isEqualTo("startTime");
+        assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingConflictsWhenNoAssignmentExistsAtThatStart() {
+        seedBookableTomorrow();
+        availabilityPortOut.employeeOccupancy.add(EmployeeBooking.of(
+                7, TimeRange.of(TOMORROW.atTime(9, 30), TOMORROW.atTime(10, 0)), TOMORROW, UserId.of(ANNA), BookingId.genId()));
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 15))))
+                .isInstanceOf(SlotNotAvailableException.class);
+        assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingConflictsForAPastStartInTheBranchZone() {
+        seedBookableTomorrow();
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 1, BAY_ID));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 2, UserId.of(ANNA)));
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TODAY, LocalTime.of(9, 0))))
+                .isInstanceOf(SlotNotAvailableException.class);
+        assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingConflictsWhenServicesShareNoBayType() {
+        seedBookableTomorrow();
+        servicePortOut.toReturn = List.of(service(1, Set.of(LIFT), "150.00"), service(2, Set.of(PIT), "80.00"));
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1, 2), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(SlotNotAvailableException.class);
+        assertThat(bookingPortOut.inserted).isNull();
     }
 
     @Test

@@ -19,7 +19,8 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
            "JOIN FETCH cp.modelVersionEntity mv " +
            "JOIN FETCH mv.carModelEntity cm " +
            "JOIN FETCH cm.carBrandEntity " +
-           "LEFT JOIN FETCH b.serviceEntities " +
+           "LEFT JOIN FETCH b.segments seg " +
+           "LEFT JOIN FETCH seg.serviceEntity " +
            "WHERE cp.customerEntity.id = :customerId " +
            "ORDER BY b.date DESC, b.startTime DESC")
     List<BookingEntity> findAllByCustomerIdWithDetails(@Param("customerId") UUID customerId);
@@ -32,7 +33,8 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
            "JOIN FETCH cp.modelVersionEntity mv " +
            "JOIN FETCH mv.carModelEntity cm " +
            "JOIN FETCH cm.carBrandEntity " +
-           "LEFT JOIN FETCH b.serviceEntities " +
+           "LEFT JOIN FETCH b.segments seg " +
+           "LEFT JOIN FETCH seg.serviceEntity " +
            "WHERE b.id = :id AND cp.customerEntity.id = :customerId")
     Optional<BookingEntity> findByIdAndCustomerIdWithDetails(@Param("id") UUID id,
                                                              @Param("customerId") UUID customerId);

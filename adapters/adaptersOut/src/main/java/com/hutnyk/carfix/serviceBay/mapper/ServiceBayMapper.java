@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.serviceBay.mapper;
 
 import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.scheduling.mapper.TimeRangeMapper;
 import com.hutnyk.carfix.serviceBay.ServiceBay;
@@ -48,5 +49,15 @@ public class ServiceBayMapper {
                 e.getDate(),
                 e.getServiceBayEntity().getId(),
                 BookingId.of(e.getBookingEntity().getId()));
+    }
+
+    public static ServiceBayBookingEntity toEntity(ServiceBayBooking b, ServiceBayEntity bay, BookingEntity booking) {
+        if (b == null) return null;
+        return new ServiceBayBookingEntity(
+                b.getId(),
+                TimeRangeMapper.toRange(b.getBookedTime()),
+                b.getDate(),
+                bay,
+                booking);
     }
 }

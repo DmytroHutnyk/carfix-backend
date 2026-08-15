@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 public enum BookingErrorCode implements ErrorCode {
 
     BOOKING_NOT_FOUND(ErrorCategory.NOT_FOUND),
-    BOOKING_CANCELLATION_NOT_ALLOWED(ErrorCategory.CONFLICT);
+    BOOKING_CANCELLATION_NOT_ALLOWED(ErrorCategory.CONFLICT),
+    INVALID_BOOKING_REQUEST(ErrorCategory.VALIDATION),
+    SLOT_NOT_AVAILABLE(ErrorCategory.CONFLICT);
 
     private final ErrorCategory category;
 

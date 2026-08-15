@@ -11,13 +11,18 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
+import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
+import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
+import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
 import com.hutnyk.carfix.in.booking.BookingPortIn;
+import com.hutnyk.carfix.in.booking.commands.CreateBookingCommand;
 import com.hutnyk.carfix.in.booking.query.BookingServiceView;
 import com.hutnyk.carfix.in.booking.query.BookingView;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -41,6 +46,13 @@ public class CustomerBookingControllerTest {
     private static final UUID BOOKING_ID = UUID.fromString("a1b2c3d4-0000-0000-0000-000000000000");
     private static final UUID BRANCH_ID = UUID.randomUUID();
     private static final UUID CAR_PROFILE_ID = UUID.randomUUID();
+
+    private static final String CREATE_BODY = "{"
+            + "\"branchId\":\"" + BRANCH_ID + "\","
+            + "\"carProfileId\":\"" + CAR_PROFILE_ID + "\","
+            + "\"serviceIds\":[11,27],"
+            + "\"date\":\"2030-06-12\","
+            + "\"startTime\":\"10:00\"}";
 
     private static BookingView view(BookingStatus status) {
         return new BookingView(
@@ -71,12 +83,21 @@ public class CustomerBookingControllerTest {
     private static final class StubBookingPortIn implements BookingPortIn {
         String receivedEmail;
         UUID receivedBookingId;
+        CreateBookingCommand receivedCommand;
         RuntimeException toThrow;
 
         @Override
         public List<BookingView> getMyBookings(String customerEmail) {
             this.receivedEmail = customerEmail;
             return List.of(view(BookingStatus.SCHEDULED));
+        }
+
+        @Override
+        public BookingView createBooking(String customerEmail, CreateBookingCommand command) {
+            this.receivedEmail = customerEmail;
+            this.receivedCommand = command;
+            if (toThrow != null) throw toThrow;
+            return view(BookingStatus.SCHEDULED);
         }
 
         @Override
@@ -161,5 +182,85 @@ public class CustomerBookingControllerTest {
         mockMvc.perform(post("/api/customer/bookings/{id}/cancel", BOOKING_ID))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("BOOKING_CANCELLATION_NOT_ALLOWED"));
+    }
+
+    @Test
+    public void createReturns201WithTheBookingCardAndPassesTheCommand() throws Exception {
+        mockMvc.perform(post("/api/customer/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CREATE_BODY))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.bookingId").value(BOOKING_ID.toString()))
+                .andExpect(jsonPath("$.reference").value("BK-A1B2C3D4"))
+                .andExpect(jsonPath("$.status").value("SCHEDULED"))
+                .andExpect(jsonPath("$.services[0].name").value("Air filter replacement"))
+                .andExpect(jsonPath("$.totalPrice").value(310.00));
+
+        assertThat(stub.receivedEmail).isEqualTo(EMAIL);
+        assertThat(stub.receivedCommand.branchId()).isEqualTo(BRANCH_ID);
+        assertThat(stub.receivedCommand.carProfileId()).isEqualTo(CAR_PROFILE_ID);
+        assertThat(stub.receivedCommand.serviceIds()).containsExactly(11, 27);
+        assertThat(stub.receivedCommand.date()).isEqualTo(LocalDate.of(2030, 6, 12));
+        assertThat(stub.receivedCommand.startTime()).isEqualTo(LocalTime.of(10, 0));
+    }
+
+    @Test
+    public void createRejectsMissingFieldsWithFieldErrors() throws Exception {
+        mockMvc.perform(post("/api/customer/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"branchId\":\"" + BRANCH_ID + "\",\"serviceIds\":[],\"startTime\":\"10:00\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors.carProfileId").exists())
+                .andExpect(jsonPath("$.errors.serviceIds").exists())
+                .andExpect(jsonPath("$.errors.date").exists());
+
+        assertThat(stub.receivedCommand).isNull();
+    }
+
+    @Test
+    public void createRejectsMoreThanThreeServicesBeforeReachingTheService() throws Exception {
+        mockMvc.perform(post("/api/customer/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CREATE_BODY.replace("[11,27]", "[1,2,3,4]")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.serviceIds").exists());
+
+        assertThat(stub.receivedCommand).isNull();
+    }
+
+    @Test
+    public void createMapsOffGridStartTo400WithTheField() throws Exception {
+        stub.toThrow = new InvalidBookingRequestException("startTime", "startTime must be on the 15-minute grid");
+
+        mockMvc.perform(post("/api/customer/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CREATE_BODY.replace("10:00", "10:20")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_BOOKING_REQUEST"))
+                .andExpect(jsonPath("$.errors.startTime").exists());
+    }
+
+    @Test
+    public void createMapsSlotNotAvailableTo409() throws Exception {
+        stub.toThrow = new SlotNotAvailableException(LocalDate.of(2030, 6, 12), LocalTime.of(10, 0));
+
+        mockMvc.perform(post("/api/customer/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CREATE_BODY))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SLOT_NOT_AVAILABLE"))
+                .andExpect(jsonPath("$.detail").value("Slot 2030-06-12 10:00 is no longer available"));
+    }
+
+    @Test
+    public void createMapsForeignCarProfileTo404() throws Exception {
+        stub.toThrow = new CarProfileNotFoundException(CAR_PROFILE_ID);
+
+        mockMvc.perform(post("/api/customer/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CREATE_BODY))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("CAR_PROFILE_NOT_FOUND"));
     }
 }
