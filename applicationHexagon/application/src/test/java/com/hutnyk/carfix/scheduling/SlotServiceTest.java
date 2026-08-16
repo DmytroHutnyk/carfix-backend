@@ -98,6 +98,7 @@ public class SlotServiceTest {
     private static class StubBranchPortOut implements BranchPortOut {
         boolean exists = true;
         ZoneId zone = WARSAW;
+        BranchId lastZoneBranchId;
 
         @Override
         public boolean existsActiveById(BranchId branchId) {
@@ -106,6 +107,7 @@ public class SlotServiceTest {
 
         @Override
         public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
+            lastZoneBranchId = branchId;
             return exists ? Optional.of(zone) : Optional.empty();
         }
 
@@ -122,9 +124,11 @@ public class SlotServiceTest {
 
     private static class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
+        Collection<Integer> lastLoadByIds;
 
         @Override
         public List<Service> loadByIds(Collection<Integer> serviceIds) {
+            lastLoadByIds = serviceIds;
             return toReturn;
         }
     }
@@ -162,22 +166,29 @@ public class SlotServiceTest {
         List<OpeningHours> openingHours = new ArrayList<>(allWeek(LocalTime.of(6, 0), LocalTime.of(22, 0)));
         List<OpeningHoursException> openingHoursExceptions = new ArrayList<>();
         boolean openingHoursLoaded = false;
+        BranchId lastBaysBranchId;
+        BranchId lastEmployeesBranchId;
+        BranchId lastEquipmentBranchId;
+        BranchId lastOpeningHoursBranchId;
         LocalDate lastExceptionsFrom;
         LocalDate lastExceptionsTo;
 
         @Override
         public List<ServiceBay> loadActiveBays(BranchId branchId) {
             resourcesLoaded = true;
+            lastBaysBranchId = branchId;
             return bays;
         }
 
         @Override
         public List<EmployeeCandidateView> loadActiveEmployees(BranchId branchId) {
+            lastEmployeesBranchId = branchId;
             return employees;
         }
 
         @Override
         public List<Equipment> loadActiveEquipment(BranchId branchId) {
+            lastEquipmentBranchId = branchId;
             return equipment;
         }
 
@@ -239,6 +250,7 @@ public class SlotServiceTest {
         @Override
         public List<OpeningHours> loadOpeningHours(BranchId branchId) {
             openingHoursLoaded = true;
+            lastOpeningHoursBranchId = branchId;
             return openingHours;
         }
 
@@ -681,5 +693,57 @@ public class SlotServiceTest {
         //then
         assertThat(view.chainable()).isFalse();
         assertThat(availabilityPortOut.openingHoursLoaded).isFalse();
+    }
+
+    @Test
+    void test_from_more_than_a_year_ahead_rejected() {
+        //given
+        seedHappyPath();
+        LocalDate limit = TODAY.plusYears(1);
+        //when //then
+        assertThat(slotService.getSlots(query(List.of(1), limit, limit)).days()).hasSize(1);
+        assertThatThrownBy(() -> slotService.getSlots(query(List.of(1), limit.plusDays(1), limit.plusDays(1))))
+                .isInstanceOf(InvalidSlotQueryException.class);
+    }
+
+    @Test
+    void test_extreme_dates_are_a_400_not_an_overflow() {
+        //given
+        seedHappyPath();
+        //when //then
+        assertThatThrownBy(() -> slotService.getSlots(query(List.of(1), LocalDate.MAX, LocalDate.MAX)))
+                .isInstanceOf(InvalidSlotQueryException.class);
+    }
+
+    @Test
+    void test_null_service_id_rejected() {
+        assertThatThrownBy(() -> slotService.getSlots(query(java.util.Arrays.asList(1, null), TODAY, TODAY)))
+                .isInstanceOf(InvalidSlotQueryException.class);
+    }
+
+    @Test
+    void test_response_echoes_the_branch_zone_on_every_path() {
+        //given
+        branchPortOut.zone = KYIV;
+        seedHappyPath();
+        //when //then
+        assertThat(slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW)).tz()).isEqualTo("Europe/Kyiv");
+        servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)), service(2, Set.of(LIFT + 1)));
+        assertThat(slotService.getSlots(query(List.of(1, 2), TOMORROW, TOMORROW)).tz()).isEqualTo("Europe/Kyiv");
+    }
+
+    @Test
+    void test_lookups_receive_the_query_ids() {
+        //given
+        seedHappyPath();
+        //when
+        slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW));
+        //then
+        assertThat(branchPortOut.lastZoneBranchId).isEqualTo(BRANCH_ID);
+        assertThat(servicePortOut.lastLoadByIds).containsExactly(1);
+        assertThat(availabilityPortOut.lastBaysBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastEmployeesBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastEquipmentBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastOpeningHoursBranchId).isEqualTo(BRANCH_ID);
     }
 }

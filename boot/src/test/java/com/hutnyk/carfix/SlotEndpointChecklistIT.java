@@ -3,6 +3,7 @@ package com.hutnyk.carfix;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -393,7 +394,10 @@ class SlotEndpointChecklistIT {
                     .append(c.verdict()).append(" | ").append(String.join("; ", shown)).append(" |\n");
         }
         long failed = report.stream().filter(c -> !c.passed()).count();
-        sb.append("\n").append(report.size() - failed).append("/").append(report.size()).append(" checks passed\n");
+        long skipped = report.stream().filter(c -> c.passed() && c.skipped != null).count();
+        sb.append("\n").append(report.size() - failed - skipped).append(" passed, ")
+                .append(skipped).append(" skipped, ").append(failed).append(" failed of ")
+                .append(report.size()).append(" checks\n");
         for (Chk c : report) {
             if (!c.passed()) {
                 sb.append("\n--- FAIL DETAIL ").append(c.id).append(" (").append(c.name).append(") ---\n");
@@ -498,11 +502,10 @@ class SlotEndpointChecklistIT {
     /**
      * 6. A booked window must be excluded from the day it falls on.
      *
-     * <p>The booking is picked from the DB rather than pinned to a date: V56 anchors its bookings to
-     * CURRENT_DATE at migration time, so a reseed always drops a fresh branch-B bay booking within a
-     * week or so of the reseed, and this check keeps working across reseeds instead of dying for
-     * good the day the pinned date passes. If the DB has drifted far enough that no such booking is
-     * left inside the queried window the check reports SKIPPED with that reason.
+     * <p>The check seeds its own bay booking on the first open, booking-free day of the window and
+     * removes it again, so the verdict no longer depends on where V56 (which anchors its bookings to
+     * CURRENT_DATE at migration time) happened to land one. Rows are inserted and removed by this
+     * check; it reports SKIPPED only when the window holds no open, booking-free day at all.
      */
     private void check6() throws Exception {
         Chk c = check("6", "booked window excluded");
@@ -523,83 +526,92 @@ class SlotEndpointChecklistIT {
                 return;
             }
 
-            List<Map<String, Object>> rows =
-                    jdbc.queryForList(
-                            "SELECT sbb.date AS d, lower(sbb.booked_time)::time AS s,"
-                                    + " upper(sbb.booked_time)::time AS e FROM " + schema
-                                    + ".service_bays_bookings sbb JOIN " + schema
-                                    + ".service_bays sb ON sb.service_bay_id = sbb.service_bay_id"
-                                    + " WHERE " + bayFilter + " AND sbb.date BETWEEN ? AND ? ORDER BY sbb.date",
-                            BRANCH_B,
-                            java.sql.Date.valueOf(from()),
-                            java.sql.Date.valueOf(to()));
-
             Map<DayOfWeek, Hours> hours = hours(BRANCH_B);
+            Set<LocalDate> busy = busyDates(BRANCH_B, from(), to());
             LocalDate date = null;
-            LocalTime bookedStart = null;
-            LocalTime bookedEnd = null;
-            for (Map<String, Object> row : rows) {
-                LocalDate d = ((java.sql.Date) row.get("d")).toLocalDate();
-                long sameDay = rows.stream().filter(r -> ((java.sql.Date) r.get("d")).toLocalDate().equals(d)).count();
-                Hours h = hours.get(d.getDayOfWeek());
-                LocalTime s = ((Time) row.get("s")).toLocalTime();
-                LocalTime e = ((Time) row.get("e")).toLocalTime();
-                if (sameDay == 1 && h != null && !s.isBefore(h.open()) && !e.isAfter(h.close())) {
+            for (LocalDate d : window()) {
+                if (hours.containsKey(d.getDayOfWeek()) && !busy.contains(d)) {
                     date = d;
-                    bookedStart = s;
-                    bookedEnd = e;
                     break;
                 }
             }
             if (date == null) {
-                c.skip("no single branch-B tyre-bay booking inside " + from() + ".." + to()
-                        + " — reseed the DB (V56 anchors bookings to CURRENT_DATE) to restore this check");
+                c.skip("no open, booking-free day for branch B in " + from() + ".." + to());
                 return;
             }
-
             Hours h = hours.get(date.getDayOfWeek());
             int duration = 40;
-            JsonNode b = json(slotsUrl(BRANCH_B, String.valueOf(SVC_TYRE_B), date, date));
-            c.eq("day count", 1, b.get("days").size());
-            JsonNode day = day(b, date.toString());
-            shape(c, day, date.toString(), duration);
+            LocalTime bookedStart = h.open().plusHours(2);
+            LocalTime bookedEnd = bookedStart.plusMinutes(duration);
+            Integer bayId = jdbc.queryForObject(
+                    "SELECT sb.service_bay_id FROM " + schema + ".service_bays sb WHERE " + bayFilter,
+                    Integer.class, BRANCH_B);
+            String carProfileId = jdbc.queryForObject(
+                    "SELECT car_profile_id::text FROM " + schema + ".car_profiles ORDER BY car_profile_id LIMIT 1",
+                    String.class);
+            String bookingId = UUID.randomUUID().toString();
+            try {
+                jdbc.update("INSERT INTO " + schema + ".bookings"
+                                + " (booking_id, date, status, start_time, end_time, branch_id, car_profile_id)"
+                                + " VALUES (CAST(? AS uuid), ?, 'SCHEDULED', ?, ?, CAST(? AS uuid), CAST(? AS uuid))",
+                        bookingId, java.sql.Date.valueOf(date), Time.valueOf(bookedStart), Time.valueOf(bookedEnd),
+                        BRANCH_B, carProfileId);
+                jdbc.update("INSERT INTO " + schema + ".service_bays_bookings"
+                                + " (booked_time, date, service_bay_id, booking_id)"
+                                + " VALUES (tsrange(?, ?, '[)'), ?, ?, CAST(? AS uuid))",
+                        Timestamp.valueOf(date.atTime(bookedStart)), Timestamp.valueOf(date.atTime(bookedEnd)),
+                        java.sql.Date.valueOf(date), bayId, bookingId);
 
-            int expectedMorning = fits(h.open(), bookedStart, duration);
-            int expectedAfternoon = fits(bookedEnd, h.close(), duration);
-            c.eq("total slots", expectedMorning + expectedAfternoon, count(day));
+                JsonNode b = json(slotsUrl(BRANCH_B, String.valueOf(SVC_TYRE_B), date, date));
+                c.eq("day count", 1, b.get("days").size());
+                JsonNode day = day(b, date.toString());
+                shape(c, day, date.toString(), duration);
 
-            int morning = 0;
-            int afternoon = 0;
-            for (JsonNode s : day.get("slots")) {
-                LocalTime st = LocalTime.parse(s.get("startTime").asText());
-                LocalTime en = LocalTime.parse(s.get("endTime").asText());
-                if (st.isBefore(bookedEnd) && en.isAfter(bookedStart)) {
-                    c.fails.add("slot " + st + "-" + en + " overlaps the booked [" + bookedStart + "," + bookedEnd + ") window");
+                int expectedMorning = fits(h.open(), bookedStart, duration);
+                int expectedAfternoon = fits(bookedEnd, h.close(), duration);
+                c.eq("total slots", expectedMorning + expectedAfternoon, count(day));
+
+                int morning = 0;
+                int afternoon = 0;
+                for (JsonNode s : day.get("slots")) {
+                    LocalTime st = LocalTime.parse(s.get("startTime").asText());
+                    LocalTime en = LocalTime.parse(s.get("endTime").asText());
+                    if (st.isBefore(bookedEnd) && en.isAfter(bookedStart)) {
+                        c.fails.add("slot " + st + "-" + en + " overlaps the booked [" + bookedStart + "," + bookedEnd + ") window");
+                    }
+                    if (st.isBefore(bookedStart)) {
+                        morning++;
+                    } else {
+                        afternoon++;
+                    }
                 }
-                if (st.isBefore(bookedStart)) {
-                    morning++;
-                } else {
-                    afternoon++;
+                c.eq("slots before the booking", expectedMorning, morning);
+                c.eq("slots after the booking", expectedAfternoon, afternoon);
+                if (expectedMorning > 0) {
+                    c.eq("first", spanOf(h.open(), duration), first(day));
+                }
+                if (expectedAfternoon > 0) {
+                    c.eq("last", spanOf(lastStart(bookedEnd, h.close(), duration), duration), last(day));
+                }
+                if (expectedMorning > 0 && expectedAfternoon > 0) {
+                    int lastMorningIdx = expectedMorning - 1;
+                    c.eq(
+                            "last slot before the booking",
+                            spanOf(lastStart(h.open(), bookedStart, duration), duration),
+                            span(day, lastMorningIdx));
+                    c.eq("next slot after the booking", spanOf(bookedEnd, duration), span(day, lastMorningIdx + 1));
+                }
+                c.note("self-seeded bay booking " + date + " " + bookedStart + "-" + bookedEnd + " excluded; "
+                        + expectedMorning + " + " + expectedAfternoon + " slots either side");
+            } finally {
+                try {
+                    jdbc.update("DELETE FROM " + schema + ".service_bays_bookings WHERE booking_id = CAST(? AS uuid)",
+                            bookingId);
+                    jdbc.update("DELETE FROM " + schema + ".bookings WHERE booking_id = CAST(? AS uuid)", bookingId);
+                } catch (Throwable t) {
+                    c.fails.add("cleanup failed: " + t);
                 }
             }
-            c.eq("slots before the booking", expectedMorning, morning);
-            c.eq("slots after the booking", expectedAfternoon, afternoon);
-            if (expectedMorning > 0) {
-                c.eq("first", spanOf(h.open(), duration), first(day));
-            }
-            if (expectedAfternoon > 0) {
-                c.eq("last", spanOf(lastStart(bookedEnd, h.close(), duration), duration), last(day));
-            }
-            if (expectedMorning > 0 && expectedAfternoon > 0) {
-                int lastMorningIdx = expectedMorning - 1;
-                c.eq(
-                        "last slot before the booking",
-                        spanOf(lastStart(h.open(), bookedStart, duration), duration),
-                        span(day, lastMorningIdx));
-                c.eq("next slot after the booking", spanOf(bookedEnd, duration), span(day, lastMorningIdx + 1));
-            }
-            c.note("booking " + date + " " + bookedStart + "-" + bookedEnd + " excluded; "
-                    + expectedMorning + " + " + expectedAfternoon + " slots either side");
         } catch (Throwable t) {
             c.fails.add("threw: " + t);
         }
@@ -852,7 +864,11 @@ class SlotEndpointChecklistIT {
         } catch (Throwable t) {
             c.fails.add("threw: " + t);
         } finally {
-            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
+            try {
+                jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
+            } catch (Throwable t) {
+                c.fails.add("cleanup failed: " + t);
+            }
         }
     }
 }

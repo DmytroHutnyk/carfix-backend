@@ -50,6 +50,7 @@ public class SlotService implements SlotPortIn {
 
     private static final int MAX_SERVICES = 3;
     private static final int MAX_RANGE_DAYS = 7;
+    private static final int MAX_HORIZON_YEARS = 1;
 
     private final BranchPortOut branchPortOut;
     private final ServicePortOut servicePortOut;
@@ -68,6 +69,9 @@ public class SlotService implements SlotPortIn {
         LocalDate today = LocalDate.now(branchClock);
         if (query.from().isBefore(today)) {
             throw new InvalidSlotQueryException("from must not be in the past");
+        }
+        if (query.from().isAfter(today.plusYears(MAX_HORIZON_YEARS))) {
+            throw new InvalidSlotQueryException("from must be within " + MAX_HORIZON_YEARS + " year of today");
         }
 
         List<Service> services = loadServices(query.serviceIds(), branchId);
@@ -180,6 +184,9 @@ public class SlotService implements SlotPortIn {
         List<Integer> ids = query.serviceIds();
         if (ids == null || ids.isEmpty()) {
             throw new InvalidSlotQueryException("at least one serviceId is required");
+        }
+        if (ids.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new InvalidSlotQueryException("serviceIds must not contain null");
         }
         if (ids.size() > MAX_SERVICES) {
             throw new InvalidSlotQueryException("at most " + MAX_SERVICES + " services per visit");
