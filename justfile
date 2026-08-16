@@ -42,6 +42,14 @@ search-checklist:
       -Dsurefire.failIfNoSpecifiedTests=false \
       -Dmaven.gitcommitid.skip=true
 
+# Run the M5 booking-endpoint checklist as a real-HTTP integration test (needs a reachable dev Postgres)
+booking-checklist:
+    JAVA_HOME=/opt/homebrew/opt/openjdk PATH="/opt/homebrew/opt/openjdk/bin:$PATH" \
+    mvn -o test -pl boot -am \
+      -Dtest=BookingEndpointChecklistIT \
+      -Dsurefire.failIfNoSpecifiedTests=false \
+      -Dmaven.gitcommitid.skip=true
+
 clean-db:
     cd boot \
     && mvn flyway:clean -Dflyway.cleanDisabled=false
