@@ -224,12 +224,12 @@ public class SearchServiceTest {
         public List<Service> loadByIds(Collection<Integer> serviceIds) {
             return toReturn;
         }
-    
+
         @Override
         public Service insert(Service service) {
             throw new UnsupportedOperationException();
         }
-}
+    }
 
     private static final class StubAvailabilityPortOut implements AvailabilityPortOut {
         final List<ServiceBay> bays = new ArrayList<>();

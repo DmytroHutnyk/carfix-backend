@@ -198,7 +198,7 @@ public class BookingServiceTest {
         public Optional<BranchView> findViewById(BranchId branchId) {
             throw new UnsupportedOperationException();
         }
-    
+
         @Override
         public Branch insert(Branch branch) {
             throw new UnsupportedOperationException();
@@ -213,7 +213,7 @@ public class BookingServiceTest {
         public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
             throw new UnsupportedOperationException();
         }
-}
+    }
 
     private static final class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
@@ -226,12 +226,12 @@ public class BookingServiceTest {
             this.lastLoadByIds = serviceIds;
             return toReturn;
         }
-    
+
         @Override
         public Service insert(Service service) {
             throw new UnsupportedOperationException();
         }
-}
+    }
 
     private static final class StubAvailabilityPortOut implements AvailabilityPortOut {
         List<ServiceBay> bays = new ArrayList<>();

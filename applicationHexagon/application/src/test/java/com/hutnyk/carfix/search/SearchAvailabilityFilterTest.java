@@ -116,12 +116,12 @@ public class SearchAvailabilityFilterTest {
             calls++;
             return toReturn;
         }
-    
+
         @Override
         public Service insert(Service service) {
             throw new UnsupportedOperationException();
         }
-}
+    }
 
     private static final class StubAvailabilityPortOut implements AvailabilityPortOut {
         List<ServiceBay> bays = new ArrayList<>();

@@ -83,12 +83,12 @@ public class BranchScheduleLoaderTest {
         public List<Service> loadByIds(Collection<Integer> serviceIds) {
             return toReturn;
         }
-    
+
         @Override
         public Service insert(Service service) {
             throw new UnsupportedOperationException();
         }
-}
+    }
 
     private static class StubAvailabilityPortOut implements AvailabilityPortOut {
         List<ServiceBay> bays = new ArrayList<>();
