@@ -16,7 +16,6 @@ import com.hutnyk.carfix.review.exception.ReviewedBookingNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -84,11 +83,6 @@ public class ReviewServiceTest {
 
         @Override
         public boolean existsActiveById(BranchId branchId) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
             throw new UnsupportedOperationException();
         }
     }

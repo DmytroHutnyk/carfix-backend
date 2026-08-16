@@ -1,6 +1,5 @@
 package com.hutnyk.carfix.user.dto.request;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
@@ -17,9 +16,6 @@ public record UpdateUserRequest(
         String surname,
 
         @Past(message = "Date of birth must be in the past")
-        LocalDate dateOfBirth,
-
-        @Valid
-        LocationRequest preferredLocation
+        LocalDate dateOfBirth
 ) {
 }

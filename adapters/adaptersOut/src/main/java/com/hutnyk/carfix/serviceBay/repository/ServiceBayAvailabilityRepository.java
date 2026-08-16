@@ -11,8 +11,5 @@ public interface ServiceBayAvailabilityRepository extends JpaRepository<ServiceB
     List<ServiceBayAvailabilityEntity> findAllByServiceBayEntityIdInAndDate(
             Collection<Integer> serviceBayIds, LocalDate date);
 
-    List<ServiceBayAvailabilityEntity> findAllByServiceBayEntityIdInAndDateBetween(
-            Collection<Integer> serviceBayIds, LocalDate from, LocalDate to);
-
     List<ServiceBayAvailabilityEntity> findAllBySeriesId(Integer seriesId);
 }

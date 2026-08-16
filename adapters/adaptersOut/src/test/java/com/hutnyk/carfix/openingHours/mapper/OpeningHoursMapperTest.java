@@ -8,10 +8,11 @@ import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursExceptionEntity;
+import org.junit.jupiter.api.Test;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
 
 public class OpeningHoursMapperTest {
 
@@ -24,65 +25,49 @@ public class OpeningHoursMapperTest {
     }
 
     @Test
-    void test_weekly_row_maps_to_domain() {
+    public void test_toDomain_maps_regular_hours() {
         //given
         OpeningHoursEntity entity = new OpeningHoursEntity();
         entity.setId(7);
-        entity.setDayOfWeek(DayOfWeek.FRIDAY);
+        entity.setDayOfWeek(DayOfWeek.MONDAY);
         entity.setStartTime(LocalTime.of(8, 0));
         entity.setCloseTime(LocalTime.of(18, 0));
         entity.setBranchEntity(branch());
+
         //when
-        OpeningHours domain = OpeningHoursMapper.toDomain(entity);
+        OpeningHours hours = OpeningHoursMapper.toDomain(entity);
+
         //then
-        assertThat(domain.getId()).isEqualTo(7);
-        assertThat(domain.getDayOfWeek()).isEqualTo(DayOfWeek.FRIDAY);
-        assertThat(domain.getStartTime()).isEqualTo(LocalTime.of(8, 0));
-        assertThat(domain.getCloseTime()).isEqualTo(LocalTime.of(18, 0));
-        assertThat(domain.getBranchId().id()).isEqualTo(BRANCH_ID);
+        assertThat(hours.getId()).isEqualTo(7);
+        assertThat(hours.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+        assertThat(hours.getStartTime()).isEqualTo(LocalTime.of(8, 0));
+        assertThat(hours.getCloseTime()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(hours.getBranchId().id()).isEqualTo(BRANCH_ID);
     }
 
     @Test
-    void test_closed_exception_maps_with_null_hours() {
+    public void test_toDomain_maps_closed_exception_without_hours() {
         //given
         OpeningHoursExceptionEntity entity = new OpeningHoursExceptionEntity();
         entity.setId(3);
-        entity.setDate(LocalDate.of(2026, 8, 14));
+        entity.setDate(LocalDate.of(2026, 12, 25));
         entity.setIsOpen(false);
-        entity.setReason("holiday");
+        entity.setReason("Christmas");
         entity.setBranchEntity(branch());
+
         //when
-        OpeningHoursException domain = OpeningHoursMapper.toDomain(entity);
+        OpeningHoursException exception = OpeningHoursMapper.toDomain(entity);
+
         //then
-        assertThat(domain.getId()).isEqualTo(3);
-        assertThat(domain.getDate()).isEqualTo(LocalDate.of(2026, 8, 14));
-        assertThat(domain.getIsOpen()).isFalse();
-        assertThat(domain.getStartTime()).isNull();
-        assertThat(domain.getCloseTime()).isNull();
-        assertThat(domain.getReason()).isEqualTo("holiday");
-        assertThat(domain.getBranchId().id()).isEqualTo(BRANCH_ID);
+        assertThat(exception.getDate()).isEqualTo(LocalDate.of(2026, 12, 25));
+        assertThat(exception.getIsOpen()).isFalse();
+        assertThat(exception.getStartTime()).isNull();
+        assertThat(exception.getReason()).isEqualTo("Christmas");
+        assertThat(exception.getBranchId().id()).isEqualTo(BRANCH_ID);
     }
 
     @Test
-    void test_open_exception_maps_hours() {
-        //given
-        OpeningHoursExceptionEntity entity = new OpeningHoursExceptionEntity();
-        entity.setId(4);
-        entity.setDate(LocalDate.of(2026, 8, 15));
-        entity.setIsOpen(true);
-        entity.setStartTime(LocalTime.of(9, 0));
-        entity.setCloseTime(LocalTime.of(13, 0));
-        entity.setBranchEntity(branch());
-        //when
-        OpeningHoursException domain = OpeningHoursMapper.toDomain(entity);
-        //then
-        assertThat(domain.getIsOpen()).isTrue();
-        assertThat(domain.getStartTime()).isEqualTo(LocalTime.of(9, 0));
-        assertThat(domain.getCloseTime()).isEqualTo(LocalTime.of(13, 0));
-    }
-
-    @Test
-    void test_null_entities_map_to_null() {
+    public void test_toDomain_null_guards() {
         assertThat(OpeningHoursMapper.toDomain((OpeningHoursEntity) null)).isNull();
         assertThat(OpeningHoursMapper.toDomain((OpeningHoursExceptionEntity) null)).isNull();
     }

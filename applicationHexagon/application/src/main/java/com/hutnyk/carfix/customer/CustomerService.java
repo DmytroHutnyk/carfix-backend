@@ -39,7 +39,6 @@ public class CustomerService implements CustomerPortIn {
                 UserRole.CUSTOMER,
                 passwordHash,
                 null,
-                null,
                 null
         );
 

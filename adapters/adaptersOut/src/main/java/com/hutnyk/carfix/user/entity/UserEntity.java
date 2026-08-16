@@ -1,7 +1,6 @@
 package com.hutnyk.carfix.user.entity;
 
 import com.hutnyk.carfix.address.entity.AddressEntity;
-import com.hutnyk.carfix.address.entity.CityEntity;
 import com.hutnyk.carfix.user.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -56,9 +55,4 @@ public class UserEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private AddressEntity addressEntity;
-
-    @ToString.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "preferred_city_id")
-    private CityEntity preferredCityEntity;
 }

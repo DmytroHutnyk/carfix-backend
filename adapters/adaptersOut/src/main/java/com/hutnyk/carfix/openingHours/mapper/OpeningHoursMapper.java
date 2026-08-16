@@ -11,25 +11,29 @@ public final class OpeningHoursMapper {
     private OpeningHoursMapper() {
     }
 
-    public static OpeningHours toDomain(OpeningHoursEntity e) {
-        if (e == null) return null;
+    public static OpeningHours toDomain(OpeningHoursEntity entity) {
+        if (entity == null) {
+            return null;
+        }
         return OpeningHours.of(
-                e.getId(),
-                e.getDayOfWeek(),
-                e.getStartTime(),
-                e.getCloseTime(),
-                BranchId.of(e.getBranchEntity().getId()));
+                entity.getId(),
+                entity.getDayOfWeek(),
+                entity.getStartTime(),
+                entity.getCloseTime(),
+                BranchId.of(entity.getBranchEntity().getId()));
     }
 
-    public static OpeningHoursException toDomain(OpeningHoursExceptionEntity e) {
-        if (e == null) return null;
+    public static OpeningHoursException toDomain(OpeningHoursExceptionEntity entity) {
+        if (entity == null) {
+            return null;
+        }
         return OpeningHoursException.of(
-                e.getId(),
-                e.getDate(),
-                e.getStartTime(),
-                e.getCloseTime(),
-                e.getIsOpen(),
-                e.getReason(),
-                BranchId.of(e.getBranchEntity().getId()));
+                entity.getId(),
+                entity.getDate(),
+                entity.getStartTime(),
+                entity.getCloseTime(),
+                entity.getIsOpen(),
+                entity.getReason(),
+                BranchId.of(entity.getBranchEntity().getId()));
     }
 }

@@ -3,14 +3,10 @@ package com.hutnyk.carfix.address.entity;
 import com.hutnyk.carfix.address.CountryIso;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
 @Entity
 @Table(name = "countries")
 public class CountryEntity {
