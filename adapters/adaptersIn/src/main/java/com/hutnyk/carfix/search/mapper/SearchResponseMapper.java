@@ -1,9 +1,12 @@
 package com.hutnyk.carfix.search.mapper;
 
+import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
 import com.hutnyk.carfix.in.search.query.SearchEchoView;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsView;
 import com.hutnyk.carfix.in.search.query.WorkshopResultView;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
+import com.hutnyk.carfix.search.dto.response.AvailabilityWindowResponse;
+import com.hutnyk.carfix.search.dto.response.AvailableStartResponse;
 import com.hutnyk.carfix.search.dto.response.CategorySuggestionResponse;
 import com.hutnyk.carfix.search.dto.response.MatchedServiceResponse;
 import com.hutnyk.carfix.search.dto.response.SearchEchoResponse;
@@ -46,7 +49,15 @@ public class SearchResponseMapper {
             return null;
         }
         return new SearchEchoResponse(echo.q(), echo.serviceName(), echo.categoryId(),
-                echo.categoryName(), echo.city(), echo.voivodeship(), echo.country());
+                echo.categoryName(), echo.city(), echo.voivodeship(), echo.country(),
+                toResponse(echo.availability()));
+    }
+
+    private static AvailabilityWindowResponse toResponse(AvailabilityWindow window) {
+        if (window == null) {
+            return null;
+        }
+        return new AvailabilityWindowResponse(window.from(), window.to(), window.timeFrom(), window.timeTo());
     }
 
     private static WorkshopResultResponse toResponse(WorkshopResultView view) {
@@ -58,6 +69,10 @@ public class SearchResponseMapper {
                         .map(service -> new MatchedServiceResponse(
                                 service.serviceId(), service.name(), service.price(),
                                 service.durationMinutes(), service.categoryName()))
+                        .toList(),
+                view.tz(),
+                view.nextAvailableStarts() == null ? null : view.nextAvailableStarts().stream()
+                        .map(start -> new AvailableStartResponse(start.date(), start.startTime()))
                         .toList());
     }
 }

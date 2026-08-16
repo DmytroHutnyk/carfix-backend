@@ -64,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -260,6 +261,18 @@ public class BookingServiceTest {
         @Override public List<Equipment> loadActiveEquipment(BranchId branchId) {
             this.lastEquipmentBranchId = branchId;
             return equipment;
+        }
+
+        @Override public Map<BranchId, List<ServiceBay>> loadActiveBaysByBranch(Collection<BranchId> branchIds) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public Map<BranchId, List<EmployeeCandidateView>> loadActiveEmployeesByBranch(Collection<BranchId> branchIds) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public Map<BranchId, List<Equipment>> loadActiveEquipmentByBranch(Collection<BranchId> branchIds) {
+            throw new UnsupportedOperationException();
         }
 
         @Override public List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) {

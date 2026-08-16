@@ -16,6 +16,7 @@ import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface AvailabilityPortOut {
@@ -25,6 +26,12 @@ public interface AvailabilityPortOut {
     List<EmployeeCandidateView> loadActiveEmployees(BranchId branchId);
 
     List<Equipment> loadActiveEquipment(BranchId branchId);
+
+    Map<BranchId, List<ServiceBay>> loadActiveBaysByBranch(Collection<BranchId> branchIds);
+
+    Map<BranchId, List<EmployeeCandidateView>> loadActiveEmployeesByBranch(Collection<BranchId> branchIds);
+
+    Map<BranchId, List<Equipment>> loadActiveEquipmentByBranch(Collection<BranchId> branchIds);
 
     List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> bayIds, LocalDate from, LocalDate to);
 

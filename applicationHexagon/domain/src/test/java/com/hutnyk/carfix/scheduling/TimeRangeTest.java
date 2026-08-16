@@ -107,4 +107,16 @@ public class TimeRangeTest {
         assertThat(range(9, 17).subtract(range(8, 12))).containsExactly(range(12, 17));
         assertThat(range(9, 17).subtract(range(15, 18))).containsExactly(range(9, 15));
     }
+
+    @Test
+    void test_contains_instant_lower_inclusive_upper_exclusive() {
+        //given
+        TimeRange range = range(9, 17);
+
+        //then
+        assertThat(range.contains(LocalDateTime.of(2026, 8, 13, 9, 0))).isTrue();
+        assertThat(range.contains(LocalDateTime.of(2026, 8, 13, 16, 59))).isTrue();
+        assertThat(range.contains(LocalDateTime.of(2026, 8, 13, 17, 0))).isFalse();
+        assertThat(range.contains(LocalDateTime.of(2026, 8, 13, 8, 59))).isFalse();
+    }
 }

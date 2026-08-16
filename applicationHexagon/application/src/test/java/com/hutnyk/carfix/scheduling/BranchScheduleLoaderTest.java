@@ -106,6 +106,9 @@ public class BranchScheduleLoaderTest {
         @Override public List<ServiceBay> loadActiveBays(BranchId branchId) { return bays; }
         @Override public List<EmployeeCandidateView> loadActiveEmployees(BranchId branchId) { return employees; }
         @Override public List<Equipment> loadActiveEquipment(BranchId branchId) { return equipment; }
+        @Override public Map<BranchId, List<ServiceBay>> loadActiveBaysByBranch(Collection<BranchId> branchIds) { throw new UnsupportedOperationException(); }
+        @Override public Map<BranchId, List<EmployeeCandidateView>> loadActiveEmployeesByBranch(Collection<BranchId> branchIds) { throw new UnsupportedOperationException(); }
+        @Override public Map<BranchId, List<Equipment>> loadActiveEquipmentByBranch(Collection<BranchId> branchIds) { throw new UnsupportedOperationException(); }
         @Override public List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) { lastBayIds = ids; return bayAvailability; }
         @Override public List<ServiceBayBooking> loadBayOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) { return bayOccupancy; }
         @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> ids, LocalDate from, LocalDate to) { lastEmployeeIds = ids; return employeeAvailability; }

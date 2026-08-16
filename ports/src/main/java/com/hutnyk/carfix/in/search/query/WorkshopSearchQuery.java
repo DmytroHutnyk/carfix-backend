@@ -33,7 +33,10 @@ public record WorkshopSearchQuery(
         //Nullable on the way in; never null after SearchService normalizes it
         String sort,
         //Nullable — this branch is kept in the result set and ordered first
-        UUID pinnedBranchId
+        UUID pinnedBranchId,
+
+        //Nullable — null after SearchService normalizes an all-null window
+        AvailabilityWindow availability
 ) {
     public static final String SORT_DISTANCE = "distance";
     public static final String SORT_NAME = "name";

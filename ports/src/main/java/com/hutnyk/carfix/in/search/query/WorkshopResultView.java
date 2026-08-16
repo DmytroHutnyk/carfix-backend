@@ -17,5 +17,14 @@ public record WorkshopResultView(
         //Nullable pair — null = no reviews yet ("New" on the card)
         BigDecimal rating,
         Integer reviewCount,
-        List<MatchedServiceView> matchedServices
-) {}
+        List<MatchedServiceView> matchedServices,
+        //IANA zone of the branch; the availability starts below are local to it
+        String tz,
+        //Nullable — filled only on the availability path
+        List<AvailableStartView> nextAvailableStarts
+) {
+    public WorkshopResultView withNextAvailableStarts(List<AvailableStartView> starts) {
+        return new WorkshopResultView(branchId, name, streetName, buildingNumber, city, latitude, longitude,
+                distanceKm, rating, reviewCount, matchedServices, tz, starts);
+    }
+}

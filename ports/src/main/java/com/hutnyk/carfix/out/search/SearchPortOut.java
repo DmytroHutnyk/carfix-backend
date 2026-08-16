@@ -3,6 +3,7 @@ package com.hutnyk.carfix.out.search;
 import com.hutnyk.carfix.in.search.query.CategorySuggestionView;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
 import com.hutnyk.carfix.in.search.query.ServiceSuggestionView;
+import com.hutnyk.carfix.in.search.query.WorkshopResultView;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
@@ -19,6 +20,8 @@ public interface SearchPortOut {
     List<WorkshopSuggestionView> findWorkshopSuggestions(SearchSuggestionsQuery query, Integer brandId, int limit);
 
     WorkshopSearchPage searchWorkshops(WorkshopSearchQuery query, Integer brandId);
+
+    List<WorkshopResultView> findAvailabilityCandidates(WorkshopSearchQuery query, Integer brandId, int limit);
 
     Optional<String> findCategoryName(Integer categoryId);
 }

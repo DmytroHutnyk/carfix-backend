@@ -31,6 +31,10 @@ public record TimeRange(LocalDateTime lower, LocalDateTime upper) {
         return !lower.isAfter(other.lower) && !upper.isBefore(other.upper);
     }
 
+    public boolean contains(LocalDateTime instant) {
+        return !instant.isBefore(lower) && instant.isBefore(upper);
+    }
+
     public Optional<TimeRange> intersect(TimeRange other) {
         if (!overlaps(other)) {
             return Optional.empty();

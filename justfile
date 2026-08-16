@@ -34,6 +34,14 @@ slot-checklist:
       -Dsurefire.failIfNoSpecifiedTests=false \
       -Dmaven.gitcommitid.skip=true
 
+# Run the M6 search-availability checklist as a real-HTTP integration test (needs a reachable dev Postgres)
+search-checklist:
+    JAVA_HOME=/opt/homebrew/opt/openjdk PATH="/opt/homebrew/opt/openjdk/bin:$PATH" \
+    mvn -o test -pl boot -am \
+      -Dtest=SearchAvailabilityChecklistIT \
+      -Dsurefire.failIfNoSpecifiedTests=false \
+      -Dmaven.gitcommitid.skip=true
+
 clean-db:
     cd boot \
     && mvn flyway:clean -Dflyway.cleanDisabled=false
