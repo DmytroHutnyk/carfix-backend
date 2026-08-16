@@ -3,8 +3,6 @@ package com.hutnyk.carfix.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hutnyk.carfix.address.CountryIso;
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
 import org.junit.jupiter.api.Test;
@@ -28,7 +26,7 @@ public class UserTest {
         );
     }
 
-    private User createUserWithLocation(Location location) {
+    private User createUserWithPreferredCity(Integer preferredCityId) {
         return User.of(
                 UserId.genId(),
                 "John",
@@ -39,7 +37,7 @@ public class UserTest {
                 PasswordHash.of("hashedPassword123"),
                 LocalDate.of(1990, 5, 1),
                 null,
-                location
+                preferredCityId
         );
     }
 
@@ -103,23 +101,20 @@ public class UserTest {
     }
 
     @Test
-    public void test_of_carries_the_preferred_location() {
-        //given
-        Location warsaw = new Location("Warsaw", "Masovian Voivodeship", CountryIso.PL, null, null);
-
+    public void test_of_carries_the_preferred_city_id() {
         //when
         User result = User.of(UserId.genId(), "John", "Doe", new PhoneNumber("+1", "1234567890"),
                 "john.doe@example.com", UserRole.CUSTOMER, PasswordHash.of("hashedPassword123"),
-                null, null, warsaw);
+                null, null, 11);
 
         //then
-        assertThat(result.getPreferredLocation()).isEqualTo(warsaw);
+        assertThat(result.getPreferredCityId()).isEqualTo(11);
     }
 
     @Test
     public void test_linkAddress_returns_a_copy_pointing_at_the_address_and_keeps_everything_else() {
         //given
-        User user = createUserWithLocation(new Location("Warsaw", "Masovian Voivodeship", CountryIso.PL, null, null));
+        User user = createUserWithPreferredCity(11);
 
         //when
         User linked = user.linkAddress(42);
@@ -134,7 +129,7 @@ public class UserTest {
         assertThat(linked.getSurname()).isEqualTo(user.getSurname());
         assertThat(linked.getPhoneNumber()).isEqualTo(user.getPhoneNumber());
         assertThat(linked.getRole()).isEqualTo(user.getRole());
-        assertThat(linked.getPreferredLocation()).isEqualTo(user.getPreferredLocation());
+        assertThat(linked.getPreferredCityId()).isEqualTo(11);
         assertThat(user.getAddressId()).isNull();
     }
 

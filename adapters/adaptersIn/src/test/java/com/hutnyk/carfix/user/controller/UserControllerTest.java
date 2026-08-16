@@ -10,10 +10,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hutnyk.carfix.address.CountryIso;
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
 import com.hutnyk.carfix.in.address.AddressPortIn;
 import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.in.user.UserPortIn;
 import com.hutnyk.carfix.in.user.commands.UpdateUserAddressCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
@@ -46,6 +46,8 @@ public class UserControllerTest {
     private static final AddressView WARSAW_ADDRESS = new AddressView(7, "Marszałkowska", "10", "3A", "00-001",
             "Warsaw", "Masovian Voivodeship", CountryIso.PL, "Poland",
             new BigDecimal("52.229700"), new BigDecimal("21.012200"), "ChIJ_place");
+    private static final LocationView WARSAW_CITY = new LocationView(11, "Warsaw", "Masovian Voivodeship",
+            CountryIso.PL, new BigDecimal("52.229700"), new BigDecimal("21.012200"));
     private static final String CORE_BODY =
             "{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":\"1990-05-01\",\"preferredLocation\":null}";
     private static final String ADDRESS_BODY = "{\"streetName\":\"Marszałkowska\",\"buildingNumber\":\"10\","
@@ -58,6 +60,7 @@ public class UserControllerTest {
         String receivedEmail;
         String deletedFor;
         Integer addressIdOfUser;
+        Integer preferredCityIdOfUser = 11;
         int calls;
 
         @Override
@@ -70,10 +73,6 @@ public class UserControllerTest {
             this.receivedEmail = email;
             this.received = command;
             this.calls++;
-            Location location = command.preferredLocation() == null ? null
-                    : new Location(command.preferredLocation().city(), command.preferredLocation().region(),
-                            CountryIso.parse(command.preferredLocation().countryIso()),
-                            command.preferredLocation().latitude(), command.preferredLocation().longitude());
             /* Built through the builder, not the 10-arg User.of(...), so that adding an optional
              * domain field does not break this file. If a new *required* field lands, these tests
              * fail with a DomainObjectValidationException naming it — add it here. */
@@ -87,7 +86,7 @@ public class UserControllerTest {
                     .passwordHash(PasswordHash.of("$2a$10$storedhashvalue"))
                     .dateOfBirth(command.dateOfBirth())
                     .addressId(addressIdOfUser)
-                    .preferredLocation(location)
+                    .preferredCityId(command.preferredLocation() == null ? null : preferredCityIdOfUser)
                     .build();
         }
 
@@ -110,6 +109,11 @@ public class UserControllerTest {
         @Override
         public Optional<AddressView> loadAddressView(Integer addressId) {
             return addressId == 7 ? Optional.of(WARSAW_ADDRESS) : Optional.empty();
+        }
+
+        @Override
+        public Optional<LocationView> loadCityView(Integer cityId) {
+            return cityId == 11 ? Optional.of(WARSAW_CITY) : Optional.empty();
         }
     }
 
@@ -244,15 +248,44 @@ public class UserControllerTest {
     }
 
     @Test
+    public void test_put_me_with_a_dangling_preferred_city_id_is_a_500() throws Exception {
+        //given
+        stub.preferredCityIdOfUser = 999;
+
+        //when + then
+        mockMvc.perform(put("/api/users/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null,"
+                                + "\"preferredLocation\":{\"city\":\"Warsaw\",\"region\":\"Masovian Voivodeship\","
+                                + "\"countryIso\":\"PL\",\"latitude\":null,\"longitude\":null}}"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     public void test_put_me_bad_country_code_format_returns_400_with_the_dotted_field() throws Exception {
         //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null,"
-                                + "\"preferredLocation\":{\"city\":\"Warsaw\",\"region\":null,\"countryIso\":\"pol\","
+                                + "\"preferredLocation\":{\"city\":\"Warsaw\",\"region\":\"Masovian Voivodeship\","
+                                + "\"countryIso\":\"pol\","
                                 + "\"latitude\":null,\"longitude\":null}}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors['preferredLocation.countryIso']").exists());
+
+        assertThat(stub.calls).isZero();
+    }
+
+    @Test
+    public void test_put_me_preferred_location_without_city_returns_400() throws Exception {
+        //when + then
+        mockMvc.perform(put("/api/users/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null,"
+                                + "\"preferredLocation\":{\"city\":\" \",\"region\":\"Masovian Voivodeship\",\"countryIso\":\"PL\","
+                                + "\"latitude\":null,\"longitude\":null}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors['preferredLocation.city']").exists());
 
         assertThat(stub.calls).isZero();
     }

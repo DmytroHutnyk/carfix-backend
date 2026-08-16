@@ -2,9 +2,8 @@ package com.hutnyk.carfix.user.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hutnyk.carfix.address.CountryIso;
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.address.entity.CityEntity;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -13,15 +12,18 @@ import com.hutnyk.carfix.user.UserRole;
 import com.hutnyk.carfix.user.entity.UserEntity;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class UserMapperTest {
 
-    private static final Location WARSAW = new Location("Warsaw", "Masovian Voivodeship", CountryIso.PL,
-            new BigDecimal("52.229700"), new BigDecimal("21.012200"));
+    private static CityEntity warsaw() {
+        CityEntity city = new CityEntity();
+        city.setId(11);
+        city.setName("Warsaw");
+        return city;
+    }
 
-    private static User user(Integer addressId, Location preferredLocation) {
+    private static User user(Integer addressId, Integer preferredCityId) {
         return User.builder()
                 .id(UserId.genId())
                 .name("John")
@@ -32,45 +34,42 @@ public class UserMapperTest {
                 .passwordHash(PasswordHash.of("$2a$10$storedhashvalue"))
                 .dateOfBirth(LocalDate.of(1990, 5, 1))
                 .addressId(addressId)
-                .preferredLocation(preferredLocation)
+                .preferredCityId(preferredCityId)
                 .build();
     }
 
     @Test
-    public void test_toEntity_and_toDomain_round_trip_the_preferred_location() {
+    public void test_toEntity_and_toDomain_round_trip_the_preferred_city() {
         //given
-        User user = user(null, WARSAW);
+        CityEntity city = warsaw();
 
         //when
-        UserEntity entity = UserMapper.toEntity(user, null);
+        UserEntity entity = UserMapper.toEntity(user(null, 11), null, city);
         User back = UserMapper.toDomain(entity);
 
         //then
-        assertThat(entity.getPreferredCity()).isEqualTo("Warsaw");
-        assertThat(entity.getPreferredRegion()).isEqualTo("Masovian Voivodeship");
-        assertThat(entity.getPreferredCountryIso()).isEqualTo(CountryIso.PL);
-        assertThat(entity.getPreferredLatitude()).isEqualByComparingTo("52.229700");
-        assertThat(entity.getPreferredLongitude()).isEqualByComparingTo("21.012200");
-        assertThat(back.getPreferredLocation()).isEqualTo(WARSAW);
+        assertThat(entity.getPreferredCityEntity()).isSameAs(city);
+        assertThat(back.getPreferredCityId()).isEqualTo(11);
         assertThat(back.getAddressId()).isNull();
     }
 
     @Test
-    public void test_toDomain_yields_no_location_when_the_country_column_is_null() {
+    public void test_toDomain_yields_no_preferred_city_when_the_reference_is_null() {
         //given
-        UserEntity entity = UserMapper.toEntity(user(null, null), null);
+        UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
 
         //when + then
-        assertThat(entity.getPreferredCountryIso()).isNull();
-        assertThat(UserMapper.toDomain(entity).getPreferredLocation()).isNull();
+        assertThat(entity.getPreferredCityEntity()).isNull();
+        assertThat(UserMapper.toDomain(entity).getPreferredCityId()).isNull();
     }
 
     @Test
-    public void test_updateEntity_copies_editable_fields_address_link_and_preferred_location() {
+    public void test_updateEntity_copies_editable_fields_address_link_and_preferred_city() {
         //given
-        UserEntity entity = UserMapper.toEntity(user(null, WARSAW), null);
+        UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
         AddressEntity address = new AddressEntity();
         address.setId(9);
+        CityEntity city = warsaw();
         User updated = User.builder()
                 .id(UserId.of(entity.getId()))
                 .name("Jane")
@@ -81,22 +80,32 @@ public class UserMapperTest {
                 .passwordHash(PasswordHash.of("$2a$10$storedhashvalue"))
                 .dateOfBirth(null)
                 .addressId(9)
-                .preferredLocation(null)
+                .preferredCityId(11)
                 .build();
 
         //when
-        UserMapper.updateEntity(entity, updated, address);
+        UserMapper.updateEntity(entity, updated, address, city);
 
         //then
         assertThat(entity.getName()).isEqualTo("Jane");
         assertThat(entity.getSurname()).isEqualTo("Roe");
         assertThat(entity.getDateOfBirth()).isNull();
         assertThat(entity.getAddressEntity()).isSameAs(address);
-        assertThat(entity.getPreferredCity()).isNull();
-        assertThat(entity.getPreferredRegion()).isNull();
-        assertThat(entity.getPreferredCountryIso()).isNull();
-        assertThat(entity.getPreferredLatitude()).isNull();
-        assertThat(entity.getPreferredLongitude()).isNull();
+        assertThat(entity.getPreferredCityEntity()).isSameAs(city);
         assertThat(UserMapper.toDomain(entity).getAddressId()).isEqualTo(9);
+        assertThat(UserMapper.toDomain(entity).getPreferredCityId()).isEqualTo(11);
+    }
+
+    @Test
+    public void test_updateEntity_clears_the_preferred_city_when_the_user_has_none() {
+        //given
+        UserEntity entity = UserMapper.toEntity(user(null, 11), null, warsaw());
+
+        //when
+        UserMapper.updateEntity(entity, user(null, null), null, null);
+
+        //then
+        assertThat(entity.getPreferredCityEntity()).isNull();
+        assertThat(UserMapper.toDomain(entity).getPreferredCityId()).isNull();
     }
 }

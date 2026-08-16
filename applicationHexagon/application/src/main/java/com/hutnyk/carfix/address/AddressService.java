@@ -3,6 +3,7 @@ package com.hutnyk.carfix.address;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.in.address.AddressPortIn;
 import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.out.address.AddressPortOut;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,5 +20,11 @@ public class AddressService implements AddressPortIn {
     @Transactional(readOnly = true)
     public Optional<AddressView> loadAddressView(Integer addressId) {
         return addressPortOut.loadView(addressId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<LocationView> loadCityView(Integer cityId) {
+        return addressPortOut.loadCityView(cityId);
     }
 }

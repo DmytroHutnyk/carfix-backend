@@ -3,6 +3,7 @@ package com.hutnyk.carfix.user;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.address.AddressPortIn;
 import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.user.dto.response.UserCoreResponse;
 import com.hutnyk.carfix.user.mapper.UserToResponseMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,10 @@ public class UserResponseAssembler {
                 ? null
                 : addressPortIn.loadAddressView(user.getAddressId()).orElseThrow(() ->
                         new UnexpectedStateException("User " + user.getId().id() + " points at a missing address " + user.getAddressId()));
-        return UserToResponseMapper.toCoreResponse(user, address);
+        LocationView preferredLocation = user.getPreferredCityId() == null
+                ? null
+                : addressPortIn.loadCityView(user.getPreferredCityId()).orElseThrow(() ->
+                        new UnexpectedStateException("User " + user.getId().id() + " points at a missing city " + user.getPreferredCityId()));
+        return UserToResponseMapper.toCoreResponse(user, address, preferredLocation);
     }
 }

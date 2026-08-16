@@ -6,10 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hutnyk.carfix.address.Address;
 import com.hutnyk.carfix.address.City;
 import com.hutnyk.carfix.address.CountryIso;
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.address.Region;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.in.user.commands.LocationCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserAddressCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
@@ -29,7 +29,6 @@ public class UserServiceTest {
     private static final UserId EXISTING_ID = UserId.genId();
     private static final PhoneNumber EXISTING_PHONE = new PhoneNumber("+48", "123456789");
     private static final PasswordHash EXISTING_HASH = PasswordHash.of("$2a$10$storedhashvalue");
-    private static final Location EXISTING_LOCATION = new Location("Kraków", "Lesser Poland Voivodeship", CountryIso.PL, null, null);
     private static final UpdateUserAddressCommand ADDRESS_COMMAND = new UpdateUserAddressCommand(
             "Marszałkowska", "10", "3A", "00-001", "Warsaw", "Masovian Voivodeship", "PL",
             new BigDecimal("52.229700"), new BigDecimal("21.012200"), "ChIJ_place");
@@ -45,7 +44,7 @@ public class UserServiceTest {
                 .passwordHash(EXISTING_HASH)
                 .dateOfBirth(LocalDate.of(1990, 5, 1))
                 .addressId(addressId)
-                .preferredLocation(EXISTING_LOCATION)
+                .preferredCityId(11)
                 .build();
     }
 
@@ -89,6 +88,7 @@ public class UserServiceTest {
         final List<Integer> deleted = new ArrayList<>();
         final List<Region> insertedRegions = new ArrayList<>();
         final List<City> insertedCities = new ArrayList<>();
+        final List<City> updatedCities = new ArrayList<>();
         Integer viewRequestedFor;
         int nextAddressId = 500;
         final List<String> calls;
@@ -144,15 +144,26 @@ public class UserServiceTest {
         @Override
         public Optional<City> findCity(String name, Integer regionId) {
             return "Warsaw".equals(name) && regionId == 3
-                    ? Optional.of(City.of(11, name, regionId))
+                    ? Optional.of(City.of(11, name, regionId, null, null))
                     : Optional.empty();
         }
 
         @Override
         public City insertCity(City city) {
-            City saved = City.of(110, city.getName(), city.getRegionId());
+            City saved = City.of(110, city.getName(), city.getRegionId(), city.getLatitude(), city.getLongitude());
             insertedCities.add(saved);
             return saved;
+        }
+
+        @Override
+        public Optional<LocationView> loadCityView(Integer cityId) {
+            throw new AssertionError("not used");
+        }
+
+        @Override
+        public City updateCity(City city) {
+            updatedCities.add(city);
+            return city;
         }
     }
 
@@ -176,8 +187,30 @@ public class UserServiceTest {
         assertThat(result.getName()).isEqualTo("New");
         assertThat(result.getSurname()).isEqualTo("Surname");
         assertThat(result.getDateOfBirth()).isEqualTo(LocalDate.of(2000, 1, 15));
-        assertThat(result.getPreferredLocation()).isEqualTo(
-                new Location("Warsaw", "Masovian Voivodeship", CountryIso.PL, new BigDecimal("52.2297"), new BigDecimal("21.0122")));
+        assertThat(result.getPreferredCityId()).isEqualTo(11);
+        assertThat(addressPortOut.updatedCities).hasSize(1);
+        assertThat(addressPortOut.updatedCities.get(0).getId()).isEqualTo(11);
+        assertThat(addressPortOut.updatedCities.get(0).getLatitude()).isEqualByComparingTo("52.2297");
+        assertThat(addressPortOut.updatedCities.get(0).getLongitude()).isEqualByComparingTo("21.0122");
+    }
+
+    @Test
+    public void test_updateUser_preferred_location_in_an_unknown_city_inserts_region_and_city() {
+        //given
+        UpdateUserCommand command = new UpdateUserCommand("New", "Surname", null,
+                new LocationCommand("Berlin", "Berlin", "DE", new BigDecimal("52.52"), new BigDecimal("13.405")));
+
+        //when
+        User result = service.updateUser("john@example.com", command);
+
+        //then
+        assertThat(addressPortOut.insertedRegions).hasSize(1);
+        assertThat(addressPortOut.insertedRegions.get(0).getCountryIso()).isEqualTo(CountryIso.DE);
+        assertThat(addressPortOut.insertedCities).hasSize(1);
+        assertThat(addressPortOut.insertedCities.get(0).getLatitude()).isEqualByComparingTo("52.52");
+        assertThat(addressPortOut.insertedCities.get(0).getLongitude()).isEqualByComparingTo("13.405");
+        assertThat(addressPortOut.updatedCities).isEmpty();
+        assertThat(result.getPreferredCityId()).isEqualTo(110);
     }
 
     @Test
@@ -207,7 +240,7 @@ public class UserServiceTest {
 
         //then
         assertThat(userPortOut.updated.getDateOfBirth()).isNull();
-        assertThat(userPortOut.updated.getPreferredLocation()).isNull();
+        assertThat(userPortOut.updated.getPreferredCityId()).isNull();
     }
 
     @Test
@@ -258,7 +291,7 @@ public class UserServiceTest {
         assertThat(inserted.getGooglePlaceId()).isEqualTo("ChIJ_place");
         assertThat(addressPortOut.updated).isEmpty();
         assertThat(freshUsers.updated.getAddressId()).isEqualTo(500);
-        assertThat(freshUsers.updated.getPreferredLocation()).isEqualTo(EXISTING_LOCATION);
+        assertThat(freshUsers.updated.getPreferredCityId()).isEqualTo(11);
         assertThat(addressPortOut.viewRequestedFor).isEqualTo(500);
         assertThat(view.city()).isEqualTo("Warsaw");
         assertThat(calls).containsExactly("address.insert", "user.update");
@@ -319,7 +352,7 @@ public class UserServiceTest {
 
         //then
         assertThat(userPortOut.updated.getAddressId()).isNull();
-        assertThat(userPortOut.updated.getPreferredLocation()).isEqualTo(EXISTING_LOCATION);
+        assertThat(userPortOut.updated.getPreferredCityId()).isEqualTo(11);
         assertThat(addressPortOut.deleted).containsExactly(7);
         assertThat(calls).containsExactly("user.update", "address.deleteById");
     }

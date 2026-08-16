@@ -3,7 +3,6 @@ package com.hutnyk.carfix.user;
 import com.hutnyk.carfix.address.Address;
 import com.hutnyk.carfix.address.CityResolver;
 import com.hutnyk.carfix.address.CountryIso;
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.address.query.AddressView;
@@ -38,20 +37,16 @@ public class UserService implements UserPortIn {
     @Override
     public User updateUser(String email, UpdateUserCommand command) {
         User existing = loadOrThrow(email);
+        LocationCommand preferred = command.preferredLocation();
+        Integer preferredCityId = preferred == null
+                ? null
+                : cityResolver.resolveCityId(preferred.city(), preferred.region(),
+                        CountryIso.parse(preferred.countryIso()), preferred.latitude(), preferred.longitude());
 
         User user = User.of(
-                existing.getId(),
-                command.name(),
-                command.surname(),
-                existing.getPhoneNumber(),
-                existing.getEmail(),
-                existing.getRole(),
-                existing.getPasswordHash(),
-                command.dateOfBirth(),
-                existing.getAddressId(),
-                toLocation(command.preferredLocation())
-        );
-
+                existing.getId(), command.name(), command.surname(), existing.getPhoneNumber(), existing.getEmail(),
+                existing.getRole(), existing.getPasswordHash(), command.dateOfBirth(), existing.getAddressId(),
+                preferredCityId);
         return userPortOut.update(user);
     }
 
@@ -98,13 +93,5 @@ public class UserService implements UserPortIn {
     private User loadOrThrow(String email) {
         return userPortOut.loadUserByEmail(email)
                 .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(email));
-    }
-
-    private static Location toLocation(LocationCommand command) {
-        if (command == null) {
-            return null;
-        }
-        return new Location(command.city(), command.region(), CountryIso.parse(command.countryIso()),
-                command.latitude(), command.longitude());
     }
 }

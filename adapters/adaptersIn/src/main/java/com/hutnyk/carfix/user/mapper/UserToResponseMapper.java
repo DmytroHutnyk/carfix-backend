@@ -1,14 +1,14 @@
 package com.hutnyk.carfix.user.mapper;
 
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.dto.response.AddressResponse;
 import com.hutnyk.carfix.user.dto.response.LocationResponse;
 import com.hutnyk.carfix.user.dto.response.UserCoreResponse;
 
 public class UserToResponseMapper {
-    public static UserCoreResponse toCoreResponse(User user, AddressView address) {
+    public static UserCoreResponse toCoreResponse(User user, AddressView address, LocationView preferredLocation) {
         if (user == null) {
             return null;
         }
@@ -22,7 +22,7 @@ public class UserToResponseMapper {
                 user.getEmail(),
                 user.getDateOfBirth(),
                 toAddressResponse(address),
-                toLocationResponse(user.getPreferredLocation())
+                toLocationResponse(preferredLocation)
         );
     }
 
@@ -46,17 +46,17 @@ public class UserToResponseMapper {
         );
     }
 
-    public static LocationResponse toLocationResponse(Location location) {
-        if (location == null) {
+    public static LocationResponse toLocationResponse(LocationView view) {
+        if (view == null) {
             return null;
         }
 
         return new LocationResponse(
-                location.city(),
-                location.region(),
-                location.countryIso(),
-                location.latitude(),
-                location.longitude()
+                view.city(),
+                view.region(),
+                view.countryIso(),
+                view.latitude(),
+                view.longitude()
         );
     }
 }

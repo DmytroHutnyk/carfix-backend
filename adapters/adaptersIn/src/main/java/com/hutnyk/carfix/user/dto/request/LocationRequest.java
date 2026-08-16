@@ -9,9 +9,11 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record LocationRequest(
+        @NotBlank(message = "City is required")
         @Size(max = 100, message = "City cannot exceed 100 characters")
         String city,
 
+        @NotBlank(message = "Region is required")
         @Size(max = 100, message = "Region cannot exceed 100 characters")
         String region,
 

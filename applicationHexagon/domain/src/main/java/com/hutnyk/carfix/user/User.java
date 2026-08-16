@@ -1,6 +1,5 @@
 package com.hutnyk.carfix.user;
 
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.util.Validator;
@@ -31,7 +30,7 @@ public final class User {
     private final Integer addressId;
 
     //Nullable
-    private final Location preferredLocation;
+    private final Integer preferredCityId;
 
     @Builder
     private User(
@@ -44,7 +43,7 @@ public final class User {
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
             Integer addressId,
-            Location preferredLocation) {
+            Integer preferredCityId) {
         this.id = Validator.notNull(id, "id");
         this.name = Validator.notBlank(name, "name");
         this.surname = Validator.notBlank(surname, "surname");
@@ -54,7 +53,7 @@ public final class User {
         this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
-        this.preferredLocation = preferredLocation;
+        this.preferredCityId = preferredCityId;
     }
 
     public static User of(
@@ -67,7 +66,7 @@ public final class User {
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
             Integer addressId,
-            Location preferredLocation){
+            Integer preferredCityId){
         return User.builder()
                 .id(id)
                 .name(name)
@@ -78,7 +77,7 @@ public final class User {
                 .passwordHash(passwordHash)
                 .dateOfBirth(dateOfBirth)
                 .addressId(addressId)
-                .preferredLocation(preferredLocation)
+                .preferredCityId(preferredCityId)
                 .build();
     }
 

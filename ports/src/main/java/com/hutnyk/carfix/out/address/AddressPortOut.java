@@ -5,6 +5,7 @@ import com.hutnyk.carfix.address.City;
 import com.hutnyk.carfix.address.CountryIso;
 import com.hutnyk.carfix.address.Region;
 import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 
 import java.util.Optional;
 
@@ -17,4 +18,6 @@ public interface AddressPortOut {
     Region insertRegion(Region region);
     Optional<City> findCity(String name, Integer regionId);
     City insertCity(City city);
+    Optional<LocationView> loadCityView(Integer cityId);
+    City updateCity(City city);
 }

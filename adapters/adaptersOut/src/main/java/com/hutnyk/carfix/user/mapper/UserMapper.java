@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.user.mapper;
 
-import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.address.entity.CityEntity;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -11,12 +11,12 @@ import com.hutnyk.carfix.user.entity.UserEntity;
 public class UserMapper {
 
 
-    public static UserEntity toEntity(User user, AddressEntity addressEntity) {
+    public static UserEntity toEntity(User user, AddressEntity addressEntity, CityEntity preferredCityEntity) {
         if (user == null) {
             return null;
         }
 
-        UserEntity entity = new UserEntity(
+        return new UserEntity(
                 user.getId().id(),
                 user.getName(),
                 user.getSurname(),
@@ -27,18 +27,16 @@ public class UserMapper {
                 user.getRole(),
                 user.getDateOfBirth(),
                 addressEntity,
-                null, null, null, null, null
+                preferredCityEntity
         );
-        copyPreferredLocation(entity, user.getPreferredLocation());
-        return entity;
     }
 
-    public static void updateEntity(UserEntity entity, User user, AddressEntity addressEntity) {
+    public static void updateEntity(UserEntity entity, User user, AddressEntity addressEntity, CityEntity preferredCityEntity) {
         entity.setName(user.getName());
         entity.setSurname(user.getSurname());
         entity.setDateOfBirth(user.getDateOfBirth());
         entity.setAddressEntity(addressEntity);
-        copyPreferredLocation(entity, user.getPreferredLocation());
+        entity.setPreferredCityEntity(preferredCityEntity);
     }
 
 
@@ -56,9 +54,8 @@ public class UserMapper {
         Integer addressId = entity.getAddressEntity() != null
                 ? entity.getAddressEntity().getId()
                 : null;
-        Location preferredLocation = entity.getPreferredCountryIso() != null
-                ? new Location(entity.getPreferredCity(), entity.getPreferredRegion(), entity.getPreferredCountryIso(),
-                        entity.getPreferredLatitude(), entity.getPreferredLongitude())
+        Integer preferredCityId = entity.getPreferredCityEntity() != null
+                ? entity.getPreferredCityEntity().getId()
                 : null;
 
         return User.builder()
@@ -71,15 +68,7 @@ public class UserMapper {
                 .passwordHash(passwordHash)
                 .dateOfBirth(entity.getDateOfBirth())
                 .addressId(addressId)
-                .preferredLocation(preferredLocation)
+                .preferredCityId(preferredCityId)
                 .build();
-    }
-
-    private static void copyPreferredLocation(UserEntity entity, Location location) {
-        entity.setPreferredCity(location == null ? null : location.city());
-        entity.setPreferredRegion(location == null ? null : location.region());
-        entity.setPreferredCountryIso(location == null ? null : location.countryIso());
-        entity.setPreferredLatitude(location == null ? null : location.latitude());
-        entity.setPreferredLongitude(location == null ? null : location.longitude());
     }
 }
