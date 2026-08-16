@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +50,8 @@ class SlotEndpointChecklistIT {
 
     private static final String BRANCH_A = "10000000-0000-4000-8000-000000000001";
     private static final String BRANCH_B = "10000000-0000-4000-8000-000000000002";
+    private static final String CHECK6_BOOKING_ID = "3fffffff-0000-4000-8000-00000000c6c6";
+    private static final String CHECK10_MARKER = "slot-checklist-10";
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
     private static final int GRID = 15;
 
@@ -510,6 +511,10 @@ class SlotEndpointChecklistIT {
     private void check6() throws Exception {
         Chk c = check("6", "booked window excluded");
         try {
+            jdbc.update("DELETE FROM " + schema + ".service_bays_bookings WHERE booking_id = CAST(? AS uuid)",
+                    CHECK6_BOOKING_ID);
+            jdbc.update("DELETE FROM " + schema + ".bookings WHERE booking_id = CAST(? AS uuid)", CHECK6_BOOKING_ID);
+
             String bayFilter =
                     "sb.branch_id = CAST(? AS uuid) AND sb.status = 'ACTIVE' AND sb.service_bay_type_id IN"
                             + " (SELECT sbt.service_bay_type_id FROM " + schema
@@ -549,18 +554,17 @@ class SlotEndpointChecklistIT {
             String carProfileId = jdbc.queryForObject(
                     "SELECT car_profile_id::text FROM " + schema + ".car_profiles ORDER BY car_profile_id LIMIT 1",
                     String.class);
-            String bookingId = UUID.randomUUID().toString();
             try {
                 jdbc.update("INSERT INTO " + schema + ".bookings"
                                 + " (booking_id, date, status, start_time, end_time, branch_id, car_profile_id)"
                                 + " VALUES (CAST(? AS uuid), ?, 'SCHEDULED', ?, ?, CAST(? AS uuid), CAST(? AS uuid))",
-                        bookingId, java.sql.Date.valueOf(date), Time.valueOf(bookedStart), Time.valueOf(bookedEnd),
-                        BRANCH_B, carProfileId);
+                        CHECK6_BOOKING_ID, java.sql.Date.valueOf(date), Time.valueOf(bookedStart),
+                        Time.valueOf(bookedEnd), BRANCH_B, carProfileId);
                 jdbc.update("INSERT INTO " + schema + ".service_bays_bookings"
                                 + " (booked_time, date, service_bay_id, booking_id)"
                                 + " VALUES (tsrange(?, ?, '[)'), ?, ?, CAST(? AS uuid))",
                         Timestamp.valueOf(date.atTime(bookedStart)), Timestamp.valueOf(date.atTime(bookedEnd)),
-                        java.sql.Date.valueOf(date), bayId, bookingId);
+                        java.sql.Date.valueOf(date), bayId, CHECK6_BOOKING_ID);
 
                 JsonNode b = json(slotsUrl(BRANCH_B, String.valueOf(SVC_TYRE_B), date, date));
                 c.eq("day count", 1, b.get("days").size());
@@ -606,8 +610,10 @@ class SlotEndpointChecklistIT {
             } finally {
                 try {
                     jdbc.update("DELETE FROM " + schema + ".service_bays_bookings WHERE booking_id = CAST(? AS uuid)",
-                            bookingId);
-                    jdbc.update("DELETE FROM " + schema + ".bookings WHERE booking_id = CAST(? AS uuid)", bookingId);
+                            CHECK6_BOOKING_ID);
+                    jdbc.update(
+                            "DELETE FROM " + schema + ".bookings WHERE booking_id = CAST(? AS uuid)",
+                            CHECK6_BOOKING_ID);
                 } catch (Throwable t) {
                     c.fails.add("cleanup failed: " + t);
                 }
@@ -805,8 +811,9 @@ class SlotEndpointChecklistIT {
      */
     private void check10() throws Exception {
         Chk c = check("10", "opening-hours exceptions");
-        String marker = "slot-checklist-10-" + UUID.randomUUID();
         try {
+            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", CHECK10_MARKER);
+
             Map<DayOfWeek, Hours> hours = hours(BRANCH_A);
             Set<LocalDate> busy = busyDates(BRANCH_A, from(), to());
             LocalDate target = null;
@@ -835,7 +842,7 @@ class SlotEndpointChecklistIT {
             jdbc.update("INSERT INTO " + schema + ".opening_hours_exceptions"
                             + " (date, start_time, close_time, is_open, reason, branch_id)"
                             + " VALUES (?, NULL, NULL, false, ?, CAST(? AS uuid))",
-                    java.sql.Date.valueOf(target), marker, BRANCH_A);
+                    java.sql.Date.valueOf(target), CHECK10_MARKER, BRANCH_A);
             JsonNode closed = json(path);
             c.eq("closed exception: slots on " + target, 0, count(day(closed, target.toString())));
             if (other != null) {
@@ -843,20 +850,20 @@ class SlotEndpointChecklistIT {
                 c.eq("closed exception leaves " + other + " alone", fits(h.open(), h.close(), 60),
                         count(day(closed, other.toString())));
             }
-            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
+            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", CHECK10_MARKER);
 
             // (b) open exception 10:00-12:00 -> only 60-min visits inside [10:00,12:00)
             jdbc.update("INSERT INTO " + schema + ".opening_hours_exceptions"
                             + " (date, start_time, close_time, is_open, reason, branch_id)"
                             + " VALUES (?, TIME '10:00', TIME '12:00', true, ?, CAST(? AS uuid))",
-                    java.sql.Date.valueOf(target), marker, BRANCH_A);
+                    java.sql.Date.valueOf(target), CHECK10_MARKER, BRANCH_A);
             JsonNode narrowed = day(json(path), target.toString());
             c.eq("open exception 10-12: slot count on " + target,
                     fits(LocalTime.of(10, 0), LocalTime.of(12, 0), 60), count(narrowed));
             c.eq("open exception 10-12: first slot", "10:00-11:00", first(narrowed));
             c.eq("open exception 10-12: last slot", "11:00-12:00", last(narrowed));
             shape(c, narrowed, target.toString(), 60);
-            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
+            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", CHECK10_MARKER);
 
             // (c) rows gone -> the day is back to its weekly shape
             c.eq("after cleanup: slots on " + target, before, count(day(json(path), target.toString())));
@@ -865,7 +872,7 @@ class SlotEndpointChecklistIT {
             c.fails.add("threw: " + t);
         } finally {
             try {
-                jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
+                jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", CHECK10_MARKER);
             } catch (Throwable t) {
                 c.fails.add("cleanup failed: " + t);
             }

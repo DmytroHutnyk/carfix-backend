@@ -609,6 +609,11 @@ public class SlotServiceTest {
         assertThat(availabilityPortOut.openingHoursLoaded).isTrue();
         assertThat(availabilityPortOut.resourcesLoaded).isFalse();
         assertThat(availabilityPortOut.calendarsLoaded).isFalse();
+        assertThat(availabilityPortOut.lastEmployeesBranchId).isNull();
+        assertThat(availabilityPortOut.lastEquipmentBranchId).isNull();
+        assertThat(availabilityPortOut.lastBayOccIds).isNull();
+        assertThat(availabilityPortOut.lastEmployeeAvailIds).isNull();
+        assertThat(availabilityPortOut.lastEquipmentAvailIds).isNull();
     }
 
     @Test

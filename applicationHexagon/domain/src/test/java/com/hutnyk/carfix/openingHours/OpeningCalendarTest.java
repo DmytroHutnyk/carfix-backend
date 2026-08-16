@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.scheduling.TimeRange;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -119,10 +120,13 @@ public class OpeningCalendarTest {
     @Test
     void test_closed_exception_wins_over_open_exception_on_the_same_date() {
         //given
-        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18),
+        OpeningCalendar openThenClosed = OpeningCalendar.of(monToFri(8, 18),
                 List.of(openOn(FRIDAY, 9, 11), closedOn(FRIDAY)));
+        OpeningCalendar closedThenOpen = OpeningCalendar.of(monToFri(8, 18),
+                List.of(closedOn(FRIDAY), openOn(FRIDAY, 9, 11)));
         //when //then
-        assertThat(calendar.openRanges(FRIDAY)).isEmpty();
+        assertThat(openThenClosed.openRanges(FRIDAY)).isEmpty();
+        assertThat(closedThenOpen.openRanges(FRIDAY)).isEmpty();
     }
 
     @Test
@@ -134,12 +138,23 @@ public class OpeningCalendarTest {
     }
 
     @Test
+    void test_exception_is_keyed_by_date_not_by_weekday() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of(closedOn(FRIDAY)));
+        //when //then
+        assertThat(calendar.openRanges(FRIDAY)).isEmpty();
+        assertThat(calendar.openRanges(FRIDAY.plusWeeks(1)))
+                .containsExactly(range(FRIDAY.plusWeeks(1), 8, 18));
+    }
+
+    @Test
     void test_row_with_close_not_after_start_fails_loud_when_applied() {
         //given
         OpeningCalendar calendar = OpeningCalendar.of(List.of(weekly(DayOfWeek.FRIDAY, 18, 8)), List.of());
         //when //then
         assertThatThrownBy(() -> calendar.openRanges(FRIDAY))
-                .isInstanceOf(DomainObjectValidationException.class);
+                .isInstanceOfSatisfying(DomainObjectValidationException.class,
+                        e -> assertThat(e.getErrorType()).isEqualTo(ValidationErrorType.INVALID_TIME_RANGE));
         assertThat(calendar.openRanges(SATURDAY)).isEmpty();
     }
 
