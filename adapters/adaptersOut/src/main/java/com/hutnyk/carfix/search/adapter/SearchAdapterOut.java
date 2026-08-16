@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.search.adapter;
 
 import com.hutnyk.carfix.components.PersistenceAdapter;
+import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
 import com.hutnyk.carfix.in.search.query.CategorySuggestionView;
 import com.hutnyk.carfix.in.search.query.MatchedServiceView;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
@@ -31,6 +32,7 @@ public class SearchAdapterOut implements SearchPortOut {
 
     private static final double KM_PER_DEGREE = 111.32;
     private static final int MAX_MATCHED_SERVICES = 3;
+    private static final int MINUTES_PER_DAY = 24 * 60;
 
     private final EntityManager em;
 
@@ -132,9 +134,26 @@ public class SearchAdapterOut implements SearchPortOut {
               )
             """;
 
+    /* Coarse pre-filter: some ACTIVE bay of a type the matched service accepts has an availability row
+       on a day of the range overlapping that day's window; staff/equipment are settled in Java (layer 2). */
+    private static final String AVAILABILITY_FILTER = """
+              AND EXISTS (
+                  SELECT 1 FROM services s2
+                  JOIN services_service_bay_types sbt ON sbt.service_id = s2.service_id
+                  JOIN service_bays sb ON sb.branch_id = b.branch_id
+                                      AND sb.service_bay_type_id = sbt.service_bay_type_id
+                                      AND sb.status = 'ACTIVE'
+                  JOIN service_bays_availability sba ON sba.service_bay_id = sb.service_bay_id
+                  WHERE s2.branch_id = b.branch_id AND s2.status = 'ACTIVE' AND s2.name ILIKE :serviceName
+                    AND sba.date BETWEEN :availFrom AND :availTo
+                    AND sba.available_time && tsrange(sba.date + (:winFromMin * INTERVAL '1 minute'),
+                                                      sba.date + (:winToMin * INTERVAL '1 minute'), '[)')
+              )
+            """;
+
     private static final String PAGE_SELECT = """
             SELECT b.branch_id, b.name, a.street_name, a.building_number, c.name AS city_name,
-                   a.latitude, a.longitude, b.rating, b.review_count
+                   a.latitude, a.longitude, b.rating, b.review_count, b.tz
             """;
 
     private static final String DISTANCE_ORDER_EXPR =
@@ -143,6 +162,7 @@ public class SearchAdapterOut implements SearchPortOut {
     /* Boolean DESC puts the match first; a stable order means the pinned row appears on page 0 only. */
     private static final String PINNED_ORDER_EXPR = "(b.branch_id = :pinnedBranchId) DESC";
     private static final String PAGE_LIMIT = "\nLIMIT :size OFFSET :offset\n";
+    private static final String CANDIDATE_LIMIT = "\nLIMIT :limit\n";
 
     private static final String CATEGORY_NAME_SQL =
             "SELECT name FROM service_categories WHERE service_category_id = :categoryId";
@@ -218,20 +238,12 @@ public class SearchAdapterOut implements SearchPortOut {
         boolean sortByDistance = WorkshopSearchQuery.SORT_DISTANCE.equals(query.sort()) && hasCoordinates;
         boolean pinned = query.pinnedBranchId() != null;
 
-        /* Radius means "within X km of the point": the bbox replaces city/voivodeship,
-           country stays so a radius near a border keeps to the searched country. */
-        String locationFilter = query.radiusKm() != null
-                ? (query.country() != null ? COUNTRY_FILTER : "") + BBOX_FILTER
-                : locationFilter(query.city(), query.voivodeship(), query.country());
-        String matchFilter = matchFilter(query);
-        String filter = BRANCH_FILTER_BASE.formatted(locationFilter)
-                + matchFilter
-                + (brandId != null ? BRAND_FILTER : "");
+        String filter = filter(query, brandId);
 
         /* :pinnedBranchId appears in the filter only when there was a match clause to escape,
            but it always appears in ORDER BY when pinning — bind exactly where it is used,
            because binding a parameter absent from the SQL throws. */
-        boolean filterHasPinned = pinned && !matchFilter.isEmpty();
+        boolean filterHasPinned = pinned && !matchFilter(query).isEmpty();
 
         Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + filter);
         bindFilterParams(countQuery, query, brandId);
@@ -244,54 +256,34 @@ public class SearchAdapterOut implements SearchPortOut {
             return WorkshopSearchPage.empty(query.page(), query.size());
         }
 
-        String orderBy = "ORDER BY "
-                + (pinned ? PINNED_ORDER_EXPR + ", " : "")
-                + (sortByDistance ? DISTANCE_ORDER_EXPR : NAME_ORDER_EXPR)
-                + PAGE_LIMIT;
-
-        Query pageQuery = em.createNativeQuery(PAGE_SELECT + filter + orderBy);
+        Query pageQuery = em.createNativeQuery(
+                PAGE_SELECT + filter + orderBy(pinned, sortByDistance) + PAGE_LIMIT);
         bindFilterParams(pageQuery, query, brandId);
-        if (pinned) {
-            pageQuery.setParameter("pinnedBranchId", query.pinnedBranchId());
-        }
-        if (sortByDistance) {
-            pageQuery.setParameter("lat", query.lat());
-            pageQuery.setParameter("lng", query.lng());
-            pageQuery.setParameter("lngScale", BigDecimal.valueOf(lngScale(query.lat())));
-        }
+        bindOrderParams(pageQuery, query, pinned, sortByDistance);
         pageQuery.setParameter("size", query.size());
         pageQuery.setParameter("offset", (long) query.page() * query.size());
         List<Object[]> branchRows = pageQuery.getResultList();
 
-        List<UUID> branchIds = branchRows.stream().map(row -> (UUID) row[0]).toList();
-        Map<UUID, List<MatchedServiceView>> matchedServices = findMatchedServices(query, branchIds);
-
-        List<WorkshopResultView> content = branchRows.stream()
-                .map(row -> {
-                    UUID branchId = (UUID) row[0];
-                    BigDecimal branchLat = (BigDecimal) row[5];
-                    BigDecimal branchLng = (BigDecimal) row[6];
-                    return new WorkshopResultView(
-                            branchId, (String) row[1], (String) row[2], (String) row[3], (String) row[4],
-                            branchLat, branchLng,
-                            hasCoordinates
-                                    ? distanceKm(query.lat(), query.lng(), branchLat, branchLng)
-                                    : null,
-                            (BigDecimal) row[7],
-                            row[8] != null ? ((Number) row[8]).intValue() : null,
-                            matchedServices.getOrDefault(branchId, List.of()),
-                            null, null);
-                })
-                .toList();
-
+        List<WorkshopResultView> content = toViews(branchRows, query, hasCoordinates);
         int totalPages = (int) Math.ceil((double) total / query.size());
         return new WorkshopSearchPage(content, query.page(), query.size(), total, totalPages, null);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<WorkshopResultView> findAvailabilityCandidates(
             WorkshopSearchQuery query, Integer brandId, int limit) {
-        throw new UnsupportedOperationException();
+        boolean hasCoordinates = query.lat() != null && query.lng() != null;
+        boolean sortByDistance = WorkshopSearchQuery.SORT_DISTANCE.equals(query.sort()) && hasCoordinates;
+        boolean pinned = query.pinnedBranchId() != null;
+
+        Query candidateQuery = em.createNativeQuery(
+                PAGE_SELECT + filter(query, brandId) + orderBy(pinned, sortByDistance) + CANDIDATE_LIMIT);
+        bindFilterParams(candidateQuery, query, brandId);
+        bindOrderParams(candidateQuery, query, pinned, sortByDistance);
+        candidateQuery.setParameter("limit", limit);
+        List<Object[]> rows = candidateQuery.getResultList();
+        return toViews(rows, query, hasCoordinates);
     }
 
     @Override
@@ -320,6 +312,28 @@ public class SearchAdapterOut implements SearchPortOut {
                 Collectors.mapping(row -> new MatchedServiceView(
                         ((Number) row[1]).intValue(), (String) row[2], (BigDecimal) row[3],
                         ((Number) row[4]).shortValue(), (String) row[5]), Collectors.toList())));
+    }
+
+    private List<WorkshopResultView> toViews(
+            List<Object[]> branchRows, WorkshopSearchQuery query, boolean hasCoordinates) {
+        List<UUID> branchIds = branchRows.stream().map(row -> (UUID) row[0]).toList();
+        Map<UUID, List<MatchedServiceView>> matchedServices = findMatchedServices(query, branchIds);
+        return branchRows.stream()
+                .map(row -> {
+                    UUID branchId = (UUID) row[0];
+                    BigDecimal branchLat = (BigDecimal) row[5];
+                    BigDecimal branchLng = (BigDecimal) row[6];
+                    return new WorkshopResultView(
+                            branchId, (String) row[1], (String) row[2], (String) row[3], (String) row[4],
+                            branchLat, branchLng,
+                            hasCoordinates ? distanceKm(query.lat(), query.lng(), branchLat, branchLng) : null,
+                            (BigDecimal) row[7],
+                            row[8] != null ? ((Number) row[8]).intValue() : null,
+                            matchedServices.getOrDefault(branchId, List.of()),
+                            (String) row[9],
+                            null);
+                })
+                .toList();
     }
 
     private static String locationFilter(String city, String voivodeship, String country) {
@@ -385,6 +399,24 @@ public class SearchAdapterOut implements SearchPortOut {
         return "  AND (" + String.join(" OR ", alternatives) + ")\n";
     }
 
+    private static String filter(WorkshopSearchQuery query, Integer brandId) {
+        /* Radius means "within X km of the point": the bbox replaces city/voivodeship,
+           country stays so a radius near a border keeps to the searched country. */
+        String locationFilter = query.radiusKm() != null
+                ? (query.country() != null ? COUNTRY_FILTER : "") + BBOX_FILTER
+                : locationFilter(query.city(), query.voivodeship(), query.country());
+        return BRANCH_FILTER_BASE.formatted(locationFilter)
+                + matchFilter(query)
+                + (brandId != null ? BRAND_FILTER : "")
+                + (query.availability() != null ? AVAILABILITY_FILTER : "");
+    }
+
+    private static String orderBy(boolean pinned, boolean sortByDistance) {
+        return "ORDER BY "
+                + (pinned ? PINNED_ORDER_EXPR + ", " : "")
+                + (sortByDistance ? DISTANCE_ORDER_EXPR : NAME_ORDER_EXPR);
+    }
+
     private static void bindFilterParams(Query nativeQuery, WorkshopSearchQuery query, Integer brandId) {
         if (query.radiusKm() != null) {
             if (query.country() != null) {
@@ -397,6 +429,21 @@ public class SearchAdapterOut implements SearchPortOut {
         bindMatchParams(nativeQuery, query);
         if (brandId != null) {
             nativeQuery.setParameter("brandId", brandId);
+        }
+        if (query.availability() != null) {
+            bindAvailabilityParams(nativeQuery, query.availability());
+        }
+    }
+
+    private static void bindOrderParams(
+            Query nativeQuery, WorkshopSearchQuery query, boolean pinned, boolean sortByDistance) {
+        if (pinned) {
+            nativeQuery.setParameter("pinnedBranchId", query.pinnedBranchId());
+        }
+        if (sortByDistance) {
+            nativeQuery.setParameter("lat", query.lat());
+            nativeQuery.setParameter("lng", query.lng());
+            nativeQuery.setParameter("lngScale", BigDecimal.valueOf(lngScale(query.lat())));
         }
     }
 
@@ -418,6 +465,15 @@ public class SearchAdapterOut implements SearchPortOut {
             nativeQuery.setParameter("q", query.q());
             nativeQuery.setParameter("minSimilarity", MIN_WORD_SIMILARITY);
         }
+    }
+
+    private static void bindAvailabilityParams(Query nativeQuery, AvailabilityWindow window) {
+        nativeQuery.setParameter("availFrom", window.from());
+        nativeQuery.setParameter("availTo", window.to());
+        nativeQuery.setParameter("winFromMin",
+                window.timeFrom() != null ? window.timeFrom().toSecondOfDay() / 60 : 0);
+        nativeQuery.setParameter("winToMin",
+                window.timeTo() != null ? window.timeTo().toSecondOfDay() / 60 : MINUTES_PER_DAY);
     }
 
     private static double lngScale(BigDecimal lat) {
