@@ -3,7 +3,6 @@ package com.hutnyk.carfix.employee.entity;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.employee.EmployeeStatus;
 import com.hutnyk.carfix.role.entity.RoleEntity;
-import com.hutnyk.carfix.user.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,14 +24,18 @@ public class EmployeeEntity {
 
     @Id
     @EqualsAndHashCode.Include
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "employee_id", nullable = false)
     private UUID id;
 
-    @ToString.Exclude
-    @MapsId
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity userEntity;
+    @Column(name = "first_name", length = 50, nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", length = 50, nullable = false)
+    private String lastName;
+
+    // FK to users(user_id): the optional login account. Plain column — an optional @OneToOne cannot be lazy.
+    @Column(name = "user_id")
+    private UUID userId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -41,7 +44,7 @@ public class EmployeeEntity {
     @Column(name = "notes")
     private String notes;
 
-    @Column(name = "salary", nullable = false, precision = 10, scale = 2)
+    @Column(name = "salary", precision = 10, scale = 2)
     private BigDecimal salary;
 
     @ToString.Exclude
@@ -53,7 +56,7 @@ public class EmployeeEntity {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "employees_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
+            joinColumns = @JoinColumn(name = "employee_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<RoleEntity> roles;
 }
