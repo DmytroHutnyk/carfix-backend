@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class ServiceBay {
@@ -52,5 +51,10 @@ public final class ServiceBay {
                 .serviceBayTypeId(serviceBayTypeId)
                 .branchId(branchId)
                 .build();
+    }
+
+    /** A bay the owner registers: active from day one, no notes yet. */
+    public static ServiceBay create(String name, Integer serviceBayTypeId, BranchId branchId) {
+        return of(null, name, ServiceBayStatus.ACTIVE, null, serviceBayTypeId, branchId);
     }
 }
