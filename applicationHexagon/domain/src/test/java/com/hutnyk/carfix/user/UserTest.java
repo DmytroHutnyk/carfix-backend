@@ -28,6 +28,21 @@ public class UserTest {
         );
     }
 
+    private User createUserWithLocation(Location location) {
+        return User.of(
+                UserId.genId(),
+                "John",
+                "Doe",
+                new PhoneNumber("+1", "1234567890"),
+                "john.doe@example.com",
+                UserRole.CUSTOMER,
+                PasswordHash.of("hashedPassword123"),
+                LocalDate.of(1990, 5, 1),
+                null,
+                location
+        );
+    }
+
     @Test
     public void test_validateBirthDate_valid_date_and_fieldName_not_null() {
         //when
@@ -104,7 +119,7 @@ public class UserTest {
     @Test
     public void test_linkAddress_returns_a_copy_pointing_at_the_address_and_keeps_everything_else() {
         //given
-        User user = createUserWithBirthDate(LocalDate.of(1990, 5, 1));
+        User user = createUserWithLocation(new Location("Warsaw", "Masovian Voivodeship", CountryIso.PL, null, null));
 
         //when
         User linked = user.linkAddress(42);
@@ -115,6 +130,11 @@ public class UserTest {
         assertThat(linked.getEmail()).isEqualTo(user.getEmail());
         assertThat(linked.getPasswordHash()).isEqualTo(user.getPasswordHash());
         assertThat(linked.getDateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 1));
+        assertThat(linked.getName()).isEqualTo(user.getName());
+        assertThat(linked.getSurname()).isEqualTo(user.getSurname());
+        assertThat(linked.getPhoneNumber()).isEqualTo(user.getPhoneNumber());
+        assertThat(linked.getRole()).isEqualTo(user.getRole());
+        assertThat(linked.getPreferredLocation()).isEqualTo(user.getPreferredLocation());
         assertThat(user.getAddressId()).isNull();
     }
 

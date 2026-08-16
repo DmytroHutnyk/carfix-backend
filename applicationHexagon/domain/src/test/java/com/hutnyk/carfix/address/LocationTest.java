@@ -46,8 +46,8 @@ public class LocationTest {
         //when + then
         assertThatThrownBy(() -> new Location("Warsaw", null, null, null, null))
                 .isInstanceOf(DomainObjectValidationException.class)
-                .extracting("errorType")
-                .isEqualTo(ValidationErrorType.NULL_VALUE);
+                .extracting("errorType", "fieldName")
+                .containsExactly(ValidationErrorType.NULL_VALUE, "countryIso");
     }
 
     @ParameterizedTest
@@ -104,5 +104,24 @@ public class LocationTest {
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType", "fieldName")
                 .containsExactly(ValidationErrorType.VALUE_OUT_OF_RANGE, "longitude");
+    }
+
+    @Test
+    public void test_boundary_coordinates_are_accepted() {
+        //when
+        Location result = new Location(null, null, CountryIso.PL, new BigDecimal("90"), new BigDecimal("-180"));
+
+        //then
+        assertThat(result.latitude()).isEqualByComparingTo("90");
+        assertThat(result.longitude()).isEqualByComparingTo("-180");
+    }
+
+    @Test
+    public void test_negative_latitude_out_of_range_is_rejected() {
+        //when + then
+        assertThatThrownBy(() -> new Location(null, null, CountryIso.PL, new BigDecimal("-90.000001"), WARSAW_LNG))
+                .isInstanceOf(DomainObjectValidationException.class)
+                .extracting("errorType", "fieldName")
+                .containsExactly(ValidationErrorType.VALUE_OUT_OF_RANGE, "latitude");
     }
 }

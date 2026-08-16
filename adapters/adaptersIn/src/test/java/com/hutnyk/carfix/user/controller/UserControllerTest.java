@@ -148,6 +148,7 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORE_BODY))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("John"))
                 .andExpect(jsonPath("$.surname").value("Doe"))
                 .andExpect(jsonPath("$.email").value(EMAIL))
@@ -228,6 +229,18 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.address.countryIso").value("PL"))
                 .andExpect(jsonPath("$.address.countryName").value("Poland"))
                 .andExpect(jsonPath("$.address.googlePlaceId").value("ChIJ_place"));
+    }
+
+    @Test
+    public void test_put_me_with_a_dangling_address_id_is_a_500() throws Exception {
+        //given
+        stub.addressIdOfUser = 999;
+
+        //when + then
+        mockMvc.perform(put("/api/users/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CORE_BODY))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test

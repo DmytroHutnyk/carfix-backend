@@ -7,7 +7,6 @@ import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class CountryIsoTest {
@@ -29,12 +28,22 @@ public class CountryIsoTest {
                 .containsExactly(ValidationErrorType.INVALID_ISO_CODE, "countryIso");
     }
 
+    @Test
+    public void test_parse_rejects_null_as_null_value() {
+        //when + then
+        assertThatThrownBy(() -> CountryIso.parse(null))
+                .isInstanceOf(DomainObjectValidationException.class)
+                .extracting("errorType", "fieldName")
+                .containsExactly(ValidationErrorType.NULL_VALUE, "countryIso");
+    }
+
     @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {"  "})
-    public void test_parse_rejects_blank(String code) {
+    @ValueSource(strings = {"", "  "})
+    public void test_parse_rejects_blank_as_empty_string(String code) {
         //when + then
         assertThatThrownBy(() -> CountryIso.parse(code))
-                .isInstanceOf(DomainObjectValidationException.class);
+                .isInstanceOf(DomainObjectValidationException.class)
+                .extracting("errorType", "fieldName")
+                .containsExactly(ValidationErrorType.EMPTY_STRING, "countryIso");
     }
 }

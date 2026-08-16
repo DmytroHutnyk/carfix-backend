@@ -52,9 +52,11 @@ public class UserServiceTest {
     private static final class StubUserPortOut implements UserPortOut {
         User stored;
         User updated;
+        final List<String> calls;
 
-        StubUserPortOut(User stored) {
+        StubUserPortOut(User stored, List<String> calls) {
             this.stored = stored;
+            this.calls = calls;
         }
 
         @Override
@@ -76,6 +78,7 @@ public class UserServiceTest {
         public User update(User user) {
             this.updated = user;
             this.stored = user;
+            calls.add("user.update");
             return user;
         }
     }
@@ -88,6 +91,11 @@ public class UserServiceTest {
         final List<City> insertedCities = new ArrayList<>();
         Integer viewRequestedFor;
         int nextAddressId = 500;
+        final List<String> calls;
+
+        StubAddressPortOut(List<String> calls) {
+            this.calls = calls;
+        }
 
         @Override
         public Optional<AddressView> loadView(Integer addressId) {
@@ -103,6 +111,7 @@ public class UserServiceTest {
                     address.getFlatNumber(), address.getPostalCode(), address.getCityId(),
                     address.getLatitude(), address.getLongitude(), address.getGooglePlaceId());
             inserted.add(saved);
+            calls.add("address.insert");
             return saved;
         }
 
@@ -115,6 +124,7 @@ public class UserServiceTest {
         @Override
         public void deleteById(Integer addressId) {
             deleted.add(addressId);
+            calls.add("address.deleteById");
         }
 
         @Override
@@ -146,8 +156,9 @@ public class UserServiceTest {
         }
     }
 
-    private final StubUserPortOut userPortOut = new StubUserPortOut(existingUser(7));
-    private final StubAddressPortOut addressPortOut = new StubAddressPortOut();
+    private final List<String> calls = new ArrayList<>();
+    private final StubUserPortOut userPortOut = new StubUserPortOut(existingUser(7), calls);
+    private final StubAddressPortOut addressPortOut = new StubAddressPortOut(calls);
     private final UserService service = new UserService(userPortOut, addressPortOut);
 
     // ---- updateUser -------------------------------------------------------------------------
@@ -215,7 +226,7 @@ public class UserServiceTest {
     @Test
     public void test_updating_a_user_whose_record_vanished_fails_as_authentication() {
         //given
-        UserService serviceWithNoUser = new UserService(new StubUserPortOut(null), addressPortOut);
+        UserService serviceWithNoUser = new UserService(new StubUserPortOut(null, calls), addressPortOut);
         UpdateUserCommand command = new UpdateUserCommand("John", "Doe", LocalDate.of(1990, 5, 1), null);
 
         //when + then
@@ -229,7 +240,7 @@ public class UserServiceTest {
     @Test
     public void test_updateAddress_for_a_user_without_address_inserts_it_links_the_user_and_returns_the_view() {
         //given
-        StubUserPortOut freshUsers = new StubUserPortOut(existingUser(null));
+        StubUserPortOut freshUsers = new StubUserPortOut(existingUser(null), calls);
         UserService fresh = new UserService(freshUsers, addressPortOut);
 
         //when
@@ -250,6 +261,7 @@ public class UserServiceTest {
         assertThat(freshUsers.updated.getPreferredLocation()).isEqualTo(EXISTING_LOCATION);
         assertThat(addressPortOut.viewRequestedFor).isEqualTo(500);
         assertThat(view.city()).isEqualTo("Warsaw");
+        assertThat(calls).containsExactly("address.insert", "user.update");
     }
 
     @Test
@@ -309,12 +321,13 @@ public class UserServiceTest {
         assertThat(userPortOut.updated.getAddressId()).isNull();
         assertThat(userPortOut.updated.getPreferredLocation()).isEqualTo(EXISTING_LOCATION);
         assertThat(addressPortOut.deleted).containsExactly(7);
+        assertThat(calls).containsExactly("user.update", "address.deleteById");
     }
 
     @Test
     public void test_deleteAddress_without_address_is_a_no_op() {
         //given
-        StubUserPortOut noAddress = new StubUserPortOut(existingUser(null));
+        StubUserPortOut noAddress = new StubUserPortOut(existingUser(null), calls);
         UserService fresh = new UserService(noAddress, addressPortOut);
 
         //when
