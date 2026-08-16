@@ -5,8 +5,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
 import com.hutnyk.carfix.in.search.SearchPortIn;
+import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
+import com.hutnyk.carfix.in.search.query.AvailableStartView;
 import com.hutnyk.carfix.in.search.query.CategorySuggestionView;
 import com.hutnyk.carfix.in.search.query.MatchedServiceView;
 import com.hutnyk.carfix.in.search.query.SearchEchoView;
@@ -20,6 +24,8 @@ import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
 import com.hutnyk.carfix.search.exception.InvalidSearchFilterException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -29,6 +35,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,14 +45,15 @@ public class SearchControllerTest {
     private static final String EMAIL = "john@example.com";
     private static final UUID BRANCH_ID = UUID.randomUUID();
 
-    private static WorkshopResultView card(Double distanceKm, BigDecimal rating, Integer reviewCount) {
+    private static WorkshopResultView card(Double distanceKm, BigDecimal rating, Integer reviewCount,
+                                           List<AvailableStartView> starts) {
         return new WorkshopResultView(
                 BRANCH_ID, "AutoFix Mokotow", "Pulawska", "45", "Warsaw",
                 new BigDecimal("52.180000"), new BigDecimal("21.020000"), distanceKm,
                 rating, reviewCount,
                 List.of(new MatchedServiceView(9, "Brake pads replacement",
                         new BigDecimal("150.00"), (short) 60, "Brakes")),
-                "Europe/Warsaw", null);
+                "Europe/Warsaw", starts);
     }
 
     private static final class StubSearchPortIn implements SearchPortIn {
@@ -57,6 +66,8 @@ public class SearchControllerTest {
         Double distanceKm = 3.2;
         BigDecimal rating = new BigDecimal("4.7");
         Integer reviewCount = 236;
+        List<AvailableStartView> starts = null;
+        AvailabilityWindow echoAvailability = null;
 
         @Override
         public SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query, String principalEmail) {
@@ -76,8 +87,8 @@ public class SearchControllerTest {
             if (toThrow != null) {
                 throw toThrow;
             }
-            return new WorkshopSearchPage(List.of(card(distanceKm, rating, reviewCount)), 0, 20, 1, 1,
-                    new SearchEchoView("brake", null, null, null, "Warsaw", null, null, null));
+            return new WorkshopSearchPage(List.of(card(distanceKm, rating, reviewCount, starts)), 0, 20, 1, 1,
+                    new SearchEchoView("brake", null, null, null, "Warsaw", null, null, echoAvailability));
         }
     }
 
@@ -87,6 +98,11 @@ public class SearchControllerTest {
             .standaloneSetup(new SearchController(stub))
             .setControllerAdvice(new GlobalExceptionHandler())
             .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+            .setMessageConverters(new MappingJackson2HttpMessageConverter(
+                    Jackson2ObjectMapperBuilder.json()
+                            .modules(new JavaTimeModule())
+                            .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                            .build()))
             .build();
 
     @AfterEach
@@ -311,5 +327,85 @@ public class SearchControllerTest {
                 .andExpect(status().isBadRequest());
 
         assertThat(stub.receivedSuggestionsQuery).isNull();
+    }
+
+    @Test
+    public void test_workshops_forwards_availability_params() throws Exception {
+        //when
+        mockMvc.perform(get("/api/search/workshops")
+                        .param("serviceName", "Oil and filter change").param("city", "Warsaw")
+                        .param("from", "2026-08-18").param("to", "2026-08-20")
+                        .param("timeFrom", "13:00").param("timeTo", "19:00"))
+                .andExpect(status().isOk());
+
+        //then
+        assertThat(stub.receivedQuery.availability()).isEqualTo(new AvailabilityWindow(
+                LocalDate.of(2026, 8, 18), LocalDate.of(2026, 8, 20), LocalTime.of(13, 0), LocalTime.of(19, 0)));
+    }
+
+    @Test
+    public void test_workshops_without_availability_params_passes_null_window() throws Exception {
+        //when
+        mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil and filter change"))
+                .andExpect(status().isOk());
+
+        //then
+        assertThat(stub.receivedQuery.availability()).isNull();
+    }
+
+    @Test
+    public void test_workshops_partial_availability_params_still_reach_the_port() throws Exception {
+        //when
+        mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil").param("from", "2026-08-18"))
+                .andExpect(status().isOk());
+
+        //then
+        assertThat(stub.receivedQuery.availability())
+                .isEqualTo(new AvailabilityWindow(LocalDate.of(2026, 8, 18), null, null, null));
+    }
+
+    @Test
+    public void test_workshops_malformed_time_or_date_is_400() throws Exception {
+        //when + then
+        mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil")
+                        .param("from", "2026-08-18").param("to", "2026-08-18").param("timeFrom", "1pm"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil")
+                        .param("from", "18.08.2026").param("to", "2026-08-18"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(stub.searchCalled).isFalse();
+    }
+
+    @Test
+    public void test_workshops_response_carries_tz_next_available_starts_and_echo_window() throws Exception {
+        //given
+        stub.starts = List.of(new AvailableStartView(LocalDate.of(2026, 8, 18), LocalTime.of(13, 15)),
+                new AvailableStartView(LocalDate.of(2026, 8, 19), LocalTime.of(9, 0)));
+        stub.echoAvailability = new AvailabilityWindow(LocalDate.of(2026, 8, 18), LocalDate.of(2026, 8, 20),
+                LocalTime.of(13, 0), null);
+
+        //when + then
+        mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil")
+                        .param("from", "2026-08-18").param("to", "2026-08-20").param("timeFrom", "13:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].tz").value("Europe/Warsaw"))
+                .andExpect(jsonPath("$.content[0].nextAvailableStarts[0].date").value("2026-08-18"))
+                .andExpect(jsonPath("$.content[0].nextAvailableStarts[0].startTime").value("13:15"))
+                .andExpect(jsonPath("$.content[0].nextAvailableStarts[1].startTime").value("09:00"))
+                .andExpect(jsonPath("$.echo.availability.from").value("2026-08-18"))
+                .andExpect(jsonPath("$.echo.availability.to").value("2026-08-20"))
+                .andExpect(jsonPath("$.echo.availability.timeFrom").value("13:00"))
+                .andExpect(jsonPath("$.echo.availability.timeTo").doesNotExist());
+    }
+
+    @Test
+    public void test_workshops_response_has_no_starts_and_null_echo_window_without_filter() throws Exception {
+        //when + then
+        mockMvc.perform(get("/api/search/workshops").param("q", "brake"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].tz").value("Europe/Warsaw"))
+                .andExpect(jsonPath("$.content[0].nextAvailableStarts").doesNotExist())
+                .andExpect(jsonPath("$.echo.availability").doesNotExist());
     }
 }

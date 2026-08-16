@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.search.controller;
 
 import com.hutnyk.carfix.in.search.SearchPortIn;
+import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 import com.hutnyk.carfix.search.dto.response.SearchSuggestionsResponse;
@@ -12,6 +13,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -60,11 +64,18 @@ public class SearchController {
             @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(50) int size,
             @RequestParam(name = "sort", required = false) @Size(max = 20) String sort,
             @RequestParam(name = "pinnedBranchId", required = false) UUID pinnedBranchId,
+            @RequestParam(name = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(name = "timeFrom", required = false) @DateTimeFormat(pattern = "HH:mm") LocalTime timeFrom,
+            @RequestParam(name = "timeTo", required = false) @DateTimeFormat(pattern = "HH:mm") LocalTime timeTo,
             @AuthenticationPrincipal UserDetails principal) {
+        AvailabilityWindow availability = from == null && to == null && timeFrom == null && timeTo == null
+                ? null
+                : new AvailabilityWindow(from, to, timeFrom, timeTo);
         WorkshopSearchQuery query = new WorkshopSearchQuery(
                 q, serviceName, categoryId, city, voivodeship, country,
                 lat, lng, radiusKm, carProfileId, page, size,
-                sort, pinnedBranchId, null);
+                sort, pinnedBranchId, availability);
         String principalEmail = principal != null ? principal.getUsername() : null;
         return ResponseEntity.ok(SearchResponseMapper.toResponse(
                 searchPortIn.searchWorkshops(query, principalEmail)));
