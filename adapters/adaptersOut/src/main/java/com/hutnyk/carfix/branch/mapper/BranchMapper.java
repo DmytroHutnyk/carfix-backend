@@ -107,7 +107,7 @@ public final class BranchMapper {
                                 .comparingInt((OpeningHoursEntity oh) -> oh.getDayOfWeek().ordinal())
                                 .thenComparing(OpeningHoursEntity::getStartTime))
                         .map(oh -> new BranchOpeningHoursView(
-                                oh.getDayOfWeek(), oh.getStartTime(), oh.getCloseTime()))
+                                oh.getDayOfWeek(), oh.getStartTime(), oh.getCloseTime(), oh.getMode()))
                         .toList(),
                 groupByCategory(services));
     }

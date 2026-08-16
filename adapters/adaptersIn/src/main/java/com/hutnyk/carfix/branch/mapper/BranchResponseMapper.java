@@ -33,7 +33,7 @@ public class BranchResponseMapper {
                         .toList(),
                 view.openingHours().stream()
                         .map(oh -> new BranchOpeningHoursResponse(
-                                oh.dayOfWeek(), oh.startTime(), oh.closeTime()))
+                                oh.dayOfWeek(), oh.startTime(), oh.closeTime(), oh.mode()))
                         .toList(),
                 view.serviceCategories().stream()
                         .map(BranchResponseMapper::toResponse)
