@@ -4,12 +4,14 @@ import com.hutnyk.carfix.booking.Booking;
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.booking.BookingOccupancy;
 import com.hutnyk.carfix.booking.BookingSegment;
+import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.booking.entity.BookingSegmentEntity;
 import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
 import com.hutnyk.carfix.booking.mapper.BookingMapper;
 import com.hutnyk.carfix.booking.repository.BookingRepository;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
+import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.carProfile.entity.CarProfileEntity;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.employee.EmployeeBooking;
@@ -34,7 +36,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -137,6 +142,12 @@ public class BookingAdapterOut implements BookingPortOut {
         serviceBayBookingRepository.deleteAllByBookingEntityId(id);
         employeeBookingRepository.deleteAllByBookingEntityId(id);
         equipmentBookingRepository.deleteAllByBookingEntityId(id);
+    }
+
+    @Override
+    public boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end) {
+        return bookingRepository.existsByCarProfileOverlapping(
+                carProfileId.id(), date, start, end, EnumSet.of(BookingStatus.SCHEDULED, BookingStatus.IN_PROGRESS));
     }
 
     /* Postgres reports a lost race as one of a few SQLSTATEs. Hibernate wraps it in a

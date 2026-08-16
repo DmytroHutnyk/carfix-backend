@@ -11,8 +11,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
+import com.hutnyk.carfix.booking.exception.CarProfileAlreadyBookedException;
 import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
 import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
+import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
 import com.hutnyk.carfix.in.booking.BookingPortIn;
@@ -251,6 +253,19 @@ public class CustomerBookingControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SLOT_NOT_AVAILABLE"))
                 .andExpect(jsonPath("$.detail").value("Slot 2030-06-12 10:00 is no longer available"));
+    }
+
+    @Test
+    public void createMapsCarProfileAlreadyBookedTo409() throws Exception {
+        stub.toThrow = new CarProfileAlreadyBookedException(
+                CarProfileId.of(CAR_PROFILE_ID), LocalDate.of(2030, 6, 13), LocalTime.of(9, 0), LocalTime.of(10, 0));
+
+        mockMvc.perform(post("/api/customer/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CREATE_BODY))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CAR_PROFILE_ALREADY_BOOKED"))
+                .andExpect(jsonPath("$.errors.carProfileId").exists());
     }
 
     @Test

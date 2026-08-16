@@ -3,8 +3,11 @@ package com.hutnyk.carfix.out.booking;
 import com.hutnyk.carfix.booking.Booking;
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.booking.BookingOccupancy;
+import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.in.booking.query.BookingView;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,4 +26,7 @@ public interface BookingPortOut {
 
     Booking update(Booking booking);
     void freeOccupancy(BookingId bookingId);
+
+    /** True when the car profile already holds a SCHEDULED or IN_PROGRESS booking on that date overlapping [start, end). */
+    boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end);
 }

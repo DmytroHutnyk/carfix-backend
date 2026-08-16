@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.booking;
 
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
+import com.hutnyk.carfix.booking.exception.CarProfileAlreadyBookedException;
 import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
 import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
 import com.hutnyk.carfix.branch.BranchId;
@@ -93,8 +94,15 @@ public class BookingService implements BookingPortIn {
         VisitPlan plan = planVisit(branchId, services, start, now)
                 .orElseThrow(() -> new SlotNotAvailableException(cmd.date(), cmd.startTime()));
 
+        CarProfileId carProfileId = CarProfileId.of(cmd.carProfileId());
+        if (bookingPortOut.existsActiveOverlapping(carProfileId, plan.start().toLocalDate(),
+                plan.start().toLocalTime(), plan.end().toLocalTime())) {
+            throw new CarProfileAlreadyBookedException(carProfileId, plan.start().toLocalDate(),
+                    plan.start().toLocalTime(), plan.end().toLocalTime());
+        }
+
         Booking booking = Booking.schedule(
-                BookingId.genId(), branchId, CarProfileId.of(cmd.carProfileId()), plan, services, now);
+                BookingId.genId(), branchId, carProfileId, plan, services, now);
         bookingPortOut.insert(booking, BookingOccupancy.of(booking.getId(), plan));
 
         return bookingPortOut.findViewByIdAndCustomerId(booking.getId().id(), customerId)

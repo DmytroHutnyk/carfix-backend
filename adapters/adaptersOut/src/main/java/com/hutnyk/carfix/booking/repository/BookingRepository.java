@@ -1,10 +1,14 @@
 package com.hutnyk.carfix.booking.repository;
 
+import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,4 +42,13 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
            "WHERE b.id = :id AND cp.customerEntity.id = :customerId")
     Optional<BookingEntity> findByIdAndCustomerIdWithDetails(@Param("id") UUID id,
                                                              @Param("customerId") UUID customerId);
+
+    @Query("SELECT COUNT(b) > 0 FROM BookingEntity b " +
+           "WHERE b.carProfileEntity.id = :carProfileId AND b.date = :date " +
+           "AND b.status IN :statuses AND b.startTime < :end AND b.endTime > :start")
+    boolean existsByCarProfileOverlapping(@Param("carProfileId") UUID carProfileId,
+                                          @Param("date") LocalDate date,
+                                          @Param("start") LocalTime start,
+                                          @Param("end") LocalTime end,
+                                          @Param("statuses") Collection<BookingStatus> statuses);
 }

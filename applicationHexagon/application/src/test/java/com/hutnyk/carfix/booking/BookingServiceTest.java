@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
+import com.hutnyk.carfix.booking.exception.CarProfileAlreadyBookedException;
 import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
 import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
 import com.hutnyk.carfix.branch.BranchId;
@@ -323,6 +324,11 @@ public class BookingServiceTest {
         BookingOccupancy insertedOccupancy;
         UUID requestedCustomerId;
         BookingId freedOccupancyFor;
+        boolean carAlreadyBooked = false;
+        CarProfileId overlapCarProfileId;
+        LocalDate overlapDate;
+        LocalTime overlapStart;
+        LocalTime overlapEnd;
 
         @Override
         public List<BookingView> findAllViewsByCustomerId(UUID customerId) {
@@ -360,6 +366,15 @@ public class BookingServiceTest {
         @Override
         public void freeOccupancy(BookingId bookingId) {
             this.freedOccupancyFor = bookingId;
+        }
+
+        @Override
+        public boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end) {
+            this.overlapCarProfileId = carProfileId;
+            this.overlapDate = date;
+            this.overlapStart = start;
+            this.overlapEnd = end;
+            return carAlreadyBooked;
         }
     }
 
@@ -503,6 +518,30 @@ public class BookingServiceTest {
         assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1, 2), TOMORROW, LocalTime.of(9, 0))))
                 .isInstanceOf(SlotNotAvailableException.class);
         assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingRejectsACarThatAlreadyHasAnOverlappingBooking() {
+        seedBookableTomorrow();
+        bookingPortOut.carAlreadyBooked = true;
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 15))))
+                .isInstanceOf(CarProfileAlreadyBookedException.class);
+        assertThat(bookingPortOut.inserted).isNull();
+        assertThat(bookingPortOut.overlapCarProfileId).isEqualTo(CarProfileId.of(CAR_PROFILE_ID));
+        assertThat(bookingPortOut.overlapDate).isEqualTo(TOMORROW);
+        assertThat(bookingPortOut.overlapStart).isEqualTo(LocalTime.of(9, 15));
+        assertThat(bookingPortOut.overlapEnd).isEqualTo(LocalTime.of(10, 15));
+    }
+
+    @Test
+    public void createBookingChecksTheCarOnlyAfterAPlanExists() {
+        seedBookableTomorrow();
+        bookingPortOut.carAlreadyBooked = true;
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(13, 0))))
+                .isInstanceOf(SlotNotAvailableException.class);
+        assertThat(bookingPortOut.overlapCarProfileId).isNull();
     }
 
     @Test
