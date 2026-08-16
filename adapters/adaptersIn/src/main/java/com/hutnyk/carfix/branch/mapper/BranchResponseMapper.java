@@ -1,7 +1,9 @@
 package com.hutnyk.carfix.branch.mapper;
 
+import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.dto.response.BranchBrandResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchOpeningHoursResponse;
+import com.hutnyk.carfix.branch.dto.response.BranchRegistrationResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchReviewResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchReviewsPageResponse;
@@ -40,6 +42,13 @@ public class BranchResponseMapper {
                 view.serviceCategories().stream()
                         .map(BranchResponseMapper::toResponse)
                         .toList());
+    }
+
+    public static BranchRegistrationResponse toRegistrationResponse(Branch branch) {
+        if (branch == null) {
+            return null;
+        }
+        return new BranchRegistrationResponse(branch.getId().id(), branch.getName(), branch.getStatus());
     }
 
     public static BranchReviewsPageResponse toResponse(BranchReviewsPage page) {
