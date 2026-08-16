@@ -7,7 +7,6 @@ import com.hutnyk.carfix.util.Validator;
 import lombok.*;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Set;
 
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -29,7 +28,11 @@ public final class User {
     private final LocalDate dateOfBirth;
 
     //Nullable
+    @With(AccessLevel.PRIVATE)
     private final Integer addressId;
+
+    //Nullable
+    private final Integer preferredCityId;
 
     //Nullable
     @With(AccessLevel.PRIVATE)
@@ -46,6 +49,7 @@ public final class User {
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
             Integer addressId,
+            Integer preferredCityId,
             Instant emailVerifiedAt) {
         this.id = Validator.notNull(id, "id");
         this.name = Validator.notBlank(name, "name");
@@ -56,6 +60,7 @@ public final class User {
         this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
+        this.preferredCityId = preferredCityId;
         this.emailVerifiedAt = emailVerifiedAt;
     }
 
@@ -69,6 +74,7 @@ public final class User {
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
             Integer addressId,
+            Integer preferredCityId,
             Instant emailVerifiedAt){
         return User.builder()
                 .id(id)
@@ -80,8 +86,17 @@ public final class User {
                 .passwordHash(passwordHash)
                 .dateOfBirth(dateOfBirth)
                 .addressId(addressId)
+                .preferredCityId(preferredCityId)
                 .emailVerifiedAt(emailVerifiedAt)
                 .build();
+    }
+
+    public User linkAddress(Integer addressId) {
+        return withAddressId(Validator.notNull(addressId, "addressId"));
+    }
+
+    public User unlinkAddress() {
+        return withAddressId(null);
     }
 
     public boolean isEmailVerified() {

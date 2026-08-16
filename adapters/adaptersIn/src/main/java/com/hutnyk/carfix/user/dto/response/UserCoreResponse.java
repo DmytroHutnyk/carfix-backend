@@ -11,6 +11,8 @@ public record UserCoreResponse(
         String phoneNumber,
         String email,
         LocalDate dateOfBirth,
+        AddressResponse address,
+        LocationResponse preferredLocation,
         Instant emailVerifiedAt
 ) {
 }

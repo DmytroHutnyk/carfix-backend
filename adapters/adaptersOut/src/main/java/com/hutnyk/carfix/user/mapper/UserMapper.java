@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.user.mapper;
 
 import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.address.entity.CityEntity;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -9,7 +10,7 @@ import com.hutnyk.carfix.user.entity.UserEntity;
 
 public class UserMapper {
 
-    public static UserEntity toEntity(User user, AddressEntity addressEntity) {
+    public static UserEntity toEntity(User user, AddressEntity addressEntity, CityEntity preferredCityEntity) {
         if (user == null) {
             return null;
         }
@@ -24,11 +25,12 @@ public class UserMapper {
                 user.getRole(),
                 user.getDateOfBirth(),
                 user.getEmailVerifiedAt(),
-                addressEntity
+                addressEntity,
+                preferredCityEntity
         );
     }
 
-    public static UserEntity updateEntity(UserEntity entity, User user) {
+    public static void updateEntity(UserEntity entity, User user, AddressEntity addressEntity, CityEntity preferredCityEntity) {
         entity.setName(user.getName());
         entity.setSurname(user.getSurname());
         entity.setPhoneNumber(user.getPhoneNumber().phoneNumber());
@@ -38,7 +40,8 @@ public class UserMapper {
         entity.setRole(user.getRole());
         entity.setDateOfBirth(user.getDateOfBirth());
         entity.setEmailVerifiedAt(user.getEmailVerifiedAt());
-        return entity;
+        entity.setAddressEntity(addressEntity);
+        entity.setPreferredCityEntity(preferredCityEntity);
     }
 
     public static User toDomain(UserEntity entity) {
@@ -54,6 +57,9 @@ public class UserMapper {
         Integer addressId = entity.getAddressEntity() != null
                 ? entity.getAddressEntity().getId()
                 : null;
+        Integer preferredCityId = entity.getPreferredCityEntity() != null
+                ? entity.getPreferredCityEntity().getId()
+                : null;
         return User.builder()
                 .id(userId)
                 .name(entity.getName())
@@ -64,6 +70,7 @@ public class UserMapper {
                 .passwordHash(passwordHash)
                 .dateOfBirth(entity.getDateOfBirth())
                 .addressId(addressId)
+                .preferredCityId(preferredCityId)
                 .emailVerifiedAt(entity.getEmailVerifiedAt())
                 .build();
     }

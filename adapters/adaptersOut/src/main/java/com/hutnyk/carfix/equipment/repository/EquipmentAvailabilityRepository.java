@@ -11,5 +11,8 @@ public interface EquipmentAvailabilityRepository extends JpaRepository<Equipment
     List<EquipmentAvailabilityEntity> findAllByEquipmentEntityIdInAndDate(
             Collection<Integer> equipmentIds, LocalDate date);
 
+    List<EquipmentAvailabilityEntity> findAllByEquipmentEntityIdInAndDateBetween(
+            Collection<Integer> equipmentIds, LocalDate from, LocalDate to);
+
     List<EquipmentAvailabilityEntity> findAllBySeriesId(Integer seriesId);
 }

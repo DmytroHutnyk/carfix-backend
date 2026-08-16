@@ -40,6 +40,7 @@ public class CustomerService implements CustomerPortIn {
                 passwordHash,
                 null,
                 null,
+                null,
                 null
         );
 

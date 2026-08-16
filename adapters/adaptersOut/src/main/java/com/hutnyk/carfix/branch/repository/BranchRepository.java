@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,4 +22,17 @@ public interface BranchRepository extends JpaRepository<BranchEntity, UUID> {
             @Param("branchId") UUID branchId, @Param("status") BranchStatus status);
 
     boolean existsByIdAndStatus(UUID id, BranchStatus status);
+
+    @Query("SELECT b.tz FROM BranchEntity b WHERE b.id = :branchId AND b.status = :status")
+    Optional<String> findTzByIdAndStatus(
+            @Param("branchId") UUID branchId, @Param("status") BranchStatus status);
+
+    @Query("""
+            SELECT b FROM BranchEntity b
+            JOIN FETCH b.addressEntity a
+            JOIN FETCH a.cityEntity
+            WHERE b.ownerId = :ownerId
+            ORDER BY b.name
+            """)
+    List<BranchEntity> findAllWithAddressByOwnerId(@Param("ownerId") UUID ownerId);
 }

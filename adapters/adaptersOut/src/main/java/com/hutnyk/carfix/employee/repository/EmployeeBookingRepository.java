@@ -12,6 +12,9 @@ public interface EmployeeBookingRepository extends JpaRepository<EmployeeBooking
     List<EmployeeBookingEntity> findAllByEmployeeEntityIdInAndDate(
             Collection<UUID> employeeIds, LocalDate date);
 
+    List<EmployeeBookingEntity> findAllByEmployeeEntityIdInAndDateBetween(
+            Collection<UUID> employeeIds, LocalDate from, LocalDate to);
+
     List<EmployeeBookingEntity> findAllByBookingEntityId(UUID bookingId);
 
     void deleteAllByBookingEntityId(UUID bookingId);

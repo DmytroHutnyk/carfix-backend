@@ -2,9 +2,9 @@ package com.hutnyk.carfix.user.controller;
 
 import com.hutnyk.carfix.in.user.UserPortIn;
 import com.hutnyk.carfix.user.User;
+import com.hutnyk.carfix.user.UserResponseAssembler;
 import com.hutnyk.carfix.user.dto.request.ConfirmEmailVerificationRequest;
 import com.hutnyk.carfix.user.dto.response.UserCoreResponse;
-import com.hutnyk.carfix.user.mapper.UserToResponseMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EmailVerificationController {
 
     private final UserPortIn userPortIn;
+    private final UserResponseAssembler userResponseAssembler;
 
     @PostMapping
     public ResponseEntity<Void> requestVerification(@AuthenticationPrincipal UserDetails userDetails) {
@@ -32,6 +33,6 @@ public class EmailVerificationController {
     public ResponseEntity<UserCoreResponse> confirmVerification(@Valid @RequestBody ConfirmEmailVerificationRequest request,
                                                                 @AuthenticationPrincipal UserDetails userDetails) {
         User user = userPortIn.verifyEmail(userDetails.getUsername(), request.code());
-        return ResponseEntity.ok(UserToResponseMapper.toCoreResponse(user));
+        return ResponseEntity.ok(userResponseAssembler.toCoreResponse(user));
     }
 }

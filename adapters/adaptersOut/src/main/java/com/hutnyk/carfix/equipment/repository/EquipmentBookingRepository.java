@@ -12,6 +12,9 @@ public interface EquipmentBookingRepository extends JpaRepository<EquipmentBooki
     List<EquipmentBookingEntity> findAllByEquipmentEntityIdInAndDate(
             Collection<Integer> equipmentIds, LocalDate date);
 
+    List<EquipmentBookingEntity> findAllByEquipmentEntityIdInAndDateBetween(
+            Collection<Integer> equipmentIds, LocalDate from, LocalDate to);
+
     List<EquipmentBookingEntity> findAllByBookingEntityId(UUID bookingId);
 
     void deleteAllByBookingEntityId(UUID bookingId);

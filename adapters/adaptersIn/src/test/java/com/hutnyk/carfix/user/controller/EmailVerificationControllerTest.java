@@ -8,12 +8,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
+import com.hutnyk.carfix.in.address.AddressPortIn;
+import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.in.user.UserPortIn;
+import com.hutnyk.carfix.in.user.commands.UpdateUserAddressCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.UserId;
+import com.hutnyk.carfix.user.UserResponseAssembler;
 import com.hutnyk.carfix.user.UserRole;
 import com.hutnyk.carfix.user.exception.EmailAlreadyVerifiedException;
 import com.hutnyk.carfix.user.exception.VerificationCodeInvalidException;
@@ -57,6 +62,16 @@ public class EmailVerificationControllerTest {
         }
 
         @Override
+        public AddressView updateAddress(String email, UpdateUserAddressCommand command) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteAddress(String email) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void requestEmailVerification(String email) {
             if (requestFailure != null) {
                 throw requestFailure;
@@ -86,9 +101,21 @@ public class EmailVerificationControllerTest {
         }
     }
 
+    private static final class StubAddressPortIn implements AddressPortIn {
+        @Override
+        public Optional<AddressView> loadAddressView(Integer addressId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<LocationView> loadCityView(Integer cityId) {
+            return Optional.empty();
+        }
+    }
+
     private final StubUserPortIn stub = new StubUserPortIn();
     private final MockMvc mockMvc = MockMvcBuilders
-            .standaloneSetup(new EmailVerificationController(stub))
+            .standaloneSetup(new EmailVerificationController(stub, new UserResponseAssembler(new StubAddressPortIn())))
             .setControllerAdvice(new GlobalExceptionHandler())
             .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
             .setMessageConverters(new MappingJackson2HttpMessageConverter(

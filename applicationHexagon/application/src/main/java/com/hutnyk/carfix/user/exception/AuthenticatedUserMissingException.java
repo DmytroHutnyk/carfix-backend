@@ -24,4 +24,10 @@ public class AuthenticatedUserMissingException extends AuthenticationFailedExcep
         return new AuthenticatedUserMissingException(
                 "No customer aggregate for authenticated principal: " + username);
     }
+
+    /** A user row exists, but the owner aggregate it needs does not. */
+    public static AuthenticatedUserMissingException noOwnerAggregate(String username) {
+        return new AuthenticatedUserMissingException(
+                "No owner aggregate for authenticated principal: " + username);
+    }
 }
