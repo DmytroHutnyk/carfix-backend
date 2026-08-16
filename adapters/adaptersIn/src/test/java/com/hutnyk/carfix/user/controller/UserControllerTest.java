@@ -51,7 +51,7 @@ public class UserControllerTest {
             this.receivedEmail = email;
             this.received = command;
             this.calls++;
-            /* Built through the builder, not the 9-arg User.of(...), so that adding an optional
+            /* Built through the builder, not the 10-arg User.of(...), so that adding an optional
              * domain field does not break this file. If a new *required* field lands, these tests
              * fail with a DomainObjectValidationException naming it — add it here. */
             return User.builder()
@@ -65,6 +65,16 @@ public class UserControllerTest {
                     .dateOfBirth(command.dateOfBirth())
                     .addressId(null)
                     .build();
+        }
+
+        @Override
+        public void requestEmailVerification(String email) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public User verifyEmail(String email, String code) {
+            throw new UnsupportedOperationException();
         }
     }
 
