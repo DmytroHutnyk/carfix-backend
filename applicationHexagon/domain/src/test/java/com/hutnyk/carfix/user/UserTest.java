@@ -21,7 +21,23 @@ public class UserTest {
                 UserRole.CUSTOMER,
                 PasswordHash.of("hashedPassword123"),
                 dateOfBirth,
+                null,
                 null
+        );
+    }
+
+    private User createUserWithPreferredCity(Integer preferredCityId) {
+        return User.of(
+                UserId.genId(),
+                "John",
+                "Doe",
+                new PhoneNumber("+1", "1234567890"),
+                "john.doe@example.com",
+                UserRole.CUSTOMER,
+                PasswordHash.of("hashedPassword123"),
+                LocalDate.of(1990, 5, 1),
+                null,
+                preferredCityId
         );
     }
 
@@ -84,5 +100,48 @@ public class UserTest {
                 .isEqualTo(ValidationErrorType.DATE_TOO_OLD);
     }
 
-}
+    @Test
+    public void test_of_carries_the_preferred_city_id() {
+        //when
+        User result = User.of(UserId.genId(), "John", "Doe", new PhoneNumber("+1", "1234567890"),
+                "john.doe@example.com", UserRole.CUSTOMER, PasswordHash.of("hashedPassword123"),
+                null, null, 11);
 
+        //then
+        assertThat(result.getPreferredCityId()).isEqualTo(11);
+    }
+
+    @Test
+    public void test_linkAddress_returns_a_copy_pointing_at_the_address_and_keeps_everything_else() {
+        //given
+        User user = createUserWithPreferredCity(11);
+
+        //when
+        User linked = user.linkAddress(42);
+
+        //then
+        assertThat(linked.getAddressId()).isEqualTo(42);
+        assertThat(linked.getId()).isEqualTo(user.getId());
+        assertThat(linked.getEmail()).isEqualTo(user.getEmail());
+        assertThat(linked.getPasswordHash()).isEqualTo(user.getPasswordHash());
+        assertThat(linked.getDateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 1));
+        assertThat(linked.getName()).isEqualTo(user.getName());
+        assertThat(linked.getSurname()).isEqualTo(user.getSurname());
+        assertThat(linked.getPhoneNumber()).isEqualTo(user.getPhoneNumber());
+        assertThat(linked.getRole()).isEqualTo(user.getRole());
+        assertThat(linked.getPreferredCityId()).isEqualTo(11);
+        assertThat(user.getAddressId()).isNull();
+    }
+
+    @Test
+    public void test_linkAddress_rejects_null_and_unlinkAddress_clears() {
+        //given
+        User user = createUserWithBirthDate(null).linkAddress(7);
+
+        //when + then
+        assertThatThrownBy(() -> user.linkAddress(null))
+                .isInstanceOf(DomainObjectValidationException.class);
+        assertThat(user.unlinkAddress().getAddressId()).isNull();
+    }
+
+}
