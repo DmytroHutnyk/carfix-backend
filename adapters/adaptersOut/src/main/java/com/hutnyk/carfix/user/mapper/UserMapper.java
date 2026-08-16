@@ -9,12 +9,10 @@ import com.hutnyk.carfix.user.entity.UserEntity;
 
 public class UserMapper {
 
-
     public static UserEntity toEntity(User user, AddressEntity addressEntity) {
         if (user == null) {
             return null;
         }
-
         return new UserEntity(
                 user.getId().id(),
                 user.getName(),
@@ -25,26 +23,37 @@ public class UserMapper {
                 user.getPasswordHash().getValue(),
                 user.getRole(),
                 user.getDateOfBirth(),
+                user.getEmailVerifiedAt(),
                 addressEntity
         );
     }
 
+    public static UserEntity updateEntity(UserEntity entity, User user) {
+        entity.setName(user.getName());
+        entity.setSurname(user.getSurname());
+        entity.setPhoneNumber(user.getPhoneNumber().phoneNumber());
+        entity.setPhoneCountryCode(user.getPhoneNumber().countryCode());
+        entity.setEmail(user.getEmail());
+        entity.setPassword(user.getPasswordHash().getValue());
+        entity.setRole(user.getRole());
+        entity.setDateOfBirth(user.getDateOfBirth());
+        entity.setEmailVerifiedAt(user.getEmailVerifiedAt());
+        return entity;
+    }
 
     public static User toDomain(UserEntity entity) {
         if (entity == null) {
             return null;
         }
-
         UserId userId = UserId.of(entity.getId());
         PhoneNumber phoneNumber = new PhoneNumber(
                 entity.getPhoneCountryCode(),
                 entity.getPhoneNumber()
         );
         PasswordHash passwordHash = PasswordHash.of(entity.getPassword());
-        Integer addressId = entity.getAddressEntity() != null 
-                ? entity.getAddressEntity().getId() 
+        Integer addressId = entity.getAddressEntity() != null
+                ? entity.getAddressEntity().getId()
                 : null;
-
         return User.builder()
                 .id(userId)
                 .name(entity.getName())
@@ -55,6 +64,7 @@ public class UserMapper {
                 .passwordHash(passwordHash)
                 .dateOfBirth(entity.getDateOfBirth())
                 .addressId(addressId)
+                .emailVerifiedAt(entity.getEmailVerifiedAt())
                 .build();
     }
 }

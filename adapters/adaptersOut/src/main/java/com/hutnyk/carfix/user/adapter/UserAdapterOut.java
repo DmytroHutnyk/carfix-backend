@@ -37,11 +37,6 @@ public class UserAdapterOut implements UserPortOut {
     public User update(User user){
         UserEntity entity = userRepository.findById(user.getId().id())
                 .orElseThrow(() -> new UnexpectedStateException("User not found: " + user.getId().id()));
-
-        entity.setName(user.getName());
-        entity.setSurname(user.getSurname());
-        entity.setDateOfBirth(user.getDateOfBirth());
-
-        return UserMapper.toDomain(userRepository.save(entity));
+        return UserMapper.toDomain(userRepository.save(UserMapper.updateEntity(entity, user)));
     }
 }

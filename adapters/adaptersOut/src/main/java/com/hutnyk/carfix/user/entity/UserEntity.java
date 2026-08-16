@@ -9,6 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -50,6 +51,9 @@ public class UserEntity {
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
 
     @ToString.Exclude
     @OneToOne(fetch = FetchType.LAZY)
