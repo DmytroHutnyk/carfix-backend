@@ -470,6 +470,7 @@ class BookingEndpointChecklistIT {
         go.countDown();
         int created = 0;
         int conflicts = 0;
+        List<String> createdIds = new ArrayList<>();
         List<Integer> statuses = new ArrayList<>();
         try {
             for (Future<ResponseEntity<String>> f : futures) {
@@ -483,7 +484,9 @@ class BookingEndpointChecklistIT {
                 statuses.add(r.getStatusCode().value());
                 if (r.getStatusCode().value() == 201) {
                     created++;
-                    remember(json(r));
+                    JsonNode won = json(r);
+                    remember(won);
+                    createdIds.add(won.get("bookingId").asText());
                 } else if (r.getStatusCode().value() == 409) {
                     conflicts++;
                     String code = json(r).get("code").asText();
@@ -507,6 +510,13 @@ class BookingEndpointChecklistIT {
         c.ok("at least one 409", conflicts >= 1);
         c.ok("created ≤ active bays (" + bays + ")", created <= bays);
         c.note(n + " parallel POSTs for " + date + " " + start + " → statuses " + statuses);
+        /* Hand the slot back: checks 8 and 9 book the same car, and the same-car guard would reject
+           theirs while these are still SCHEDULED. The ids stay remembered, so cleanup() still
+           deletes the rows; only the status changes, and CANCELLED is invisible to the guard. */
+        for (String won : createdIds) {
+            c.eq("cancel " + won + " to free the day for checks 8-9", 200,
+                    post("/api/customer/bookings/" + won + "/cancel", "").getStatusCode().value());
+        }
     }
 
     /** 6 error contract. */
@@ -596,6 +606,9 @@ class BookingEndpointChecklistIT {
                 + requirements("service_employee_requirements", SVC_BRAKES);
         c.eq("employee rows = both segments' requirement slots", employeeReqs, count("employees_bookings", id));
         c.note("booked " + pair + " on " + date + " " + start + ", employees " + employeeReqs);
+        /* Same reason as check 5: check 9 books this car too. */
+        c.eq("cancel to free the day for check 9", 200,
+                post("/api/customer/bookings/" + id + "/cancel", "").getStatusCode().value());
     }
 
     /** 9 the same car cannot be booked into two overlapping visits, even when a second bay is free. */
