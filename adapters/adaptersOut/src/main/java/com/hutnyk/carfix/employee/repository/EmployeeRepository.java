@@ -1,11 +1,25 @@
 package com.hutnyk.carfix.employee.repository;
 
+import com.hutnyk.carfix.employee.EmployeeStatus;
 import com.hutnyk.carfix.employee.entity.EmployeeEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, UUID> {
 
     List<EmployeeEntity> findAllByBranchEntityId(UUID branchId);
+
+    /* Rows: [UUID branchId, Long count]. */
+    @Query("""
+            SELECT e.branchEntity.id, COUNT(e)
+            FROM EmployeeEntity e
+            WHERE e.branchEntity.id IN :branchIds AND e.status = :status
+            GROUP BY e.branchEntity.id
+            """)
+    List<Object[]> countByBranchIdsAndStatus(@Param("branchIds") Collection<UUID> branchIds,
+                                             @Param("status") EmployeeStatus status);
 }

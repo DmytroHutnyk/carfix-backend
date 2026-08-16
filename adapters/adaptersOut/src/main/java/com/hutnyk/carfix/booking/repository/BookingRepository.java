@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,4 +38,14 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
            "WHERE b.id = :id AND cp.customerEntity.id = :customerId")
     Optional<BookingEntity> findByIdAndCustomerIdWithDetails(@Param("id") UUID id,
                                                              @Param("customerId") UUID customerId);
+
+    /* Rows: [UUID branchId, LocalDate date, BookingStatus status, Long count]. */
+    @Query("""
+            SELECT b.branchEntity.id, b.date, b.status, COUNT(b)
+            FROM BookingEntity b
+            WHERE b.branchEntity.id IN :branchIds AND b.date IN :dates
+            GROUP BY b.branchEntity.id, b.date, b.status
+            """)
+    List<Object[]> countByBranchDateAndStatus(@Param("branchIds") Collection<UUID> branchIds,
+                                              @Param("dates") Collection<LocalDate> dates);
 }
