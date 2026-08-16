@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -214,6 +215,15 @@ class BookingEndpointChecklistIT {
                 "SELECT count(*) FROM " + schema + "." + table + " WHERE booking_id = ?::uuid", Integer.class, bookingId));
     }
 
+    /** Rows of {@code table} that belong to bookings of this car on this date. */
+    private int rowsForCarOn(String carProfileId, String date, String table) {
+        String sql = table.equals("bookings")
+                ? "SELECT count(*) FROM " + schema + ".bookings b WHERE b.car_profile_id = ?::uuid AND b.date = ?::date"
+                : "SELECT count(*) FROM " + schema + "." + table + " t JOIN " + schema + ".bookings b ON b.booking_id = t.booking_id"
+                        + " WHERE b.car_profile_id = ?::uuid AND b.date = ?::date";
+        return Objects.requireNonNull(jdbc.queryForObject(sql, Integer.class, carProfileId, date));
+    }
+
     /** One occupancy row is written per requirement row, per segment — so this is the expected count. */
     private int requirements(String table, int serviceId) {
         return Objects.requireNonNull(jdbc.queryForObject(
@@ -291,6 +301,7 @@ class BookingEndpointChecklistIT {
             check6(from);
             check7();
             check8(from, to);
+            check9(from, to);
         } finally {
             try {
                 cleanup();
@@ -305,8 +316,14 @@ class BookingEndpointChecklistIT {
             System.out.println(sb);
         }
         long failed = report.stream().filter(c -> !c.fails.isEmpty()).count();
+        long skipped = report.stream().filter(c -> c.fails.isEmpty() && c.skipped != null).count();
+        long passed = report.size() - failed - skipped;
+        System.out.println(passed + " passed, " + skipped + " skipped, " + failed + " failed of " + report.size() + " checks");
         if (failed > 0) {
             throw new AssertionError(failed + " checklist item(s) failed — see the table above");
+        }
+        if (passed == 0) {
+            throw new AssertionError("nothing was verified — every check skipped (no bookable slot in the window? reseed the DB)");
         }
     }
 
@@ -366,6 +383,31 @@ class BookingEndpointChecklistIT {
         c2.eq("equipment rows = equipment requirement slots", equipmentReqs, count("equipment_bookings", id));
         c2.note("bay 1, employees " + employeeReqs + ", equipment " + equipmentReqs + ", price " + seededPrice);
 
+        LocalTime visitStart = LocalTime.parse(created.get("startTime").asText());
+        LocalTime visitEnd = LocalTime.parse(created.get("endTime").asText());
+        for (String table : List.of("service_bays_bookings", "employees_bookings", "equipment_bookings")) {
+            List<Map<String, Object>> rows = jdbc.queryForList(
+                    "SELECT date, lower(booked_time)::time AS s, upper(booked_time)::time AS e, "
+                            + "lower_inc(booked_time) AS li, upper_inc(booked_time) AS ui FROM " + schema + "." + table
+                            + " WHERE booking_id = ?::uuid", id);
+            for (Map<String, Object> row : rows) {
+                c2.eq(table + " row date", date, String.valueOf(row.get("date")));
+                LocalTime s = ((java.sql.Time) row.get("s")).toLocalTime();
+                LocalTime e = ((java.sql.Time) row.get("e")).toLocalTime();
+                c2.ok(table + " row " + s + "-" + e + " inside the visit " + visitStart + "-" + visitEnd,
+                        !s.isBefore(visitStart) && !e.isAfter(visitEnd) && s.isBefore(e));
+                c2.ok(table + " row is half-open [)", Boolean.TRUE.equals(row.get("li")) && Boolean.FALSE.equals(row.get("ui")));
+            }
+        }
+        List<Map<String, Object>> bayRows = jdbc.queryForList(
+                "SELECT lower(booked_time)::time AS s, upper(booked_time)::time AS e FROM " + schema
+                        + ".service_bays_bookings WHERE booking_id = ?::uuid", id);
+        if (bayRows.size() == 1) {
+            c2.eq("bay row spans the whole visit", visitStart + "-" + visitEnd,
+                    ((java.sql.Time) bayRows.getFirst().get("s")).toLocalTime() + "-"
+                            + ((java.sql.Time) bayRows.getFirst().get("e")).toLocalTime());
+        }
+
         List<String> startsDuring = starts(day(slots(SVC_OIL, from, to), date));
         c3.ok("no new starts appeared", startsBefore.containsAll(startsDuring));
         c3.note(startsBefore.size() + " → " + startsDuring.size() + " starts on " + date);
@@ -392,9 +434,12 @@ class BookingEndpointChecklistIT {
         c4.eq("slot listing restored after cancel", startsBefore, startsAfter);
     }
 
-    /** 5 concurrent double-book: bays+1 parallel POSTs for one slot → ≥1 201, ≥1 409, never 5xx. */
+    /**
+     * 5 concurrent double-book: bays+1 parallel POSTs for one slot → ≥1 201, ≥1 409, never 5xx, and
+     * every loser rolls back whole — the row deltas must equal the number of 201s.
+     */
     private void check5(LocalDate from, LocalDate to) throws Exception {
-        Chk c = check("5", "parallel double-book → exactly the bay count succeeds at most, rest 409 SLOT_NOT_AVAILABLE");
+        Chk c = check("5", "parallel double-book → ≥1 201, rest 409, losers leave no rows");
         JsonNode day = firstOpenDay(slots(SVC_OIL, from, to));
         if (day == null) {
             c.skipped = "no open day";
@@ -406,6 +451,13 @@ class BookingEndpointChecklistIT {
                 "SELECT count(*) FROM " + schema + ".service_bays WHERE branch_id = ?::uuid AND status = 'ACTIVE'",
                 Integer.class, BRANCH_A));
         int n = bays + 1;
+        int employeeReqs = requirements("service_employee_requirements", SVC_OIL);
+        int equipmentReqs = requirements("service_equipment_requirements", SVC_OIL);
+        int bookingsBefore = rowsForCarOn(CAR_1, date, "bookings");
+        int segmentsBefore = rowsForCarOn(CAR_1, date, "bookings_services");
+        int bayRowsBefore = rowsForCarOn(CAR_1, date, "service_bays_bookings");
+        int employeeRowsBefore = rowsForCarOn(CAR_1, date, "employees_bookings");
+        int equipmentRowsBefore = rowsForCarOn(CAR_1, date, "equipment_bookings");
         ExecutorService pool = Executors.newFixedThreadPool(n);
         CountDownLatch go = new CountDownLatch(1);
         List<Future<ResponseEntity<String>>> futures = new ArrayList<>();
@@ -434,7 +486,9 @@ class BookingEndpointChecklistIT {
                     remember(json(r));
                 } else if (r.getStatusCode().value() == 409) {
                     conflicts++;
-                    c.eq("409 code", "SLOT_NOT_AVAILABLE", json(r).get("code").asText());
+                    String code = json(r).get("code").asText();
+                    c.ok("409 code is SLOT_NOT_AVAILABLE or CAR_PROFILE_ALREADY_BOOKED (got " + code + ")",
+                            Set.of("SLOT_NOT_AVAILABLE", "CAR_PROFILE_ALREADY_BOOKED").contains(code));
                 } else {
                     c.fails.add("unexpected status " + r.getStatusCode().value() + ": " + r.getBody());
                 }
@@ -442,6 +496,13 @@ class BookingEndpointChecklistIT {
         } finally {
             pool.shutdown();
         }
+        c.eq("bookings rows added = 201s (losers rolled back)", created, rowsForCarOn(CAR_1, date, "bookings") - bookingsBefore);
+        c.eq("bookings_services rows added = 201s", created, rowsForCarOn(CAR_1, date, "bookings_services") - segmentsBefore);
+        c.eq("bay occupancy rows added = 201s", created, rowsForCarOn(CAR_1, date, "service_bays_bookings") - bayRowsBefore);
+        c.eq("employee occupancy rows added = 201s × slots", created * employeeReqs,
+                rowsForCarOn(CAR_1, date, "employees_bookings") - employeeRowsBefore);
+        c.eq("equipment occupancy rows added = 201s × slots", created * equipmentReqs,
+                rowsForCarOn(CAR_1, date, "equipment_bookings") - equipmentRowsBefore);
         c.ok("at least one 201", created >= 1);
         c.ok("at least one 409", conflicts >= 1);
         c.ok("created ≤ active bays (" + bays + ")", created <= bays);
@@ -458,7 +519,7 @@ class BookingEndpointChecklistIT {
                 "c foreign car profile", new String[] {bookingBody(BRANCH_A, CAR_FOREIGN, "11", d, "10:00"), "404", "CAR_PROFILE_NOT_FOUND"},
                 "d unknown branch", new String[] {bookingBody("99999999-9999-4999-8999-999999999999", CAR_1, "11", d, "10:00"), "404", "BRANCH_NOT_FOUND"},
                 "e service of another branch", new String[] {bookingBody(BRANCH_A, CAR_1, "" + SVC_OTHER_BRANCH, d, "10:00"), "404", "SERVICE_NOT_FOUND"},
-                "f past start", new String[] {bookingBody(BRANCH_A, CAR_1, "11", from.minusDays(2).toString(), "10:00"), "409", "SLOT_NOT_AVAILABLE"});
+                "f past start", new String[] {bookingBody(BRANCH_A, CAR_1, "11", from.minusDays(2).toString(), "10:00"), "400", "INVALID_BOOKING_REQUEST"});
         int okCount = 0;
         for (Map.Entry<String, String[]> e : cases.entrySet()) {
             String label = e.getKey();
@@ -535,5 +596,41 @@ class BookingEndpointChecklistIT {
                 + requirements("service_employee_requirements", SVC_BRAKES);
         c.eq("employee rows = both segments' requirement slots", employeeReqs, count("employees_bookings", id));
         c.note("booked " + pair + " on " + date + " " + start + ", employees " + employeeReqs);
+    }
+
+    /** 9 the same car cannot be booked into two overlapping visits, even when a second bay is free. */
+    private void check9(LocalDate from, LocalDate to) throws Exception {
+        Chk c = check("9", "same car twice at one time → 409 CAR_PROFILE_ALREADY_BOOKED");
+        JsonNode day = firstOpenDay(slots(SVC_OIL, from, to));
+        if (day == null) {
+            c.skipped = "no open day";
+            return;
+        }
+        String date = day.get("date").asText();
+        List<String> open = starts(day);
+        String start = open.get(open.size() / 2);
+        ResponseEntity<String> first = post("/api/customer/bookings", bookingBody(BRANCH_A, CAR_1, "" + SVC_OIL, date, start));
+        c.eq("first booking", 201, first.getStatusCode().value());
+        if (first.getStatusCode().value() != 201) {
+            return;
+        }
+        remember(json(first));
+        ResponseEntity<String> second = post("/api/customer/bookings", bookingBody(BRANCH_A, CAR_1, "" + SVC_BRAKES, date, start));
+        c.eq("second booking of the same car at the same time", 409, second.getStatusCode().value());
+        if (second.getStatusCode().value() == 409) {
+            String code = json(second).get("code").asText();
+            int bays = Objects.requireNonNull(jdbc.queryForObject(
+                    "SELECT count(*) FROM " + schema + ".service_bays WHERE branch_id = ?::uuid AND status = 'ACTIVE'",
+                    Integer.class, BRANCH_A));
+            if (bays > 1) {
+                c.eq("409 code", "CAR_PROFILE_ALREADY_BOOKED", code);
+            } else {
+                c.ok("409 code (single bay: either conflict is right)", Set.of("SLOT_NOT_AVAILABLE", "CAR_PROFILE_ALREADY_BOOKED").contains(code));
+            }
+            c.ok("errors.carProfileId present", json(second).path("errors").has("carProfileId") || !"CAR_PROFILE_ALREADY_BOOKED".equals(code));
+        } else if (second.getStatusCode().value() == 201) {
+            remember(json(second));
+        }
+        c.note(date + " " + start + " → first 201, second " + second.getStatusCode().value());
     }
 }
