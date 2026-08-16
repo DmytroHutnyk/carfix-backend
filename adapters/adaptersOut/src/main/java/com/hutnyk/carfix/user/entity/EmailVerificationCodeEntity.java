@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -25,6 +26,7 @@ public class EmailVerificationCodeEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @ToString.Exclude
     @Column(name = "code_hash", nullable = false)
     private String codeHash;
 

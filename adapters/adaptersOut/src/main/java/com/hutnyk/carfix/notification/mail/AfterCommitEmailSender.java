@@ -38,7 +38,7 @@ public abstract class AfterCommitEmailSender implements EmailSender {
         try {
             executor.execute(() -> deliverSafely(message));
         } catch (RuntimeException e) {
-            log.error("Email could not be scheduled: to={}, subject={}", message.to(), message.subject(), e);
+            log.error("Email could not be scheduled: to={}", message.to(), e);
         }
     }
 
@@ -46,7 +46,7 @@ public abstract class AfterCommitEmailSender implements EmailSender {
         try {
             deliver(message);
         } catch (RuntimeException e) {
-            log.error("Email delivery failed: to={}, subject={}", message.to(), message.subject(), e);
+            log.error("Email delivery failed: to={}", message.to(), e);
         }
     }
 }
