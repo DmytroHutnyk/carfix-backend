@@ -9,7 +9,11 @@ import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.UserId;
 import com.hutnyk.carfix.user.UserRole;
+import com.hutnyk.carfix.user.entity.UserEntity;
+import com.hutnyk.carfix.user.mapper.UserMapper;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 public class OwnerMapperTest {
 
@@ -42,6 +46,36 @@ public class OwnerMapperTest {
         assertThat(owner.getBusinessName()).isEqualTo("AutoSerwis Kowalski");
         assertThat(owner.getVatIn()).isEqualTo("5252445567");
         assertThat(owner.getRegon()).isEqualTo("146892132");
+    }
+
+    @Test
+    public void test_toDomain_composes_the_owner_around_the_mapped_user_entity() {
+        //given
+        UUID userId = UUID.randomUUID();
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
+        userEntity.setName("Marek");
+        userEntity.setSurname("Kowalski");
+        userEntity.setPhoneCountryCode("+48");
+        userEntity.setPhoneNumber("600100200");
+        userEntity.setEmail("owner@carfix.dev");
+        userEntity.setPassword("$2a$10$storedhashvalue");
+        userEntity.setRole(UserRole.OWNER);
+        OwnerEntity entity = new OwnerEntity();
+        entity.setId(userId);
+        entity.setUserEntity(userEntity);
+        entity.setBusinessName("AutoSerwis Kowalski");
+        entity.setVatIn("5252445567");
+        entity.setRegon("146892132");
+
+        //when
+        Owner owner = OwnerMapper.toDomain(entity, UserMapper.toDomain(entity.getUserEntity()));
+
+        //then
+        assertThat(owner.getUser().getId().id()).isEqualTo(userId);
+        assertThat(owner.getUser().getRole()).isEqualTo(UserRole.OWNER);
+        assertThat(owner.getUser().getEmail()).isEqualTo("owner@carfix.dev");
+        assertThat(owner.getBusinessName()).isEqualTo("AutoSerwis Kowalski");
     }
 
     @Test

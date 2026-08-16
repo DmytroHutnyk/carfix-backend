@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.auth.dto.response.AccountResponse;
+import com.hutnyk.carfix.auth.dto.response.CustomerAccountResponse;
 import com.hutnyk.carfix.auth.dto.response.OwnerAccountResponse;
 import com.hutnyk.carfix.customer.Customer;
+import com.hutnyk.carfix.customer.CustomerStatus;
 import com.hutnyk.carfix.in.address.AddressPortIn;
 import com.hutnyk.carfix.in.address.query.AddressView;
 import com.hutnyk.carfix.in.address.query.LocationView;
@@ -27,6 +29,7 @@ import java.util.Optional;
 public class AccountResponseAssemblerTest {
 
     private static final String EMAIL = "owner@carfix.dev";
+    private static final String CUSTOMER_EMAIL = "driver@carfix.dev";
 
     private static Owner owner() {
         User user = User.builder()
@@ -41,7 +44,22 @@ public class AccountResponseAssemblerTest {
         return Owner.of(user, "AutoSerwis Kowalski", "5252445567", "146892132");
     }
 
+    private static Customer customer() {
+        User user = User.builder()
+                .id(UserId.genId())
+                .name("Anna")
+                .surname("Nowak")
+                .phoneNumber(new PhoneNumber("+48", "600300400"))
+                .email(CUSTOMER_EMAIL)
+                .role(UserRole.CUSTOMER)
+                .passwordHash(PasswordHash.of("$2a$10$storedhashvalue"))
+                .build();
+        return Customer.of(user, CustomerStatus.ACTIVE);
+    }
+
     private static final class StubCustomerPortIn implements CustomerPortIn {
+        Customer customer;
+
         @Override
         public Customer registerCustomer(RegisterUserCommand command) {
             throw new UnsupportedOperationException();
@@ -49,7 +67,7 @@ public class AccountResponseAssemblerTest {
 
         @Override
         public Optional<Customer> loadByCustomerUsername(String email) {
-            throw new UnsupportedOperationException();
+            return Optional.ofNullable(customer);
         }
     }
 
@@ -74,9 +92,10 @@ public class AccountResponseAssemblerTest {
         }
     }
 
+    private final StubCustomerPortIn customerStub = new StubCustomerPortIn();
     private final StubOwnerPortIn ownerStub = new StubOwnerPortIn();
     private final AccountResponseAssembler assembler = new AccountResponseAssembler(
-            new StubCustomerPortIn(), ownerStub, new UserResponseAssembler(new StubAddressPortIn()));
+            customerStub, ownerStub, new UserResponseAssembler(new StubAddressPortIn()));
 
     @Test
     public void test_assemble_owner_returns_owner_account_with_business_tail() {
@@ -94,6 +113,34 @@ public class AccountResponseAssemblerTest {
         assertThat(ownerAccount.businessName()).isEqualTo("AutoSerwis Kowalski");
         assertThat(ownerAccount.vatIn()).isEqualTo("5252445567");
         assertThat(ownerAccount.regon()).isEqualTo("146892132");
+    }
+
+    @Test
+    public void test_assemble_customer_returns_customer_account_with_status() {
+        //given
+        customerStub.customer = customer();
+
+        //when
+        AccountResponse response = assembler.assemble(CUSTOMER_EMAIL, UserRole.CUSTOMER);
+
+        //then
+        assertThat(response).isInstanceOf(CustomerAccountResponse.class);
+        CustomerAccountResponse customerAccount = (CustomerAccountResponse) response;
+        assertThat(customerAccount.role()).isEqualTo(UserRole.CUSTOMER);
+        assertThat(customerAccount.customerStatus()).isEqualTo(CustomerStatus.ACTIVE);
+        assertThat(customerAccount.user().email()).isEqualTo(CUSTOMER_EMAIL);
+        assertThat(customerAccount.user().name()).isEqualTo("Anna");
+        assertThat(customerAccount.user().surname()).isEqualTo("Nowak");
+    }
+
+    @Test
+    public void test_assemble_customer_without_aggregate_fails_authentication() {
+        //given
+        customerStub.customer = null;
+
+        //when + then
+        assertThatThrownBy(() -> assembler.assemble(CUSTOMER_EMAIL, UserRole.CUSTOMER))
+                .isInstanceOf(AuthenticatedUserMissingException.class);
     }
 
     @Test

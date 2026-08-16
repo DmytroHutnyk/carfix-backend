@@ -101,6 +101,32 @@ public class UserMapperTest {
     }
 
     @Test
+    public void test_updateEntity_keeps_an_already_verified_email_verified() {
+        //given
+        UserEntity entity = UserMapper.toEntity(user(null, null, VERIFIED_AT), null, null);
+
+        //when
+        UserMapper.updateEntity(entity, user(null, null, VERIFIED_AT), null, null);
+
+        //then
+        assertThat(entity.getEmailVerifiedAt()).isEqualTo(VERIFIED_AT);
+        assertThat(UserMapper.toDomain(entity).isEmailVerified()).isTrue();
+    }
+
+    @Test
+    public void test_updateEntity_copies_a_freshly_set_email_verified_at() {
+        //given
+        UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
+
+        //when
+        UserMapper.updateEntity(entity, user(null, null, VERIFIED_AT), null, null);
+
+        //then
+        assertThat(entity.getEmailVerifiedAt()).isEqualTo(VERIFIED_AT);
+        assertThat(UserMapper.toDomain(entity).isEmailVerified()).isTrue();
+    }
+
+    @Test
     public void test_toEntity_and_toDomain_round_trip_the_preferred_city() {
         //given
         CityEntity city = warsaw();
