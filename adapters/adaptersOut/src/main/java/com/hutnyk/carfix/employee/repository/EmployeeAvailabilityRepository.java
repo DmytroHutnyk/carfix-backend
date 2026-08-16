@@ -12,5 +12,8 @@ public interface EmployeeAvailabilityRepository extends JpaRepository<EmployeeAv
     List<EmployeeAvailabilityEntity> findAllByEmployeeEntityIdInAndDate(
             Collection<UUID> employeeIds, LocalDate date);
 
+    List<EmployeeAvailabilityEntity> findAllByEmployeeEntityIdInAndDateBetween(
+            Collection<UUID> employeeIds, LocalDate from, LocalDate to);
+
     List<EmployeeAvailabilityEntity> findAllBySeriesId(Integer seriesId);
 }

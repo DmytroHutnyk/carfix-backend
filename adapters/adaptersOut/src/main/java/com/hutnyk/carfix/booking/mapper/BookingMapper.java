@@ -4,7 +4,10 @@ import com.hutnyk.carfix.address.entity.AddressEntity;
 import com.hutnyk.carfix.booking.Booking;
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.booking.BookingPricing;
+import com.hutnyk.carfix.booking.BookingSegment;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
+import com.hutnyk.carfix.booking.entity.BookingSegmentEntity;
+import com.hutnyk.carfix.booking.entity.BookingSegmentKey;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarModelEntity;
@@ -13,10 +16,12 @@ import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.carProfile.entity.CarProfileEntity;
 import com.hutnyk.carfix.in.booking.query.BookingServiceView;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.service.entity.ServiceEntity;
 
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 public class BookingMapper {
@@ -30,7 +35,11 @@ public class BookingMapper {
                 e.getStartTime(),
                 e.getEndTime(),
                 BranchId.of(e.getBranchEntity().getId()),
-                CarProfileId.of(e.getCarProfileEntity().getId())
+                CarProfileId.of(e.getCarProfileEntity().getId()),
+                e.getSegments() == null ? List.of() : e.getSegments().stream()
+                        .map(s -> BookingSegment.of(
+                                s.getKey().getServiceId(), s.getStartTime(), s.getEndTime(), s.getPrice()))
+                        .toList()
         );
     }
 
@@ -42,8 +51,8 @@ public class BookingMapper {
         ModelVersionEntity version = carProfile.getModelVersionEntity();
         CarModelEntity model = version.getCarModelEntity();
 
-        List<BookingServiceView> services = e.getServiceEntities().stream()
-                .map(s -> new BookingServiceView(s.getName(), s.getPrice()))
+        List<BookingServiceView> services = e.getSegments().stream()
+                .map(s -> new BookingServiceView(s.getServiceEntity().getName(), s.getPrice()))
                 .sorted(Comparator.comparing(BookingServiceView::name))
                 .toList();
 
@@ -71,6 +80,32 @@ public class BookingMapper {
                 carProfile.getPlates(),
                 services,
                 totalPrice
+        );
+    }
+
+    public static BookingEntity toEntity(Booking b, BranchEntity branch, CarProfileEntity carProfile) {
+        if (b == null) return null;
+        return new BookingEntity(
+                b.getId().id(),
+                b.getDate(),
+                b.getStatus(),
+                b.getStartTime(),
+                b.getEndTime(),
+                branch,
+                carProfile,
+                new HashSet<>()
+        );
+    }
+
+    public static BookingSegmentEntity toSegmentEntity(BookingSegment s, BookingEntity booking, ServiceEntity service) {
+        if (s == null) return null;
+        return new BookingSegmentEntity(
+                new BookingSegmentKey(booking.getId(), service.getId()),
+                booking,
+                service,
+                s.startTime(),
+                s.endTime(),
+                s.price()
         );
     }
 
