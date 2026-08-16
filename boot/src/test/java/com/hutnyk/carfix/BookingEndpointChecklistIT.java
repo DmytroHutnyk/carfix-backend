@@ -51,6 +51,12 @@ class BookingEndpointChecklistIT {
     private static final String CAR_FOREIGN = "20000000-0000-4000-8000-000000000004";
     private static final int SVC_OIL = 11;
     private static final int SVC_BRAKES = 27;
+    /**
+     * Wheel alignment: the cheapest branch-A service that reserves equipment AND shares a bay type
+     * with {@link #SVC_OIL}, so check 8 can chain the two and exercise {@code equipment_bookings}.
+     * ({@code SVC_BRAKES} and {@code SVC_OIL} both require none, which made check 8 assert 0 == 0.)
+     */
+    private static final int SVC_ALIGN = 22;
     private static final int SVC_OTHER_BRANCH = 14;
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
 
@@ -231,6 +237,28 @@ class BookingEndpointChecklistIT {
     }
 
     /**
+     * Every occupancy row of {@code bookingId}, in all three tables, must sit on the booking's date,
+     * inside the visit span, and be half-open {@code [)} — the shape the GiST exclusion constraints
+     * and the slot recompute both assume.
+     */
+    private void assertOccupancyRows(Chk c, String bookingId, String date, LocalTime visitStart, LocalTime visitEnd) {
+        for (String table : List.of("service_bays_bookings", "employees_bookings", "equipment_bookings")) {
+            List<Map<String, Object>> rows = jdbc.queryForList(
+                    "SELECT date, lower(booked_time)::time AS s, upper(booked_time)::time AS e, "
+                            + "lower_inc(booked_time) AS li, upper_inc(booked_time) AS ui FROM " + schema + "." + table
+                            + " WHERE booking_id = ?::uuid", bookingId);
+            for (Map<String, Object> row : rows) {
+                c.eq(table + " row date", date, String.valueOf(row.get("date")));
+                LocalTime s = ((java.sql.Time) row.get("s")).toLocalTime();
+                LocalTime e = ((java.sql.Time) row.get("e")).toLocalTime();
+                c.ok(table + " row " + s + "-" + e + " inside the visit " + visitStart + "-" + visitEnd,
+                        !s.isBefore(visitStart) && !e.isAfter(visitEnd) && s.isBefore(e));
+                c.ok(table + " row is half-open [)", Boolean.TRUE.equals(row.get("li")) && Boolean.FALSE.equals(row.get("ui")));
+            }
+        }
+    }
+
+    /**
      * The ids the sweep is allowed to consider: this car's bookings created no earlier than the run
      * itself. {@code bookings.created_at} defaults to the DB's own {@code now()}, so the bound is
      * read from the DB too — no JVM/DB clock skew.
@@ -325,6 +353,11 @@ class BookingEndpointChecklistIT {
         if (passed == 0) {
             throw new AssertionError("nothing was verified — every check skipped (no bookable slot in the window? reseed the DB)");
         }
+        /* Checks 6 and 7 pass without any bookable slot, so `passed > 0` alone would let an
+           all-SKIP booking run report success. Check 1 is the one that must have booked. */
+        if (report.stream().anyMatch(c -> "1".equals(c.id) && c.skipped != null)) {
+            throw new AssertionError("check 1 skipped — no booking was ever created; reseed the DB");
+        }
     }
 
     /** 1 book a listed slot → 201; 2 rows written; 3 slot listing shrinks or holds; 4 My Bookings shows it. */
@@ -385,20 +418,7 @@ class BookingEndpointChecklistIT {
 
         LocalTime visitStart = LocalTime.parse(created.get("startTime").asText());
         LocalTime visitEnd = LocalTime.parse(created.get("endTime").asText());
-        for (String table : List.of("service_bays_bookings", "employees_bookings", "equipment_bookings")) {
-            List<Map<String, Object>> rows = jdbc.queryForList(
-                    "SELECT date, lower(booked_time)::time AS s, upper(booked_time)::time AS e, "
-                            + "lower_inc(booked_time) AS li, upper_inc(booked_time) AS ui FROM " + schema + "." + table
-                            + " WHERE booking_id = ?::uuid", id);
-            for (Map<String, Object> row : rows) {
-                c2.eq(table + " row date", date, String.valueOf(row.get("date")));
-                LocalTime s = ((java.sql.Time) row.get("s")).toLocalTime();
-                LocalTime e = ((java.sql.Time) row.get("e")).toLocalTime();
-                c2.ok(table + " row " + s + "-" + e + " inside the visit " + visitStart + "-" + visitEnd,
-                        !s.isBefore(visitStart) && !e.isAfter(visitEnd) && s.isBefore(e));
-                c2.ok(table + " row is half-open [)", Boolean.TRUE.equals(row.get("li")) && Boolean.FALSE.equals(row.get("ui")));
-            }
-        }
+        assertOccupancyRows(c2, id, date, visitStart, visitEnd);
         List<Map<String, Object>> bayRows = jdbc.queryForList(
                 "SELECT lower(booked_time)::time AS s, upper(booked_time)::time AS e FROM " + schema
                         + ".service_bays_bookings WHERE booking_id = ?::uuid", id);
@@ -573,8 +593,8 @@ class BookingEndpointChecklistIT {
      * from a re-read that fetches a collection.
      */
     private void check8(LocalDate from, LocalDate to) throws Exception {
-        Chk c = check("8", "two-service visit → one booking, two segments, one bay");
-        String pair = SVC_OIL + "," + SVC_BRAKES;
+        Chk c = check("8", "two-service visit → one booking, two segments, one bay, equipment held");
+        String pair = SVC_OIL + "," + SVC_ALIGN;
         JsonNode body = slots(pair, from, to);
         if (!body.get("chainable").asBoolean()) {
             c.skipped = "services " + pair + " share no bay type — reseed the DB";
@@ -603,9 +623,16 @@ class BookingEndpointChecklistIT {
         c.eq("bookings_services rows", 2, count("bookings_services", id));
         c.eq("bay rows (one for the whole visit)", 1, count("service_bays_bookings", id));
         int employeeReqs = requirements("service_employee_requirements", SVC_OIL)
-                + requirements("service_employee_requirements", SVC_BRAKES);
+                + requirements("service_employee_requirements", SVC_ALIGN);
         c.eq("employee rows = both segments' requirement slots", employeeReqs, count("employees_bookings", id));
-        c.note("booked " + pair + " on " + date + " " + start + ", employees " + employeeReqs);
+        int equipmentReqs = requirements("service_equipment_requirements", SVC_OIL)
+                + requirements("service_equipment_requirements", SVC_ALIGN);
+        c.ok("the chain reserves equipment at all (else this check proves nothing)", equipmentReqs > 0);
+        c.eq("equipment rows = equipment requirement slots of the chain", equipmentReqs, count("equipment_bookings", id));
+        assertOccupancyRows(c, id, date, LocalTime.parse(created.get("startTime").asText()),
+                LocalTime.parse(created.get("endTime").asText()));
+        c.note("booked " + pair + " on " + date + " " + start + ", employees " + employeeReqs
+                + ", equipment " + equipmentReqs);
         /* Same reason as check 5: check 9 books this car too. */
         c.eq("cancel to free the day for check 9", 200,
                 post("/api/customer/bookings/" + id + "/cancel", "").getStatusCode().value());

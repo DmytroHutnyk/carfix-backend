@@ -391,13 +391,18 @@ public class BookingServiceTest {
     }
 
     private void seedBookableTomorrow() {
+        seedBookableOn(TOMORROW);
+    }
+
+    /** One lift bay and one mechanic, both free 09:00-12:00 on {@code date}. */
+    private void seedBookableOn(LocalDate date) {
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT), "150.00"));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
         availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
-                1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, BAY_ID));
+                1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2, UserId.of(ANNA)));
+                1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 2, UserId.of(ANNA)));
     }
 
     @Test
@@ -508,6 +513,19 @@ public class BookingServiceTest {
                 .isInstanceOf(InvalidBookingRequestException.class);
         assertThat(servicePortOut.loaded).isFalse();
         assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingAcceptsAStartLaterToday() {
+        seedBookableOn(TODAY);
+
+        BookingView result = service.createBooking(EMAIL, command(List.of(1), TODAY, LocalTime.of(11, 0)));
+
+        assertThat(result.status()).isEqualTo(BookingStatus.SCHEDULED);
+        assertThat(bookingPortOut.inserted).isNotNull();
+        assertThat(bookingPortOut.inserted.getDate()).isEqualTo(TODAY);
+        assertThat(bookingPortOut.inserted.getStartTime()).isEqualTo(LocalTime.of(11, 0));
+        assertThat(bookingPortOut.inserted.getEndTime()).isEqualTo(LocalTime.of(12, 0));
     }
 
     @Test

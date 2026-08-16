@@ -4,8 +4,8 @@ import com.hutnyk.carfix.exception.ValidationException;
 
 /**
  * The booking request is not answerable as asked: chain size/duplicates, missing date or start,
- * or a start that is not on the 15-minute grid. Names the offending field so the client can
- * highlight it.
+ * a start that is not on the 15-minute grid, or a start before the branch-local now. Names the
+ * offending field so the client can highlight it.
  */
 public class InvalidBookingRequestException extends ValidationException {
 
