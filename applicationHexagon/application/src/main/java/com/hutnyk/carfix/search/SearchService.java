@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -91,9 +92,9 @@ public class SearchService implements SearchPortIn {
         boolean hasCoordinates = query.lat() != null && query.lng() != null;
         String sort = resolveSort(query.sort(), hasCoordinates);
 
-        Integer brandId = resolveBrandId(query.carProfileId(), principalEmail);
-
         AvailabilityWindow availability = validateAvailability(query.availability(), serviceName);
+
+        Integer brandId = resolveBrandId(query.carProfileId(), principalEmail);
 
         WorkshopSearchQuery normalized = new WorkshopSearchQuery(
                 q, serviceName, categoryId,
@@ -140,6 +141,9 @@ public class SearchService implements SearchPortIn {
         }
         if (ChronoUnit.DAYS.between(window.from(), window.to()) + 1 > MAX_AVAILABILITY_DAYS) {
             throw new InvalidSearchFilterException("availability range must not exceed " + MAX_AVAILABILITY_DAYS + " days");
+        }
+        if (window.timeTo() != null && window.timeTo().equals(LocalTime.MIDNIGHT)) {
+            throw new InvalidSearchFilterException("timeTo must be after 00:00");
         }
         if (window.timeFrom() != null && window.timeTo() != null && !window.timeFrom().isBefore(window.timeTo())) {
             throw new InvalidSearchFilterException("timeFrom must be before timeTo");

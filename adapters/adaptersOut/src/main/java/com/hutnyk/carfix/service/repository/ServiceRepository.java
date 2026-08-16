@@ -24,6 +24,8 @@ public interface ServiceRepository extends JpaRepository<ServiceEntity, Integer>
 
     @Query("""
             SELECT DISTINCT s FROM ServiceEntity s
+            JOIN FETCH s.branchEntity
+            JOIN FETCH s.serviceCategoryEntity
             LEFT JOIN FETCH s.serviceBayTypes
             LEFT JOIN FETCH s.employeeRequirements er
             LEFT JOIN FETCH er.roles

@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 public class SearchAvailabilityFilterTest {
 
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
+    private static final String PAGO_PAGO = "Pacific/Pago_Pago";
     private static final LocalDate TODAY = LocalDate.of(2026, 8, 13);
     private static final LocalDate TOMORROW = TODAY.plusDays(1);
     private static final LocalDate DAY_AFTER = TODAY.plusDays(2);
@@ -69,10 +70,14 @@ public class SearchAvailabilityFilterTest {
     }
 
     private static WorkshopResultView candidate(UUID branchId, int serviceId) {
+        return candidate(branchId, serviceId, WARSAW.getId());
+    }
+
+    private static WorkshopResultView candidate(UUID branchId, int serviceId, String tz) {
         return new WorkshopResultView(branchId, "Branch " + branchId, "Street", "1", "Warsaw",
                 new BigDecimal("52.2"), new BigDecimal("21.0"), null, null, null,
                 List.of(new MatchedServiceView(serviceId, "Oil and filter change", BigDecimal.TEN, (short) 60, "Engine")),
-                "Europe/Warsaw", null);
+                tz, null);
     }
 
     private static AvailabilityWindow window(LocalDate from, LocalDate to, LocalTime timeFrom, LocalTime timeTo) {
@@ -310,6 +315,28 @@ public class SearchAvailabilityFilterTest {
         //then — clock is 10:07 → first grid start 10:15
         assertThat(startsOf(result.getFirst()))
                 .containsExactly(TODAY + "T10:15", TODAY + "T10:30", TODAY + "T10:45");
+    }
+
+    @Test
+    void test_today_and_now_come_from_each_branch_zone() {
+        //given
+        seedBranchA();
+        seedBranchB();
+        LocalDate yesterday = TODAY.minusDays(1);
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(5, at(yesterday, 9, 23), yesterday, 1, BAY_A));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(5, at(yesterday, 9, 23), yesterday, 2, UserId.of(MECHANIC_A)));
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(6, at(yesterday, 9, 23), yesterday, 3, BAY_B));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(6, at(yesterday, 9, 23), yesterday, 4, UserId.of(MECHANIC_B)));
+
+        //when — Pago Pago is UTC-11, so at the fixed instant branch B is still on 2026-08-12 at 21:07
+        List<WorkshopResultView> result = filter.filter(
+                List.of(candidate(BRANCH_A, SERVICE_A), candidate(BRANCH_B, SERVICE_B, PAGO_PAGO)),
+                window(yesterday, yesterday, null, null));
+
+        //then — yesterday is already past for Warsaw, still today for Pago Pago
+        assertThat(result).extracting(WorkshopResultView::branchId).containsExactly(BRANCH_B);
+        assertThat(startsOf(result.getFirst()))
+                .containsExactly(yesterday + "T21:15", yesterday + "T21:30", yesterday + "T21:45");
     }
 
     @Test

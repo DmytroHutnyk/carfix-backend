@@ -893,6 +893,14 @@ public class SearchServiceTest {
     }
 
     @Test
+    public void test_time_to_at_midnight_rejected() {
+        assertThatThrownBy(() -> service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW, null, LocalTime.MIDNIGHT, 0, 20), null))
+                .isInstanceOf(InvalidSearchFilterException.class);
+        assertThat(searchPortOut.candidatesCalled).isFalse();
+    }
+
+    @Test
     public void test_all_null_window_means_no_availability_filter() {
         //when
         service.searchWorkshops(availabilityQuery(SERVICE_NAME, null, null, null, null, null, 0, 20), null);

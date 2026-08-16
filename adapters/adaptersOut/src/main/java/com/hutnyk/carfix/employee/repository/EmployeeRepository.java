@@ -24,6 +24,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, UUID> 
     @Query("""
             SELECT DISTINCT e FROM EmployeeEntity e
             JOIN FETCH e.roles
+            JOIN FETCH e.branchEntity
             WHERE e.branchEntity.id IN :branchIds AND e.status = :status
             """)
     List<EmployeeEntity> findAllWithRolesByBranchIdInAndStatus(

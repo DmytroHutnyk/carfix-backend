@@ -5,6 +5,7 @@ import com.hutnyk.carfix.equipment.entity.EquipmentEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EquipmentRepository extends JpaRepository<EquipmentEntity, Integer> {
@@ -13,5 +14,6 @@ public interface EquipmentRepository extends JpaRepository<EquipmentEntity, Inte
 
     List<EquipmentEntity> findAllByBranchEntityIdAndStatus(UUID branchId, EquipmentStatus status);
 
+    @EntityGraph(attributePaths = {"branchEntity", "equipmentTypeEntity"})
     List<EquipmentEntity> findAllByBranchEntityIdInAndStatus(Collection<UUID> branchIds, EquipmentStatus status);
 }
