@@ -14,11 +14,7 @@ import com.hutnyk.carfix.in.branch.query.BranchServiceCategoryView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 
-import java.time.format.DateTimeFormatter;
-
 public class BranchResponseMapper {
-
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     public static BranchResponse toResponse(BranchView view) {
         if (view == null) {
@@ -35,9 +31,7 @@ public class BranchResponseMapper {
                         .toList(),
                 view.openingHours().stream()
                         .map(oh -> new BranchOpeningHoursResponse(
-                                oh.dayOfWeek().name(),
-                                TIME_FORMAT.format(oh.startTime()),
-                                TIME_FORMAT.format(oh.closeTime())))
+                                oh.dayOfWeek(), oh.startTime(), oh.closeTime()))
                         .toList(),
                 view.serviceCategories().stream()
                         .map(BranchResponseMapper::toResponse)

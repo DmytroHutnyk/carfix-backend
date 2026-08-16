@@ -13,6 +13,14 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, UUID> 
 
     List<EmployeeEntity> findAllByBranchEntityId(UUID branchId);
 
+    @Query("""
+            SELECT DISTINCT e FROM EmployeeEntity e
+            JOIN FETCH e.roles
+            WHERE e.branchEntity.id = :branchId AND e.status = :status
+            """)
+    List<EmployeeEntity> findAllWithRolesByBranchIdAndStatus(
+            @Param("branchId") UUID branchId, @Param("status") EmployeeStatus status);
+
     /* Rows: [UUID branchId, Long count]. */
     @Query("""
             SELECT e.branchEntity.id, COUNT(e)

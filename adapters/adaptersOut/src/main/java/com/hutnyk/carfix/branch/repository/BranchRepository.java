@@ -23,6 +23,10 @@ public interface BranchRepository extends JpaRepository<BranchEntity, UUID> {
 
     boolean existsByIdAndStatus(UUID id, BranchStatus status);
 
+    @Query("SELECT b.tz FROM BranchEntity b WHERE b.id = :branchId AND b.status = :status")
+    Optional<String> findTzByIdAndStatus(
+            @Param("branchId") UUID branchId, @Param("status") BranchStatus status);
+
     @Query("""
             SELECT b FROM BranchEntity b
             JOIN FETCH b.addressEntity a

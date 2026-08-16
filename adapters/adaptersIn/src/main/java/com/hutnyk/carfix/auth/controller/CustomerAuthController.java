@@ -7,6 +7,7 @@ import com.hutnyk.carfix.in.customer.CustomerPortIn;
 import com.hutnyk.carfix.in.customer.commands.RegisterUserCommand;
 import com.hutnyk.carfix.auth.mapper.CustomerToResponseMapper;
 import com.hutnyk.carfix.auth.mapper.RegisterUserCommandMapper;
+import com.hutnyk.carfix.user.UserResponseAssembler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class CustomerAuthController {
 
     private final CustomerPortIn customerPortIn;
     private final RegisterUserCommandMapper registerUserCommandMapper;
+    private final UserResponseAssembler userResponseAssembler;
 
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
@@ -57,6 +59,7 @@ public class CustomerAuthController {
         securityContextHolderStrategy.setContext(context);
         securityContextRepository.saveContext(context, request, response);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(CustomerToResponseMapper.toResponse(registeredUser));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                CustomerToResponseMapper.toResponse(registeredUser, userResponseAssembler.toCoreResponse(registeredUser.getUser())));
     }
 }

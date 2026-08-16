@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -88,6 +89,11 @@ public class BranchServiceTest {
         @Override
         public boolean existsActiveById(BranchId branchId) {
             return branchExists;
+        }
+
+        @Override
+        public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
+            throw new UnsupportedOperationException();
         }
     }
 

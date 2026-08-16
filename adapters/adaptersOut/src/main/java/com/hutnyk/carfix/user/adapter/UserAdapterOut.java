@@ -1,5 +1,9 @@
 package com.hutnyk.carfix.user.adapter;
 
+import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.address.entity.CityEntity;
+import com.hutnyk.carfix.address.repository.AddressRepository;
+import com.hutnyk.carfix.address.repository.CityRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.out.user.UserPortOut;
@@ -17,6 +21,8 @@ import java.util.Optional;
 public class UserAdapterOut implements UserPortOut {
 
     private final UserRepository userRepository;
+    private final AddressRepository addressRepository;
+    private final CityRepository cityRepository;
 
     @Override
     public Optional<User> loadUserByEmail(String email){
@@ -38,9 +44,13 @@ public class UserAdapterOut implements UserPortOut {
         UserEntity entity = userRepository.findById(user.getId().id())
                 .orElseThrow(() -> new UnexpectedStateException("User not found: " + user.getId().id()));
 
-        entity.setName(user.getName());
-        entity.setSurname(user.getSurname());
-        entity.setDateOfBirth(user.getDateOfBirth());
+        AddressEntity address = user.getAddressId() == null
+                ? null
+                : addressRepository.getReferenceById(user.getAddressId());
+        CityEntity preferredCity = user.getPreferredCityId() == null
+                ? null
+                : cityRepository.getReferenceById(user.getPreferredCityId());
+        UserMapper.updateEntity(entity, user, address, preferredCity);
 
         return UserMapper.toDomain(userRepository.save(entity));
     }

@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.auth.dto.response.AccountResponse;
 import com.hutnyk.carfix.auth.dto.response.OwnerAccountResponse;
-import com.hutnyk.carfix.auth.mapper.LoginUserMapperImpl;
 import com.hutnyk.carfix.customer.Customer;
+import com.hutnyk.carfix.in.address.AddressPortIn;
+import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.in.customer.CustomerPortIn;
 import com.hutnyk.carfix.in.customer.commands.RegisterUserCommand;
 import com.hutnyk.carfix.in.owner.OwnerPortIn;
@@ -15,6 +17,7 @@ import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.UserId;
+import com.hutnyk.carfix.user.UserResponseAssembler;
 import com.hutnyk.carfix.user.UserRole;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import org.junit.jupiter.api.Test;
@@ -59,9 +62,21 @@ public class AccountResponseAssemblerTest {
         }
     }
 
+    private static final class StubAddressPortIn implements AddressPortIn {
+        @Override
+        public Optional<AddressView> loadAddressView(Integer addressId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<LocationView> loadCityView(Integer cityId) {
+            return Optional.empty();
+        }
+    }
+
     private final StubOwnerPortIn ownerStub = new StubOwnerPortIn();
-    private final AccountResponseAssembler assembler =
-            new AccountResponseAssembler(new StubCustomerPortIn(), ownerStub, new LoginUserMapperImpl());
+    private final AccountResponseAssembler assembler = new AccountResponseAssembler(
+            new StubCustomerPortIn(), ownerStub, new UserResponseAssembler(new StubAddressPortIn()));
 
     @Test
     public void test_assemble_owner_returns_owner_account_with_business_tail() {
