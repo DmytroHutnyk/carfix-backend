@@ -2,6 +2,7 @@ package com.hutnyk.carfix.employee.repository;
 
 import com.hutnyk.carfix.employee.EmployeeStatus;
 import com.hutnyk.carfix.employee.entity.EmployeeEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,12 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, UUID> 
             """)
     List<EmployeeEntity> findAllWithRolesByBranchIdAndStatus(
             @Param("branchId") UUID branchId, @Param("status") EmployeeStatus status);
+
+    @Query("""
+            SELECT DISTINCT e FROM EmployeeEntity e
+            JOIN FETCH e.roles
+            WHERE e.branchEntity.id IN :branchIds AND e.status = :status
+            """)
+    List<EmployeeEntity> findAllWithRolesByBranchIdInAndStatus(
+            @Param("branchIds") Collection<UUID> branchIds, @Param("status") EmployeeStatus status);
 }

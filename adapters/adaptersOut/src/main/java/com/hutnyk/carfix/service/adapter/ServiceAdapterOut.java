@@ -19,7 +19,7 @@ public class ServiceAdapterOut implements ServicePortOut {
     @Override
     public List<Service> loadByIds(Collection<Integer> serviceIds) {
         if (serviceIds.isEmpty()) return List.of();
-        return serviceRepository.findAllById(serviceIds).stream()
+        return serviceRepository.findAllWithRequirementsByIdIn(serviceIds).stream()
                 .map(ServiceMapper::toDomain)
                 .toList();
     }
