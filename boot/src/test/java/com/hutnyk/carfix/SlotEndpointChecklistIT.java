@@ -263,7 +263,7 @@ class SlotEndpointChecklistIT {
                         + "   WHERE sb.branch_id = CAST(? AS uuid)"
                         + "  UNION ALL"
                         + "  SELECT eb.date FROM " + schema + ".employees_bookings eb"
-                        + "    JOIN " + schema + ".employees e ON e.user_id = eb.employee_id"
+                        + "    JOIN " + schema + ".employees e ON e.employee_id = eb.employee_id"
                         + "   WHERE e.branch_id = CAST(? AS uuid)"
                         + "  UNION ALL"
                         + "  SELECT qb.date FROM " + schema + ".equipment_bookings qb"
@@ -548,6 +548,7 @@ class SlotEndpointChecklistIT {
             int duration = 40;
             LocalTime bookedStart = h.open().plusHours(2);
             LocalTime bookedEnd = bookedStart.plusMinutes(duration);
+            LocalTime resumeAt = ceilTo15(bookedEnd);
             Integer bayId = jdbc.queryForObject(
                     "SELECT sb.service_bay_id FROM " + schema + ".service_bays sb WHERE " + bayFilter,
                     Integer.class, BRANCH_B);
@@ -572,7 +573,7 @@ class SlotEndpointChecklistIT {
                 shape(c, day, date.toString(), duration);
 
                 int expectedMorning = fits(h.open(), bookedStart, duration);
-                int expectedAfternoon = fits(bookedEnd, h.close(), duration);
+                int expectedAfternoon = fits(resumeAt, h.close(), duration);
                 c.eq("total slots", expectedMorning + expectedAfternoon, count(day));
 
                 int morning = 0;
@@ -595,7 +596,7 @@ class SlotEndpointChecklistIT {
                     c.eq("first", spanOf(h.open(), duration), first(day));
                 }
                 if (expectedAfternoon > 0) {
-                    c.eq("last", spanOf(lastStart(bookedEnd, h.close(), duration), duration), last(day));
+                    c.eq("last", spanOf(lastStart(resumeAt, h.close(), duration), duration), last(day));
                 }
                 if (expectedMorning > 0 && expectedAfternoon > 0) {
                     int lastMorningIdx = expectedMorning - 1;
@@ -603,7 +604,7 @@ class SlotEndpointChecklistIT {
                             "last slot before the booking",
                             spanOf(lastStart(h.open(), bookedStart, duration), duration),
                             span(day, lastMorningIdx));
-                    c.eq("next slot after the booking", spanOf(bookedEnd, duration), span(day, lastMorningIdx + 1));
+                    c.eq("next slot after the booking", spanOf(resumeAt, duration), span(day, lastMorningIdx + 1));
                 }
                 c.note("self-seeded bay booking " + date + " " + bookedStart + "-" + bookedEnd + " excluded; "
                         + expectedMorning + " + " + expectedAfternoon + " slots either side");
