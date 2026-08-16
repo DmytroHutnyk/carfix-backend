@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -372,6 +373,7 @@ class SlotEndpointChecklistIT {
         check7();
         check8();
         check9();
+        check10();
 
         StringBuilder sb = new StringBuilder("\n\n==================== SLOT CHECKLIST RESULT ====================\n");
         sb.append("run at ").append(LocalDateTime.now(WARSAW).withNano(0)).append(" Warsaw; checks 1-6 window ")
@@ -780,6 +782,77 @@ class SlotEndpointChecklistIT {
             c.note("no cookie sent; statuses 200/400/404, never 401/403, no Set-Cookie: JSESSIONID");
         } catch (Throwable t) {
             c.fails.add("threw: " + t);
+        }
+    }
+
+    /**
+     * 10. Opening-hours exceptions (added 2026-08-16). Seed availability follows the weekly hours,
+     * so only exceptions can move a day away from its weekly shape: a closed exception must empty
+     * the day (availability rows still exist underneath), and an open exception with narrower
+     * hours must clip the day to those hours. Rows are inserted and removed by this check.
+     */
+    private void check10() throws Exception {
+        Chk c = check("10", "opening-hours exceptions");
+        String marker = "slot-checklist-10-" + UUID.randomUUID();
+        try {
+            Map<DayOfWeek, Hours> hours = hours(BRANCH_A);
+            Set<LocalDate> busy = busyDates(BRANCH_A, from(), to());
+            LocalDate target = null;
+            for (LocalDate d : window()) {
+                if (hours.containsKey(d.getDayOfWeek()) && !busy.contains(d)) {
+                    target = d;
+                    break;
+                }
+            }
+            if (target == null) {
+                c.skip("no open, booking-free day for branch A in " + from() + ".." + to());
+                return;
+            }
+            LocalDate other = null;
+            for (LocalDate d : window()) {
+                if (!d.equals(target) && hours.containsKey(d.getDayOfWeek()) && !busy.contains(d)) {
+                    other = d;
+                    break;
+                }
+            }
+            String path = slotsUrl(BRANCH_A, String.valueOf(SVC_OIL), from(), to());
+            int before = count(day(json(path), target.toString()));
+            c.ok("precondition: " + target + " offers slots before the exception (got " + before + ")", before > 0);
+
+            // (a) closed exception -> the day is empty; a neighbouring open day is untouched
+            jdbc.update("INSERT INTO " + schema + ".opening_hours_exceptions"
+                            + " (date, start_time, close_time, is_open, reason, branch_id)"
+                            + " VALUES (?, NULL, NULL, false, ?, CAST(? AS uuid))",
+                    java.sql.Date.valueOf(target), marker, BRANCH_A);
+            JsonNode closed = json(path);
+            c.eq("closed exception: slots on " + target, 0, count(day(closed, target.toString())));
+            if (other != null) {
+                Hours h = hours.get(other.getDayOfWeek());
+                c.eq("closed exception leaves " + other + " alone", fits(h.open(), h.close(), 60),
+                        count(day(closed, other.toString())));
+            }
+            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
+
+            // (b) open exception 10:00-12:00 -> only 60-min visits inside [10:00,12:00)
+            jdbc.update("INSERT INTO " + schema + ".opening_hours_exceptions"
+                            + " (date, start_time, close_time, is_open, reason, branch_id)"
+                            + " VALUES (?, TIME '10:00', TIME '12:00', true, ?, CAST(? AS uuid))",
+                    java.sql.Date.valueOf(target), marker, BRANCH_A);
+            JsonNode narrowed = day(json(path), target.toString());
+            c.eq("open exception 10-12: slot count on " + target,
+                    fits(LocalTime.of(10, 0), LocalTime.of(12, 0), 60), count(narrowed));
+            c.eq("open exception 10-12: first slot", "10:00-11:00", first(narrowed));
+            c.eq("open exception 10-12: last slot", "11:00-12:00", last(narrowed));
+            shape(c, narrowed, target.toString(), 60);
+            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
+
+            // (c) rows gone -> the day is back to its weekly shape
+            c.eq("after cleanup: slots on " + target, before, count(day(json(path), target.toString())));
+            c.note("target " + target + "; closed -> 0, open 10-12 -> 5 slots, restored -> " + before);
+        } catch (Throwable t) {
+            c.fails.add("threw: " + t);
+        } finally {
+            jdbc.update("DELETE FROM " + schema + ".opening_hours_exceptions WHERE reason = ?", marker);
         }
     }
 }
