@@ -9,7 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
+import com.hutnyk.carfix.in.address.query.AddressView;
 import com.hutnyk.carfix.in.user.UserPortIn;
+import com.hutnyk.carfix.in.user.commands.UpdateUserAddressCommand;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -64,7 +66,18 @@ public class UserControllerTest {
                     .passwordHash(PasswordHash.of("$2a$10$storedhashvalue"))
                     .dateOfBirth(command.dateOfBirth())
                     .addressId(null)
+                    .preferredLocation(null)
                     .build();
+        }
+
+        @Override
+        public AddressView updateAddress(String email, UpdateUserAddressCommand command) {
+            throw new UnsupportedOperationException("wired in Task 5");
+        }
+
+        @Override
+        public void deleteAddress(String email) {
+            throw new UnsupportedOperationException("wired in Task 5");
         }
     }
 
