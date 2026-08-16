@@ -7,10 +7,12 @@ import com.hutnyk.carfix.branch.dto.response.BranchReviewResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchReviewsPageResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchServiceCategoryResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchServiceResponse;
+import com.hutnyk.carfix.branch.dto.response.OwnerBranchSummaryResponse;
 import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchServiceCategoryView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 
 import java.time.format.DateTimeFormatter;
 
@@ -49,6 +51,29 @@ public class BranchResponseMapper {
         return new BranchReviewsPageResponse(
                 page.content().stream().map(BranchResponseMapper::toResponse).toList(),
                 page.page(), page.size(), page.totalElements(), page.totalPages());
+    }
+
+    public static OwnerBranchSummaryResponse toResponse(OwnerBranchSummaryView view) {
+        if (view == null) {
+            return null;
+        }
+        return new OwnerBranchSummaryResponse(
+                view.branchId(),
+                view.name(),
+                view.status(),
+                view.streetName(),
+                view.buildingNumber(),
+                view.city(),
+                view.rating(),
+                view.reviewCount(),
+                view.openNow(),
+                view.bookingsToday(),
+                view.completedToday(),
+                view.employeesOnDutyToday(),
+                view.employeesTotal(),
+                view.latestReviews().stream()
+                        .map(BranchResponseMapper::toResponse)
+                        .toList());
     }
 
     private static BranchServiceCategoryResponse toResponse(BranchServiceCategoryView category) {
