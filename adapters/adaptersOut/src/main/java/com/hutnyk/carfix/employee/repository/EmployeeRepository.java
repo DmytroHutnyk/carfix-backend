@@ -21,6 +21,15 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, UUID> 
     List<EmployeeEntity> findAllWithRolesByBranchIdAndStatus(
             @Param("branchId") UUID branchId, @Param("status") EmployeeStatus status);
 
+    @Query("""
+            SELECT DISTINCT e FROM EmployeeEntity e
+            JOIN FETCH e.roles
+            JOIN FETCH e.branchEntity
+            WHERE e.branchEntity.id IN :branchIds AND e.status = :status
+            """)
+    List<EmployeeEntity> findAllWithRolesByBranchIdInAndStatus(
+            @Param("branchIds") Collection<UUID> branchIds, @Param("status") EmployeeStatus status);
+
     /* Rows: [UUID branchId, Long count]. */
     @Query("""
             SELECT e.branchEntity.id, COUNT(e)

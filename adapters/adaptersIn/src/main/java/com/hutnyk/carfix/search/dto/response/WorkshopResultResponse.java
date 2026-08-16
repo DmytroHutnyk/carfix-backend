@@ -15,5 +15,7 @@ public record WorkshopResultResponse(
         Double distanceKm,
         BigDecimal rating,
         Integer reviewCount,
-        List<MatchedServiceResponse> matchedServices
+        List<MatchedServiceResponse> matchedServices,
+        String tz,
+        List<AvailableStartResponse> nextAvailableStarts
 ) {}

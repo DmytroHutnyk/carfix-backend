@@ -37,7 +37,9 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @PersistenceAdapter
@@ -77,6 +79,36 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
                 .stream()
                 .map(EquipmentMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Map<BranchId, List<ServiceBay>> loadActiveBaysByBranch(Collection<BranchId> branchIds) {
+        if (branchIds.isEmpty()) return Map.of();
+        return serviceBayRepository.findAllByBranchEntityIdInAndStatus(ids(branchIds), ServiceBayStatus.ACTIVE)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        e -> BranchId.of(e.getBranchEntity().getId()),
+                        Collectors.mapping(ServiceBayMapper::toDomain, Collectors.toList())));
+    }
+
+    @Override
+    public Map<BranchId, List<EmployeeCandidateView>> loadActiveEmployeesByBranch(Collection<BranchId> branchIds) {
+        if (branchIds.isEmpty()) return Map.of();
+        return employeeRepository.findAllWithRolesByBranchIdInAndStatus(ids(branchIds), EmployeeStatus.ACTIVE)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        e -> BranchId.of(e.getBranchEntity().getId()),
+                        Collectors.mapping(EmployeeMapper::toCandidateView, Collectors.toList())));
+    }
+
+    @Override
+    public Map<BranchId, List<Equipment>> loadActiveEquipmentByBranch(Collection<BranchId> branchIds) {
+        if (branchIds.isEmpty()) return Map.of();
+        return equipmentRepository.findAllByBranchEntityIdInAndStatus(ids(branchIds), EquipmentStatus.ACTIVE)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        e -> BranchId.of(e.getBranchEntity().getId()),
+                        Collectors.mapping(EquipmentMapper::toDomain, Collectors.toList())));
     }
 
     @Override
@@ -152,5 +184,9 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
                 .stream()
                 .map(OpeningHoursMapper::toDomain)
                 .toList();
+    }
+
+    private static List<UUID> ids(Collection<BranchId> branchIds) {
+        return branchIds.stream().map(BranchId::id).toList();
     }
 }
