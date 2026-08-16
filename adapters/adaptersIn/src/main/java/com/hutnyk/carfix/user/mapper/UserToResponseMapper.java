@@ -16,7 +16,8 @@ public class UserToResponseMapper {
                 user.getPhoneNumber().countryCode(),
                 user.getPhoneNumber().phoneNumber(),
                 user.getEmail(),
-                user.getDateOfBirth()
+                user.getDateOfBirth(),
+                user.getEmailVerifiedAt()
         );
     }
 }

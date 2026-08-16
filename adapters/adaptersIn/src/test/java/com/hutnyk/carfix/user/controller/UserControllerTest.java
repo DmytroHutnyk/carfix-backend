@@ -116,7 +116,8 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.email").value(EMAIL))
                 .andExpect(jsonPath("$.phoneCountryCode").value("+48"))
                 .andExpect(jsonPath("$.phoneNumber").value("123456789"))
-                .andExpect(jsonPath("$.dateOfBirth").value("1990-05-01"));
+                .andExpect(jsonPath("$.dateOfBirth").value("1990-05-01"))
+                .andExpect(jsonPath("$.emailVerifiedAt").doesNotExist());
     }
 
     @Test
