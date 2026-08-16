@@ -37,7 +37,8 @@ public class UserService implements UserPortIn {
                 existing.getRole(),
                 existing.getPasswordHash(),
                 command.dateOfBirth(),
-                existing.getAddressId()
+                existing.getAddressId(),
+                existing.getEmailVerifiedAt()
         );
 
         return userPortOut.update(user);

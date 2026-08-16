@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
+import com.hutnyk.carfix.user.exception.EmailAlreadyVerifiedException;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 public class UserTest {
@@ -21,6 +23,7 @@ public class UserTest {
                 UserRole.CUSTOMER,
                 PasswordHash.of("hashedPassword123"),
                 dateOfBirth,
+                null,
                 null
         );
     }
@@ -84,5 +87,46 @@ public class UserTest {
                 .isEqualTo(ValidationErrorType.DATE_TOO_OLD);
     }
 
-}
+    @Test
+    public void test_a_new_user_is_not_email_verified() {
+        //given
+        User user = createUserWithBirthDate(null);
+        //then
+        assertThat(user.isEmailVerified()).isFalse();
+        assertThat(user.getEmailVerifiedAt()).isNull();
+    }
 
+    @Test
+    public void test_verifyEmail_stamps_the_time_and_keeps_every_other_field() {
+        //given
+        User user = createUserWithBirthDate(LocalDate.of(1990, 5, 1));
+        Instant now = Instant.parse("2026-08-16T10:00:00Z");
+        //when
+        User verified = user.verifyEmail(now);
+        //then
+        assertThat(verified.isEmailVerified()).isTrue();
+        assertThat(verified.getEmailVerifiedAt()).isEqualTo(now);
+        assertThat(verified.getId()).isEqualTo(user.getId());
+        assertThat(verified.getEmail()).isEqualTo(user.getEmail());
+        assertThat(verified.getPasswordHash()).isEqualTo(user.getPasswordHash());
+        assertThat(verified.getDateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 1));
+        assertThat(user.isEmailVerified()).isFalse();
+    }
+
+    @Test
+    public void test_verifyEmail_twice_is_a_conflict() {
+        //given
+        User verified = createUserWithBirthDate(null).verifyEmail(Instant.parse("2026-08-16T10:00:00Z"));
+        //when + then
+        assertThatThrownBy(() -> verified.verifyEmail(Instant.parse("2026-08-16T11:00:00Z")))
+                .isInstanceOf(EmailAlreadyVerifiedException.class)
+                .hasMessage("Email john.doe@example.com is already verified");
+    }
+
+    @Test
+    public void test_verifyEmail_rejects_a_null_instant() {
+        //when + then
+        assertThatThrownBy(() -> createUserWithBirthDate(null).verifyEmail(null))
+                .isInstanceOf(DomainObjectValidationException.class);
+    }
+}

@@ -2,8 +2,10 @@ package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
+import com.hutnyk.carfix.user.exception.EmailAlreadyVerifiedException;
 import com.hutnyk.carfix.util.Validator;
 import lombok.*;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -29,6 +31,10 @@ public final class User {
     //Nullable
     private final Integer addressId;
 
+    //Nullable
+    @With(AccessLevel.PRIVATE)
+    private final Instant emailVerifiedAt;
+
     @Builder
     private User(
             UserId id,
@@ -39,7 +45,8 @@ public final class User {
             UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
-            Integer addressId) {
+            Integer addressId,
+            Instant emailVerifiedAt) {
         this.id = Validator.notNull(id, "id");
         this.name = Validator.notBlank(name, "name");
         this.surname = Validator.notBlank(surname, "surname");
@@ -49,6 +56,7 @@ public final class User {
         this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
+        this.emailVerifiedAt = emailVerifiedAt;
     }
 
     public static User of(
@@ -60,7 +68,8 @@ public final class User {
             UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
-            Integer addressId){
+            Integer addressId,
+            Instant emailVerifiedAt){
         return User.builder()
                 .id(id)
                 .name(name)
@@ -71,7 +80,19 @@ public final class User {
                 .passwordHash(passwordHash)
                 .dateOfBirth(dateOfBirth)
                 .addressId(addressId)
+                .emailVerifiedAt(emailVerifiedAt)
                 .build();
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    public User verifyEmail(Instant now) {
+        if (isEmailVerified()) {
+            throw new EmailAlreadyVerifiedException(email);
+        }
+        return withEmailVerifiedAt(Validator.notNull(now, "now"));
     }
 
     private static LocalDate validateBirthDate(LocalDate date){

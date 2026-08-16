@@ -30,6 +30,7 @@ public class EmployeeTest {
                 UserRole.EMPLOYEE,
                 PasswordHash.of("$2a$10$abcdefghijklmnopqrstuv"),
                 LocalDate.of(1990, 1, 1),
+                null,
                 null);
     }
 
