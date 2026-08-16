@@ -3,12 +3,22 @@ package com.hutnyk.carfix.search;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.carProfile.CarProfile;
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
+import com.hutnyk.carfix.employee.EmployeeAvailability;
+import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.equipment.Equipment;
+import com.hutnyk.carfix.equipment.EquipmentAvailability;
+import com.hutnyk.carfix.equipment.EquipmentBooking;
 import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
+import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
+import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
+import com.hutnyk.carfix.in.search.query.AvailableStartView;
 import com.hutnyk.carfix.in.search.query.CategorySuggestionView;
+import com.hutnyk.carfix.in.search.query.MatchedServiceView;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsQuery;
 import com.hutnyk.carfix.in.search.query.SearchSuggestionsView;
 import com.hutnyk.carfix.in.search.query.ServiceSuggestionView;
@@ -16,10 +26,20 @@ import com.hutnyk.carfix.in.search.query.WorkshopResultView;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
+import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
 import com.hutnyk.carfix.out.search.SearchPortOut;
+import com.hutnyk.carfix.out.service.ServicePortOut;
+import com.hutnyk.carfix.scheduling.TimeRange;
 import com.hutnyk.carfix.search.exception.InvalidSearchFilterException;
+import com.hutnyk.carfix.service.EmployeeRequirement;
+import com.hutnyk.carfix.service.Service;
+import com.hutnyk.carfix.service.ServiceStatus;
+import com.hutnyk.carfix.serviceBay.ServiceBay;
+import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
+import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
+import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -28,11 +48,19 @@ import com.hutnyk.carfix.user.UserRole;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class SearchServiceTest {
 
@@ -41,6 +69,12 @@ public class SearchServiceTest {
     private static final UUID CAR_PROFILE_ID = UUID.randomUUID();
     private static final Integer BRAND_ID = 12;
     private static final String CITY = "Warsaw";
+    private static final String SERVICE_NAME = "Oil and filter change";
+    private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
+    private static final LocalDate TODAY = LocalDate.of(2026, 8, 13);
+    private static final LocalDate TOMORROW = TODAY.plusDays(1);
+    private static final Clock CLOCK = Clock.fixed(
+            TODAY.atTime(10, 7).atZone(WARSAW).toInstant(), ZoneId.systemDefault());
 
     private static Customer customer() {
         return Customer.of(
@@ -72,6 +106,10 @@ public class SearchServiceTest {
         SearchSuggestionsQuery receivedWorkshopQuery;
         Integer receivedWorkshopBrandId;
         boolean workshopBrandIdReceived;
+        List<WorkshopResultView> candidates = List.of();
+        WorkshopSearchQuery receivedCandidateQuery;
+        Integer receivedCandidateLimit;
+        boolean candidatesCalled;
 
         @Override
         public List<ServiceSuggestionView> findServiceSuggestions(String q, int limit) {
@@ -107,7 +145,10 @@ public class SearchServiceTest {
         @Override
         public List<WorkshopResultView> findAvailabilityCandidates(
                 WorkshopSearchQuery query, Integer brandId, int limit) {
-            throw new UnsupportedOperationException();
+            this.receivedCandidateQuery = query;
+            this.receivedCandidateLimit = limit;
+            this.candidatesCalled = true;
+            return candidates;
         }
 
         Optional<String> categoryName = Optional.of("Brakes");
@@ -170,10 +211,93 @@ public class SearchServiceTest {
         }
     }
 
+    private static final class StubServicePortOut implements ServicePortOut {
+        List<Service> toReturn = List.of();
+
+        @Override
+        public List<Service> loadByIds(Collection<Integer> serviceIds) {
+            return toReturn;
+        }
+    }
+
+    private static final class StubAvailabilityPortOut implements AvailabilityPortOut {
+        final List<ServiceBay> bays = new ArrayList<>();
+        final Map<BranchId, List<EmployeeCandidateView>> employees = new HashMap<>();
+        final List<Equipment> equipment = new ArrayList<>();
+        final List<ServiceBayAvailability> bayAvailability = new ArrayList<>();
+        final List<ServiceBayBooking> bayOccupancy = new ArrayList<>();
+        final List<EmployeeAvailability> employeeAvailability = new ArrayList<>();
+        final List<EmployeeBooking> employeeOccupancy = new ArrayList<>();
+        final List<EquipmentAvailability> equipmentAvailability = new ArrayList<>();
+        final List<EquipmentBooking> equipmentOccupancy = new ArrayList<>();
+
+        @Override
+        public Map<BranchId, List<ServiceBay>> loadActiveBaysByBranch(Collection<BranchId> branchIds) {
+            return bays.stream().collect(Collectors.groupingBy(ServiceBay::getBranchId));
+        }
+
+        @Override
+        public Map<BranchId, List<EmployeeCandidateView>> loadActiveEmployeesByBranch(Collection<BranchId> branchIds) {
+            return employees;
+        }
+
+        @Override
+        public Map<BranchId, List<Equipment>> loadActiveEquipmentByBranch(Collection<BranchId> branchIds) {
+            return equipment.stream().collect(Collectors.groupingBy(Equipment::getBranchId));
+        }
+
+        @Override
+        public List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> bayIds, LocalDate from, LocalDate to) {
+            return bayAvailability;
+        }
+
+        @Override
+        public List<ServiceBayBooking> loadBayOccupancy(Collection<Integer> bayIds, LocalDate from, LocalDate to) {
+            return bayOccupancy;
+        }
+
+        @Override
+        public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+            return employeeAvailability;
+        }
+
+        @Override
+        public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+            return employeeOccupancy;
+        }
+
+        @Override
+        public List<EquipmentAvailability> loadEquipmentAvailability(Collection<Integer> equipmentIds, LocalDate from, LocalDate to) {
+            return equipmentAvailability;
+        }
+
+        @Override
+        public List<EquipmentBooking> loadEquipmentOccupancy(Collection<Integer> equipmentIds, LocalDate from, LocalDate to) {
+            return equipmentOccupancy;
+        }
+
+        @Override
+        public List<ServiceBay> loadActiveBays(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<EmployeeCandidateView> loadActiveEmployees(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Equipment> loadActiveEquipment(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
     private final StubSearchPortOut searchPortOut = new StubSearchPortOut();
     private final StubCarProfilePortOut carProfilePortOut = new StubCarProfilePortOut();
-    private final SearchService service =
-            new SearchService(searchPortOut, new StubCustomerPortOut(), carProfilePortOut);
+    private final StubServicePortOut servicePortOut = new StubServicePortOut();
+    private final StubAvailabilityPortOut availabilityPortOut = new StubAvailabilityPortOut();
+    private final SearchService service = new SearchService(searchPortOut, new StubCustomerPortOut(), carProfilePortOut,
+            servicePortOut, availabilityPortOut, CLOCK);
 
     private static WorkshopSearchQuery query(String q, String serviceName, Integer categoryId, UUID carProfileId) {
         return new WorkshopSearchQuery(q, serviceName, categoryId, CITY, null, null,
@@ -187,6 +311,29 @@ public class SearchServiceTest {
 
     private static SearchSuggestionsQuery suggestionsQuery(String q) {
         return new SearchSuggestionsQuery(q, null, null, null, null);
+    }
+
+    private static WorkshopSearchQuery availabilityQuery(String serviceName, String q, LocalDate from, LocalDate to,
+                                                         LocalTime timeFrom, LocalTime timeTo, int page, int size) {
+        return new WorkshopSearchQuery(q, serviceName, null, CITY, null, null, null, null, null, null, page, size,
+                null, null, new AvailabilityWindow(from, to, timeFrom, timeTo));
+    }
+
+    /* A candidate branch that layer 2 will keep: lift bay + mechanic + service, all free tomorrow 09-12 */
+    private WorkshopResultView availableCandidate(UUID branchId, int serviceId, int bayId, UUID mechanicId) {
+        List<Service> services = new ArrayList<>(servicePortOut.toReturn);
+        services.add(Service.of(serviceId, SERVICE_NAME, null, (short) 60, BigDecimal.TEN, ServiceStatus.ACTIVE,
+                BranchId.of(branchId), 1, Set.of(1), List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(10))), List.of()));
+        servicePortOut.toReturn = services;
+        availabilityPortOut.bays.add(ServiceBay.of(bayId, "Bay", ServiceBayStatus.ACTIVE, null, 1, BranchId.of(branchId)));
+        availabilityPortOut.employees.put(BranchId.of(branchId), List.of(new EmployeeCandidateView(mechanicId, Set.of(10))));
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(bayId,
+                TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, bayId));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(bayId,
+                TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2, UserId.of(mechanicId)));
+        return new WorkshopResultView(branchId, "Branch", "Street", "1", CITY, new BigDecimal("52.2"), new BigDecimal("21.0"),
+                null, null, null, List.of(new MatchedServiceView(serviceId, SERVICE_NAME, BigDecimal.TEN, (short) 60, "Engine")),
+                "Europe/Warsaw", null);
     }
 
     @Test
@@ -607,7 +754,8 @@ public class SearchServiceTest {
     void sort_defaults_to_distance_when_coordinates_are_present() {
         //given
         StubSearchPortOut searchPort = new StubSearchPortOut();
-        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut(),
+                servicePortOut, availabilityPortOut, CLOCK);
         WorkshopSearchQuery query = geoQuery(CITY, BigDecimal.valueOf(52.2), BigDecimal.valueOf(21.0), null);
 
         //when
@@ -621,7 +769,8 @@ public class SearchServiceTest {
     void sort_defaults_to_name_without_coordinates() {
         //given
         StubSearchPortOut searchPort = new StubSearchPortOut();
-        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut(),
+                servicePortOut, availabilityPortOut, CLOCK);
 
         //when
         service.searchWorkshops(query("tire", null, null, null), null);
@@ -634,7 +783,8 @@ public class SearchServiceTest {
     void explicit_name_sort_wins_over_coordinates() {
         //given
         StubSearchPortOut searchPort = new StubSearchPortOut();
-        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut(),
+                servicePortOut, availabilityPortOut, CLOCK);
         WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
                 BigDecimal.valueOf(52.2), BigDecimal.valueOf(21.0), null, null, 0, 20, "NAME", null, null);
 
@@ -649,7 +799,8 @@ public class SearchServiceTest {
     void distance_sort_without_coordinates_is_rejected() {
         //given
         StubSearchPortOut searchPort = new StubSearchPortOut();
-        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut(),
+                servicePortOut, availabilityPortOut, CLOCK);
         WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
                 null, null, null, null, 0, 20, "distance", null, null);
 
@@ -663,7 +814,8 @@ public class SearchServiceTest {
     void unknown_sort_value_is_rejected() {
         //given
         StubSearchPortOut searchPort = new StubSearchPortOut();
-        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut(),
+                servicePortOut, availabilityPortOut, CLOCK);
         WorkshopSearchQuery query = new WorkshopSearchQuery("tire", null, null, CITY, null, null,
                 null, null, null, null, 0, 20, "rating", null, null);
 
@@ -677,7 +829,8 @@ public class SearchServiceTest {
     void pinned_branch_id_is_passed_through_untouched() {
         //given
         StubSearchPortOut searchPort = new StubSearchPortOut();
-        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut());
+        SearchService service = new SearchService(searchPort, new StubCustomerPortOut(), new StubCarProfilePortOut(),
+                servicePortOut, availabilityPortOut, CLOCK);
         UUID pinned = UUID.randomUUID();
         WorkshopSearchQuery query = new WorkshopSearchQuery("kowalski", null, null, CITY, null, null,
                 null, null, null, null, 0, 20, null, pinned, null);
@@ -687,5 +840,126 @@ public class SearchServiceTest {
 
         //then
         assertThat(searchPort.receivedQuery.pinnedBranchId()).isEqualTo(pinned);
+    }
+
+    @Test
+    public void test_availability_without_service_name_rejected() {
+        assertThatThrownBy(() -> service.searchWorkshops(
+                availabilityQuery(null, "tire", TOMORROW, TOMORROW, null, null, 0, 20), null))
+                .isInstanceOf(InvalidSearchFilterException.class);
+        assertThat(searchPortOut.candidatesCalled).isFalse();
+        assertThat(searchPortOut.brandIdReceived).isFalse();
+    }
+
+    @Test
+    public void test_availability_from_without_to_rejected() {
+        assertThatThrownBy(() -> service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, null, null, null, 0, 20), null))
+                .isInstanceOf(InvalidSearchFilterException.class);
+    }
+
+    @Test
+    public void test_availability_to_before_from_rejected() {
+        assertThatThrownBy(() -> service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TODAY, null, null, 0, 20), null))
+                .isInstanceOf(InvalidSearchFilterException.class);
+    }
+
+    @Test
+    public void test_availability_longer_than_seven_days_rejected_seven_accepted() {
+        assertThatThrownBy(() -> service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW.plusDays(7), null, null, 0, 20), null))
+                .isInstanceOf(InvalidSearchFilterException.class);
+
+        service.searchWorkshops(availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW.plusDays(6), null, null, 0, 20), null);
+        assertThat(searchPortOut.candidatesCalled).isTrue();
+    }
+
+    @Test
+    public void test_time_window_without_dates_rejected() {
+        assertThatThrownBy(() -> service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, null, null, LocalTime.of(13, 0), null, 0, 20), null))
+                .isInstanceOf(InvalidSearchFilterException.class);
+    }
+
+    @Test
+    public void test_time_from_not_before_time_to_rejected_single_bound_accepted() {
+        assertThatThrownBy(() -> service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW, LocalTime.of(15, 0), LocalTime.of(13, 0), 0, 20), null))
+                .isInstanceOf(InvalidSearchFilterException.class);
+
+        service.searchWorkshops(availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW, LocalTime.of(13, 0), null, 0, 20), null);
+        assertThat(searchPortOut.candidatesCalled).isTrue();
+    }
+
+    @Test
+    public void test_all_null_window_means_no_availability_filter() {
+        //when
+        service.searchWorkshops(availabilityQuery(SERVICE_NAME, null, null, null, null, null, 0, 20), null);
+
+        //then
+        assertThat(searchPortOut.candidatesCalled).isFalse();
+        assertThat(searchPortOut.brandIdReceived).isTrue();
+        assertThat(searchPortOut.receivedQuery.availability()).isNull();
+    }
+
+    @Test
+    public void test_availability_path_filters_candidates_and_pages_in_memory() {
+        //given
+        UUID a = UUID.randomUUID();
+        UUID b = UUID.randomUUID();
+        UUID c = UUID.randomUUID();
+        searchPortOut.candidates = List.of(
+                availableCandidate(a, 1, 100, UUID.randomUUID()),
+                availableCandidate(b, 2, 200, UUID.randomUUID()),
+                availableCandidate(c, 3, 300, UUID.randomUUID()));
+
+        //when
+        WorkshopSearchPage first = service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW, null, null, 0, 2), null);
+        WorkshopSearchPage second = service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW, null, null, 1, 2), null);
+        WorkshopSearchPage beyond = service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW, null, null, 5, 2), null);
+
+        //then
+        assertThat(searchPortOut.brandIdReceived).isFalse();
+        assertThat(searchPortOut.receivedCandidateLimit).isEqualTo(100);
+        assertThat(searchPortOut.receivedCandidateQuery.availability())
+                .isEqualTo(new AvailabilityWindow(TOMORROW, TOMORROW, null, null));
+        assertThat(first.content()).extracting(WorkshopResultView::branchId).containsExactly(a, b);
+        assertThat(first.totalElements()).isEqualTo(3);
+        assertThat(first.totalPages()).isEqualTo(2);
+        assertThat(first.page()).isEqualTo(0);
+        assertThat(first.size()).isEqualTo(2);
+        assertThat(first.content().getFirst().nextAvailableStarts())
+                .containsExactly(new AvailableStartView(TOMORROW, LocalTime.of(9, 0)),
+                        new AvailableStartView(TOMORROW, LocalTime.of(9, 15)),
+                        new AvailableStartView(TOMORROW, LocalTime.of(9, 30)));
+        assertThat(first.echo().availability()).isEqualTo(new AvailabilityWindow(TOMORROW, TOMORROW, null, null));
+        assertThat(first.echo().serviceName()).isEqualTo(SERVICE_NAME);
+        assertThat(second.content()).extracting(WorkshopResultView::branchId).containsExactly(c);
+        assertThat(beyond.content()).isEmpty();
+        assertThat(beyond.totalElements()).isEqualTo(3);
+    }
+
+    @Test
+    public void test_availability_path_drops_unavailable_candidate_from_totals() {
+        //given
+        UUID a = UUID.randomUUID();
+        WorkshopResultView kept = availableCandidate(a, 1, 100, UUID.randomUUID());
+        WorkshopResultView noResources = new WorkshopResultView(UUID.randomUUID(), "Empty", "Street", "2", CITY,
+                new BigDecimal("52.2"), new BigDecimal("21.0"), null, null, null,
+                List.of(new MatchedServiceView(9, SERVICE_NAME, BigDecimal.TEN, (short) 60, "Engine")), "Europe/Warsaw", null);
+        searchPortOut.candidates = List.of(noResources, kept);
+
+        //when
+        WorkshopSearchPage page = service.searchWorkshops(
+                availabilityQuery(SERVICE_NAME, null, TOMORROW, TOMORROW, null, null, 0, 20), null);
+
+        //then
+        assertThat(page.content()).extracting(WorkshopResultView::branchId).containsExactly(a);
+        assertThat(page.totalElements()).isEqualTo(1);
+        assertThat(page.totalPages()).isEqualTo(1);
     }
 }
