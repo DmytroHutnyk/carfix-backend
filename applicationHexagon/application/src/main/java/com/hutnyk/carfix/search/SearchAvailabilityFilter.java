@@ -74,6 +74,10 @@ public final class SearchAvailabilityFilter {
                              Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentOccupancy) {
     }
 
+    /**
+     * Precondition (enforced by SearchService): from and to non-null with from <= to, and timeFrom
+     * before timeTo when both are given.
+     */
     public List<WorkshopResultView> filter(List<WorkshopResultView> candidates, AvailabilityWindow window) {
         if (candidates.isEmpty()) {
             return List.of();
@@ -131,6 +135,8 @@ public final class SearchAvailabilityFilter {
         return jobs;
     }
 
+    // Calendar indexing, the three schedule builders and both qualifier predicates duplicate
+    // SlotService on purpose: M5 extracts them into BranchScheduleLoader; unify after that merges
     private Calendars loadCalendars(List<Job> jobs, LocalDate from, LocalDate to) {
         List<Integer> bayIds = jobs.stream().flatMap(j -> j.bays().stream()).map(ServiceBay::getId).distinct().toList();
         List<UUID> employeeIds = jobs.stream().flatMap(j -> j.employees().stream())
@@ -227,7 +233,6 @@ public final class SearchAvailabilityFilter {
                 .anyMatch(req -> req.getEquipmentTypeIds().contains(e.getEquipmentTypeId()));
     }
 
-    // Duplicated from SlotService on purpose: M5 extracts these into BranchScheduleLoader; unify after merge
     private static <T, K> Map<LocalDate, Map<K, List<TimeRange>>> byDateAndResource(
             List<T> rows, Function<T, LocalDate> date, Function<T, K> resource, Function<T, TimeRange> range) {
         return rows.stream().collect(Collectors.groupingBy(date,
