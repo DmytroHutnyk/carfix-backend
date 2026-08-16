@@ -2,6 +2,7 @@ package com.hutnyk.carfix.service.repository;
 
 import com.hutnyk.carfix.service.ServiceStatus;
 import com.hutnyk.carfix.service.entity.ServiceEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,4 +21,17 @@ public interface ServiceRepository extends JpaRepository<ServiceEntity, Integer>
             """)
     List<ServiceEntity> findAllWithCategoryByBranchIdAndStatus(
             @Param("branchId") UUID branchId, @Param("status") ServiceStatus status);
+
+    @Query("""
+            SELECT DISTINCT s FROM ServiceEntity s
+            JOIN FETCH s.branchEntity
+            JOIN FETCH s.serviceCategoryEntity
+            LEFT JOIN FETCH s.serviceBayTypes
+            LEFT JOIN FETCH s.employeeRequirements er
+            LEFT JOIN FETCH er.roles
+            LEFT JOIN FETCH s.equipmentRequirements qr
+            LEFT JOIN FETCH qr.equipmentTypes
+            WHERE s.id IN :serviceIds
+            """)
+    List<ServiceEntity> findAllWithRequirementsByIdIn(@Param("serviceIds") Collection<Integer> serviceIds);
 }

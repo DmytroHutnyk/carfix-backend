@@ -2,10 +2,11 @@ package com.hutnyk.carfix.user;
 
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
+import com.hutnyk.carfix.user.exception.EmailAlreadyVerifiedException;
 import com.hutnyk.carfix.util.Validator;
 import lombok.*;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Set;
 
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -27,7 +28,15 @@ public final class User {
     private final LocalDate dateOfBirth;
 
     //Nullable
+    @With(AccessLevel.PRIVATE)
     private final Integer addressId;
+
+    //Nullable
+    private final Integer preferredCityId;
+
+    //Nullable
+    @With(AccessLevel.PRIVATE)
+    private final Instant emailVerifiedAt;
 
     @Builder
     private User(
@@ -39,7 +48,9 @@ public final class User {
             UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
-            Integer addressId) {
+            Integer addressId,
+            Integer preferredCityId,
+            Instant emailVerifiedAt) {
         this.id = Validator.notNull(id, "id");
         this.name = Validator.notBlank(name, "name");
         this.surname = Validator.notBlank(surname, "surname");
@@ -49,6 +60,8 @@ public final class User {
         this.passwordHash = Validator.notNull(passwordHash, "passwordHash");
         this.dateOfBirth = validateBirthDate(dateOfBirth); //TODO add age restriction?
         this.addressId = addressId;
+        this.preferredCityId = preferredCityId;
+        this.emailVerifiedAt = emailVerifiedAt;
     }
 
     public static User of(
@@ -60,7 +73,9 @@ public final class User {
             UserRole role,
             PasswordHash passwordHash,
             LocalDate dateOfBirth,
-            Integer addressId){
+            Integer addressId,
+            Integer preferredCityId,
+            Instant emailVerifiedAt){
         return User.builder()
                 .id(id)
                 .name(name)
@@ -71,7 +86,28 @@ public final class User {
                 .passwordHash(passwordHash)
                 .dateOfBirth(dateOfBirth)
                 .addressId(addressId)
+                .preferredCityId(preferredCityId)
+                .emailVerifiedAt(emailVerifiedAt)
                 .build();
+    }
+
+    public User linkAddress(Integer addressId) {
+        return withAddressId(Validator.notNull(addressId, "addressId"));
+    }
+
+    public User unlinkAddress() {
+        return withAddressId(null);
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    public User verifyEmail(Instant now) {
+        if (isEmailVerified()) {
+            throw new EmailAlreadyVerifiedException(email);
+        }
+        return withEmailVerifiedAt(Validator.notNull(now, "now"));
     }
 
     private static LocalDate validateBirthDate(LocalDate date){

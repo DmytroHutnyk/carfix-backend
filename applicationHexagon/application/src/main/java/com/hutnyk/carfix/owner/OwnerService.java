@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@ApplicationService
 @RequiredArgsConstructor
+@ApplicationService
 public class OwnerService implements OwnerPortIn {
 
     private final OwnerPortOut ownerPortOut;
@@ -17,6 +17,6 @@ public class OwnerService implements OwnerPortIn {
     @Override
     @Transactional(readOnly = true)
     public Optional<Owner> loadByOwnerUsername(String email) {
-        return ownerPortOut.loadOwnerByUsername(email);
+        return ownerPortOut.findOwnerByUsername(email);
     }
 }

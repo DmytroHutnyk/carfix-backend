@@ -91,7 +91,7 @@ public class EmployeeMapperTest {
 
         //when + then
         assertThat(EmployeeMapper.toDomain(entity).getRoleIds()).isEmpty();
-        assertThat(EmployeeMapper.toDomain(null)).isNull();
-        assertThat(EmployeeMapper.toEntity(null, null, null)).isNull();
+        assertThat(EmployeeMapper.toDomain((EmployeeEntity) null)).isNull();
+        assertThat(EmployeeMapper.toEntity((Employee) null, null, null)).isNull();
     }
 }

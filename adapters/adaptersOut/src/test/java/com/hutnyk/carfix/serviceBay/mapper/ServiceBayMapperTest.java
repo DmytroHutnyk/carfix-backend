@@ -79,6 +79,6 @@ public class ServiceBayMapperTest {
     public void test_null_guards() {
         //when + then
         assertThat(ServiceBayMapper.toTypeEntity(null, null)).isNull();
-        assertThat(ServiceBayMapper.toEntity(null, null, null)).isNull();
+        assertThat(ServiceBayMapper.toEntity((ServiceBay) null, null, null)).isNull();
     }
 }

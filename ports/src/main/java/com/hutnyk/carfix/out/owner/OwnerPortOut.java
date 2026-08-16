@@ -5,5 +5,6 @@ import com.hutnyk.carfix.owner.Owner;
 import java.util.Optional;
 
 public interface OwnerPortOut {
-    Optional<Owner> loadOwnerByUsername(String email);
+
+    Optional<Owner> findOwnerByUsername(String email);
 }

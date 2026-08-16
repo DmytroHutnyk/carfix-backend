@@ -12,6 +12,9 @@ public interface ServiceBayBookingRepository extends JpaRepository<ServiceBayBoo
     List<ServiceBayBookingEntity> findAllByServiceBayEntityIdInAndDate(
             Collection<Integer> serviceBayIds, LocalDate date);
 
+    List<ServiceBayBookingEntity> findAllByServiceBayEntityIdInAndDateBetween(
+            Collection<Integer> serviceBayIds, LocalDate from, LocalDate to);
+
     List<ServiceBayBookingEntity> findAllByBookingEntityId(UUID bookingId);
 
     void deleteAllByBookingEntityId(UUID bookingId);

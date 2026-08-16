@@ -34,6 +34,7 @@ public enum ValidationErrorType implements ErrorCode {
     INVALID_FLAT_NUMBER("INVALID_FLAT_NUMBER", "Flat number cannot be empty or blank"),
 
     INVALID_PASSWORD_FORMAT("INVALID_PASSWORD_FORMAT", "Password format is not valid"),
+    INVALID_CODE_FORMAT("INVALID_CODE_FORMAT", "Verification code must be 6 digits"),
     VALUE_OUT_OF_RANGE("VALUE_OUT_OF_RANGE", "Value is out of allowed range"),
     VALIDATION_FAILED("VALIDATION_FAILED", "Validation failed");
 

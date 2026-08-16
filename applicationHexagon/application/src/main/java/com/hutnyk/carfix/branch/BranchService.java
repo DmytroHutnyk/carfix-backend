@@ -23,9 +23,11 @@ import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.out.address.AddressPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
+import com.hutnyk.carfix.out.branch.OwnerBranchPortOut;
 import com.hutnyk.carfix.out.carCatalog.CarCatalogPortOut;
 import com.hutnyk.carfix.out.employee.EmployeePortOut;
 import com.hutnyk.carfix.out.equipment.EquipmentPortOut;
@@ -35,6 +37,7 @@ import com.hutnyk.carfix.out.role.RolePortOut;
 import com.hutnyk.carfix.out.service.ServiceCategoryPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
 import com.hutnyk.carfix.out.serviceBay.ServiceBayPortOut;
+import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.owner.Owner;
 import com.hutnyk.carfix.role.Role;
 import com.hutnyk.carfix.service.EmployeeRequirement;
@@ -44,10 +47,12 @@ import com.hutnyk.carfix.service.ServiceCategory;
 import com.hutnyk.carfix.service.exception.ServiceCategoryNotFoundException;
 import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayType;
+import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -69,6 +74,8 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
     private final BranchPortOut branchPortOut;
     private final ReviewPortOut reviewPortOut;
     private final OwnerPortOut ownerPortOut;
+    private final OwnerBranchPortOut ownerBranchPortOut;
+    private final UserPortOut userPortOut;
     private final AddressPortOut addressPortOut;
     private final CarCatalogPortOut carCatalogPortOut;
     private final ServiceBayPortOut serviceBayPortOut;
@@ -77,6 +84,7 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
     private final EmployeePortOut employeePortOut;
     private final ServicePortOut servicePortOut;
     private final ServiceCategoryPortOut serviceCategoryPortOut;
+    private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
@@ -98,8 +106,16 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<OwnerBranchSummaryView> getMyBranchSummaries(String ownerEmail) {
+        User owner = userPortOut.loadUserByEmail(ownerEmail)
+                .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(ownerEmail));
+        return ownerBranchPortOut.findSummariesByOwnerId(owner.getId(), clock.instant());
+    }
+
+    @Override
     public Branch registerBranch(String ownerEmail, RegisterBranchCommand cmd) {
-        Owner owner = ownerPortOut.loadOwnerByUsername(ownerEmail)
+        Owner owner = ownerPortOut.findOwnerByUsername(ownerEmail)
                 .orElseThrow(() -> AuthenticatedUserMissingException.noOwnerAggregate(ownerEmail));
         BranchRegistrationValidator.validate(cmd);
         requireKnownBrands(cmd.carBrandIds());

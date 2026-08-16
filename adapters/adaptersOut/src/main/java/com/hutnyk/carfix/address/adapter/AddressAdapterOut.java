@@ -18,6 +18,7 @@ import com.hutnyk.carfix.address.repository.RegionRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.out.address.AddressPortOut;
 import lombok.RequiredArgsConstructor;
 
@@ -77,5 +78,19 @@ public class AddressAdapterOut implements AddressPortOut {
     public City insertCity(City city) {
         RegionEntity region = regionRepository.getReferenceById(city.getRegionId());
         return CityMapper.toDomain(cityRepository.save(CityMapper.toEntity(city, region)));
+    }
+
+    @Override
+    public Optional<LocationView> loadCityView(Integer cityId) {
+        return cityRepository.findWithLocationById(cityId).map(CityMapper::toView);
+    }
+
+    @Override
+    public City updateCity(City city) {
+        CityEntity entity = cityRepository.findById(city.getId())
+                .orElseThrow(() -> new UnexpectedStateException("City row missing on update: " + city.getId()));
+        RegionEntity region = regionRepository.getReferenceById(city.getRegionId());
+        CityMapper.updateEntity(entity, city, region);
+        return CityMapper.toDomain(cityRepository.save(entity));
     }
 }

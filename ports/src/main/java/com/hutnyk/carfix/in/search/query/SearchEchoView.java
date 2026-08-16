@@ -11,5 +11,6 @@ public record SearchEchoView(
         String categoryName,
         String city,
         String voivodeship,
-        String country
+        String country,
+        AvailabilityWindow availability
 ) {}

@@ -13,11 +13,14 @@ import com.hutnyk.carfix.service.entity.ServiceEmployeeRequirementEntity;
 import com.hutnyk.carfix.service.entity.ServiceEntity;
 import com.hutnyk.carfix.service.entity.ServiceEquipmentRequirementEntity;
 import com.hutnyk.carfix.service.mapper.ServiceMapper;
+import com.hutnyk.carfix.service.repository.ServiceRepository;
 import com.hutnyk.carfix.serviceBay.entity.ServiceBayTypeEntity;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +29,15 @@ import java.util.stream.Collectors;
 public class ServiceAdapterOut implements ServicePortOut {
 
     private final EntityManager entityManager;
+    private final ServiceRepository serviceRepository;
+
+    @Override
+    public List<Service> loadByIds(Collection<Integer> serviceIds) {
+        if (serviceIds.isEmpty()) return List.of();
+        return serviceRepository.findAllWithRequirementsByIdIn(serviceIds).stream()
+                .map(ServiceMapper::toDomain)
+                .toList();
+    }
 
     @Override
     public Service insert(Service service) {

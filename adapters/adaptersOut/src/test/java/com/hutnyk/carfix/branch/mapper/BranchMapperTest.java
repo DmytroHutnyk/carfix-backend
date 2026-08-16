@@ -9,7 +9,9 @@ import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.BranchStatus;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
+import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursMode;
@@ -20,6 +22,7 @@ import com.hutnyk.carfix.user.UserId;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -174,5 +177,38 @@ public class BranchMapperTest {
         assertThat(entity.getCloseTime()).isEqualTo(LocalTime.of(14, 0));
         assertThat(entity.getMode()).isEqualTo(OpeningHoursMode.BY_APPOINTMENT);
         assertThat(entity.getBranchEntity().getId()).isEqualTo(BRANCH_ID);
+    }
+
+    @Test
+    public void test_toOwnerSummaryView_copies_branch_fields_and_precomputed_counts() {
+        //given
+        BranchEntity entity = branch();
+        entity.setStatus(BranchStatus.ACTIVE);
+        List<BranchReviewView> reviews = List.of(new BranchReviewView(
+                UUID.randomUUID(), 5, "Great", Instant.parse("2026-08-10T10:00:00Z"), "Anna", "Nowak"));
+
+        //when
+        OwnerBranchSummaryView view = BranchMapper.toOwnerSummaryView(entity, true, 12, 7, 3, 5, reviews);
+
+        //then
+        assertThat(view.branchId()).isEqualTo(BRANCH_ID);
+        assertThat(view.name()).isEqualTo("AutoFix Mokotow");
+        assertThat(view.status()).isEqualTo(BranchStatus.ACTIVE);
+        assertThat(view.streetName()).isEqualTo("Pulawska");
+        assertThat(view.buildingNumber()).isEqualTo("45");
+        assertThat(view.city()).isEqualTo("Warsaw");
+        assertThat(view.rating()).isEqualByComparingTo(new BigDecimal("4.7"));
+        assertThat(view.reviewCount()).isEqualTo(236);
+        assertThat(view.openNow()).isTrue();
+        assertThat(view.bookingsToday()).isEqualTo(12);
+        assertThat(view.completedToday()).isEqualTo(7);
+        assertThat(view.employeesOnDutyToday()).isEqualTo(3);
+        assertThat(view.employeesTotal()).isEqualTo(5);
+        assertThat(view.latestReviews()).isEqualTo(reviews);
+    }
+
+    @Test
+    public void test_toOwnerSummaryView_null_guard() {
+        assertThat(BranchMapper.toOwnerSummaryView(null, false, 0, 0, 0, 0, List.of())).isNull();
     }
 }

@@ -1,7 +1,14 @@
 package com.hutnyk.carfix.owner.entity;
 
 import com.hutnyk.carfix.user.entity.UserEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,12 +36,12 @@ public class OwnerEntity {
     @JoinColumn(name = "user_id")
     private UserEntity userEntity;
 
-    @Column(name = "business_name", length = 100, nullable = false)
+    @Column(name = "business_name", nullable = false, length = 100)
     private String businessName;
 
-    @Column(name = "vat_in", length = 15, nullable = false)
+    @Column(name = "vat_in", nullable = false, length = 15)
     private String vatIn;
 
-    @Column(name = "regon", length = 9, nullable = false)
+    @Column(name = "regon", nullable = false, length = 9)
     private String regon;
 }
