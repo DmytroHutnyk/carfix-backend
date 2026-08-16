@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.employee.mapper;
 
 import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.employee.Employee;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
@@ -46,6 +47,16 @@ public class EmployeeMapper {
                 e.getDate(),
                 UserId.of(e.getEmployeeEntity().getId()),
                 BookingId.of(e.getBookingEntity().getId()));
+    }
+
+    public static EmployeeBookingEntity toEntity(EmployeeBooking b, EmployeeEntity employee, BookingEntity booking) {
+        if (b == null) return null;
+        return new EmployeeBookingEntity(
+                b.getId(),
+                TimeRangeMapper.toRange(b.getBookedTime()),
+                b.getDate(),
+                employee,
+                booking);
     }
 
     public static EmployeeCandidateView toCandidateView(EmployeeEntity e) {

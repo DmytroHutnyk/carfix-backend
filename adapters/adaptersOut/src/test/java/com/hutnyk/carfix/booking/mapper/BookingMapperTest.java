@@ -5,8 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hutnyk.carfix.address.entity.AddressEntity;
 import com.hutnyk.carfix.address.entity.CityEntity;
 import com.hutnyk.carfix.booking.Booking;
+import com.hutnyk.carfix.booking.BookingSegment;
 import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
+import com.hutnyk.carfix.booking.entity.BookingSegmentEntity;
+import com.hutnyk.carfix.booking.entity.BookingSegmentKey;
 import com.hutnyk.carfix.branch.BranchStatus;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
@@ -69,12 +72,12 @@ public class BookingMapperTest {
         ServiceEntity diagnostics = new ServiceEntity();
         diagnostics.setId(1);
         diagnostics.setName("Diagnostics");
-        diagnostics.setPrice(new BigDecimal("150.00"));
+        diagnostics.setPrice(new BigDecimal("999.00"));
 
         ServiceEntity airFilter = new ServiceEntity();
         airFilter.setId(2);
         airFilter.setName("Air filter replacement");
-        airFilter.setPrice(new BigDecimal("160.00"));
+        airFilter.setPrice(new BigDecimal("999.00"));
 
         BookingEntity booking = new BookingEntity();
         booking.setId(BOOKING_ID);
@@ -84,7 +87,11 @@ public class BookingMapperTest {
         booking.setEndTime(LocalTime.of(11, 30));
         booking.setBranchEntity(branch);
         booking.setCarProfileEntity(carProfile);
-        booking.setServiceEntities(Set.of(diagnostics, airFilter));
+        booking.setSegments(Set.of(
+                new BookingSegmentEntity(new BookingSegmentKey(BOOKING_ID, 1), booking, diagnostics,
+                        LocalTime.of(10, 0), LocalTime.of(10, 30), new BigDecimal("150.00")),
+                new BookingSegmentEntity(new BookingSegmentKey(BOOKING_ID, 2), booking, airFilter,
+                        LocalTime.of(10, 30), LocalTime.of(11, 30), new BigDecimal("160.00"))));
         return booking;
     }
 
@@ -121,6 +128,14 @@ public class BookingMapperTest {
     }
 
     @Test
+    public void toDomainCarriesSegmentsSortedByStart() {
+        Booking booking = BookingMapper.toDomain(entity());
+
+        assertThat(booking.getSegments()).extracting(BookingSegment::serviceId).containsExactly(1, 2);
+        assertThat(booking.getSegments().getFirst().price()).isEqualByComparingTo("150.00");
+    }
+
+    @Test
     public void updateEntityCopiesScalarFieldsOnly() {
         BookingEntity target = entity();
         Booking cancelled = BookingMapper.toDomain(target).cancel();
@@ -131,5 +146,43 @@ public class BookingMapperTest {
         assertThat(target.getDate()).isEqualTo(LocalDate.of(2030, 6, 12));
         assertThat(target.getBranchEntity().getId()).isEqualTo(BRANCH_ID);
         assertThat(target.getCarProfileEntity().getId()).isEqualTo(CAR_PROFILE_ID);
+    }
+
+    @Test
+    public void toEntityCopiesScalarsAndReferencesWithoutSegments() {
+        Booking booking = BookingMapper.toDomain(entity());
+        BranchEntity branch = new BranchEntity();
+        branch.setId(BRANCH_ID);
+        CarProfileEntity carProfile = new CarProfileEntity();
+        carProfile.setId(CAR_PROFILE_ID);
+
+        BookingEntity e = BookingMapper.toEntity(booking, branch, carProfile);
+
+        assertThat(e.getId()).isEqualTo(BOOKING_ID);
+        assertThat(e.getDate()).isEqualTo(LocalDate.of(2030, 6, 12));
+        assertThat(e.getStatus()).isEqualTo(BookingStatus.SCHEDULED);
+        assertThat(e.getStartTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(e.getEndTime()).isEqualTo(LocalTime.of(11, 30));
+        assertThat(e.getBranchEntity()).isSameAs(branch);
+        assertThat(e.getCarProfileEntity()).isSameAs(carProfile);
+        assertThat(e.getSegments()).isEmpty();
+    }
+
+    @Test
+    public void toSegmentEntityBuildsTheCompositeKeyFromBothReferences() {
+        BookingEntity booking = new BookingEntity();
+        booking.setId(BOOKING_ID);
+        ServiceEntity service = new ServiceEntity();
+        service.setId(27);
+        BookingSegment segment = BookingSegment.of(27, LocalTime.of(10, 30), LocalTime.of(11, 30), new BigDecimal("160.00"));
+
+        BookingSegmentEntity e = BookingMapper.toSegmentEntity(segment, booking, service);
+
+        assertThat(e.getKey()).isEqualTo(new BookingSegmentKey(BOOKING_ID, 27));
+        assertThat(e.getBookingEntity()).isSameAs(booking);
+        assertThat(e.getServiceEntity()).isSameAs(service);
+        assertThat(e.getStartTime()).isEqualTo(LocalTime.of(10, 30));
+        assertThat(e.getEndTime()).isEqualTo(LocalTime.of(11, 30));
+        assertThat(e.getPrice()).isEqualByComparingTo("160.00");
     }
 }

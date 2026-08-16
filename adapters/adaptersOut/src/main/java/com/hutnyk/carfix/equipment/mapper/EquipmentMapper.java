@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.equipment.mapper;
 
 import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
@@ -48,5 +49,15 @@ public class EquipmentMapper {
                 e.getDate(),
                 e.getEquipmentEntity().getId(),
                 BookingId.of(e.getBookingEntity().getId()));
+    }
+
+    public static EquipmentBookingEntity toEntity(EquipmentBooking b, EquipmentEntity equipment, BookingEntity booking) {
+        if (b == null) return null;
+        return new EquipmentBookingEntity(
+                b.getId(),
+                TimeRangeMapper.toRange(b.getBookedTime()),
+                b.getDate(),
+                equipment,
+                booking);
     }
 }
