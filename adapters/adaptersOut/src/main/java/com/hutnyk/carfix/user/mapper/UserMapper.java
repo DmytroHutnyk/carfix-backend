@@ -1,5 +1,6 @@
 package com.hutnyk.carfix.user.mapper;
 
+import com.hutnyk.carfix.address.Location;
 import com.hutnyk.carfix.address.entity.AddressEntity;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
@@ -15,7 +16,7 @@ public class UserMapper {
             return null;
         }
 
-        return new UserEntity(
+        UserEntity entity = new UserEntity(
                 user.getId().id(),
                 user.getName(),
                 user.getSurname(),
@@ -25,8 +26,19 @@ public class UserMapper {
                 user.getPasswordHash().getValue(),
                 user.getRole(),
                 user.getDateOfBirth(),
-                addressEntity
+                addressEntity,
+                null, null, null, null, null
         );
+        copyPreferredLocation(entity, user.getPreferredLocation());
+        return entity;
+    }
+
+    public static void updateEntity(UserEntity entity, User user, AddressEntity addressEntity) {
+        entity.setName(user.getName());
+        entity.setSurname(user.getSurname());
+        entity.setDateOfBirth(user.getDateOfBirth());
+        entity.setAddressEntity(addressEntity);
+        copyPreferredLocation(entity, user.getPreferredLocation());
     }
 
 
@@ -41,8 +53,12 @@ public class UserMapper {
                 entity.getPhoneNumber()
         );
         PasswordHash passwordHash = PasswordHash.of(entity.getPassword());
-        Integer addressId = entity.getAddressEntity() != null 
-                ? entity.getAddressEntity().getId() 
+        Integer addressId = entity.getAddressEntity() != null
+                ? entity.getAddressEntity().getId()
+                : null;
+        Location preferredLocation = entity.getPreferredCountryIso() != null
+                ? new Location(entity.getPreferredCity(), entity.getPreferredRegion(), entity.getPreferredCountryIso(),
+                        entity.getPreferredLatitude(), entity.getPreferredLongitude())
                 : null;
 
         return User.builder()
@@ -55,6 +71,15 @@ public class UserMapper {
                 .passwordHash(passwordHash)
                 .dateOfBirth(entity.getDateOfBirth())
                 .addressId(addressId)
+                .preferredLocation(preferredLocation)
                 .build();
+    }
+
+    private static void copyPreferredLocation(UserEntity entity, Location location) {
+        entity.setPreferredCity(location == null ? null : location.city());
+        entity.setPreferredRegion(location == null ? null : location.region());
+        entity.setPreferredCountryIso(location == null ? null : location.countryIso());
+        entity.setPreferredLatitude(location == null ? null : location.latitude());
+        entity.setPreferredLongitude(location == null ? null : location.longitude());
     }
 }

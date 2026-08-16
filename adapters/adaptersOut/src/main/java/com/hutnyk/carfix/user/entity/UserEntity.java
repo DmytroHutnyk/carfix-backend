@@ -1,5 +1,6 @@
 package com.hutnyk.carfix.user.entity;
 
+import com.hutnyk.carfix.address.CountryIso;
 import com.hutnyk.carfix.address.entity.AddressEntity;
 import com.hutnyk.carfix.user.UserRole;
 import jakarta.persistence.*;
@@ -9,6 +10,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -55,4 +57,20 @@ public class UserEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private AddressEntity addressEntity;
+
+    @Column(name = "preferred_city", length = 100)
+    private String preferredCity;
+
+    @Column(name = "preferred_region", length = 100)
+    private String preferredRegion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "preferred_country_iso", length = 2)
+    private CountryIso preferredCountryIso;
+
+    @Column(name = "preferred_latitude", precision = 9, scale = 6)
+    private BigDecimal preferredLatitude;
+
+    @Column(name = "preferred_longitude", precision = 9, scale = 6)
+    private BigDecimal preferredLongitude;
 }
