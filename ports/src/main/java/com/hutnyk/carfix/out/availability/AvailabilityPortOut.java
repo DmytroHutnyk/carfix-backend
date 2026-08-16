@@ -41,6 +41,6 @@ public interface AvailabilityPortOut {
     /** The branch's weekly opening_hours rows (all weekdays it has rows for). */
     List<OpeningHours> loadOpeningHours(BranchId branchId);
 
-    /** Per-date overrides of the weekly hours whose date lies in [from, to] (both inclusive). */
+    /** [from, to] both inclusive */
     List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to);
 }

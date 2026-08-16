@@ -11,10 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * When a branch is open, day by day: the weekly opening_hours rows, overridden per date by
- * opening_hours_exceptions. Pure rule holder — no ports, no IO. Times are branch wall-clock.
- */
 public final class OpeningCalendar {
 
     private final Map<DayOfWeek, List<OpeningHours>> weekly;
@@ -38,9 +34,7 @@ public final class OpeningCalendar {
 
     /**
      * Time the branch is open on {@code date}: merged, ascending, branch wall-clock. Empty = closed
-     * all day. Exception rows replace the weekly rule for their date: any {@code isOpen=false} row
-     * closes the whole day, otherwise the open rows' hours apply. A row whose close is not after
-     * its start is bad data and fails loud (INVALID_TIME_RANGE) the moment it is applied.
+     * all day.
      */
     public List<TimeRange> openRanges(LocalDate date) {
         List<OpeningHoursException> forDate = exceptions.getOrDefault(date, List.of());

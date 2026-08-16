@@ -82,8 +82,6 @@ public class SlotService implements SlotPortIn {
             return new BranchSlotsView(branchZone.getId(), false, emptyDays(dates));
         }
 
-        // Branch opening hours bound every day: a closed day gets no slot math at all, and an open
-        // day only offers time inside its opening window (weekly rows, or that date's exceptions).
         OpeningCalendar calendar = OpeningCalendar.of(
                 availabilityPortOut.loadOpeningHours(branchId),
                 availabilityPortOut.loadOpeningHoursExceptions(branchId, query.from(), query.to()));
