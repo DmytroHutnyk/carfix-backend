@@ -9,6 +9,7 @@ import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
 import com.hutnyk.carfix.booking.exception.CarProfileAlreadyBookedException;
 import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
 import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
+import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
 import com.hutnyk.carfix.carProfile.CarProfile;
@@ -18,6 +19,7 @@ import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
@@ -30,6 +32,7 @@ import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.booking.BookingNotificationPortOut;
 import com.hutnyk.carfix.out.booking.BookingPortOut;
@@ -112,14 +115,14 @@ public class BookingServiceTest {
 
     private static List<OpeningHours> allWeek(LocalTime open, LocalTime close) {
         return Arrays.stream(DayOfWeek.values())
-                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .map(day -> OpeningHours.of(null, day, open, close, OpeningHoursMode.OPEN, BRANCH_ID))
                 .toList();
     }
 
     private static List<OpeningHours> monToFri(LocalTime open, LocalTime close) {
         return Arrays.stream(DayOfWeek.values())
                 .filter(day -> day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY)
-                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .map(day -> OpeningHours.of(null, day, open, close, OpeningHoursMode.OPEN, BRANCH_ID))
                 .toList();
     }
 
@@ -195,7 +198,22 @@ public class BookingServiceTest {
         public Optional<BranchView> findViewById(BranchId branchId) {
             throw new UnsupportedOperationException();
         }
-    }
+    
+        @Override
+        public Branch insert(Branch branch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void insertOpeningHours(List<OpeningHours> openingHours) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
+            throw new UnsupportedOperationException();
+        }
+}
 
     private static final class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
@@ -208,7 +226,12 @@ public class BookingServiceTest {
             this.lastLoadByIds = serviceIds;
             return toReturn;
         }
-    }
+    
+        @Override
+        public Service insert(Service service) {
+            throw new UnsupportedOperationException();
+        }
+}
 
     private static final class StubAvailabilityPortOut implements AvailabilityPortOut {
         List<ServiceBay> bays = new ArrayList<>();
@@ -470,7 +493,7 @@ public class BookingServiceTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 2, UserId.of(ANNA)));
+                1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 2, EmployeeId.of(ANNA)));
     }
 
     @Test
@@ -519,7 +542,7 @@ public class BookingServiceTest {
         assertThat(occupancy.bays().getFirst().getBookedTime())
                 .isEqualTo(TimeRange.of(TOMORROW.atTime(9, 15), TOMORROW.atTime(10, 15)));
         assertThat(occupancy.bays().getFirst().getBookingId()).isEqualTo(inserted.getId());
-        assertThat(occupancy.employees()).extracting(EmployeeBooking::getEmployeeId).containsExactly(UserId.of(ANNA));
+        assertThat(occupancy.employees()).extracting(EmployeeBooking::getEmployeeId).containsExactly(EmployeeId.of(ANNA));
         assertThat(occupancy.equipment()).isEmpty();
     }
 
@@ -575,7 +598,7 @@ public class BookingServiceTest {
     public void createBookingConflictsWhenNoAssignmentExistsAtThatStart() {
         seedBookableTomorrow();
         availabilityPortOut.employeeOccupancy.add(EmployeeBooking.of(
-                7, TimeRange.of(TOMORROW.atTime(9, 30), TOMORROW.atTime(10, 0)), TOMORROW, UserId.of(ANNA), BookingId.genId()));
+                7, TimeRange.of(TOMORROW.atTime(9, 30), TOMORROW.atTime(10, 0)), TOMORROW, EmployeeId.of(ANNA), BookingId.genId()));
 
         assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 15))))
                 .isInstanceOf(SlotNotAvailableException.class);
@@ -716,7 +739,7 @@ public class BookingServiceTest {
                 .isEqualTo(TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(11, 0)));
         assertThat(occupancy.employees()).extracting(e -> e.getBookedTime().lower())
                 .containsExactly(TOMORROW.atTime(9, 0), TOMORROW.atTime(10, 0));
-        assertThat(occupancy.employees()).allSatisfy(e -> assertThat(e.getEmployeeId()).isEqualTo(UserId.of(ANNA)));
+        assertThat(occupancy.employees()).allSatisfy(e -> assertThat(e.getEmployeeId()).isEqualTo(EmployeeId.of(ANNA)));
         assertThat(occupancy.equipment()).isEmpty();
     }
 

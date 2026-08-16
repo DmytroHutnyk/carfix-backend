@@ -2,6 +2,7 @@ package com.hutnyk.carfix.openingHours.entity;
 
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,6 +35,10 @@ public class OpeningHoursEntity {
 
     @Column(name = "close_time", nullable = false)
     private LocalTime closeTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mode", nullable = false)
+    private OpeningHoursMode mode;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)

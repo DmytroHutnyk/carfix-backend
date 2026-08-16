@@ -1,7 +1,10 @@
 package com.hutnyk.carfix.exception;
 
+import com.hutnyk.carfix.branch.exception.InvalidBranchRegistrationException;
+import com.hutnyk.carfix.carCatalog.exception.CarBrandNotFoundException;
 import com.hutnyk.carfix.carCatalog.exception.ModelVersionNotFoundException;
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
+import com.hutnyk.carfix.service.exception.ServiceCategoryNotFoundException;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import com.hutnyk.carfix.user.exception.EmailAlreadyTakenException;
@@ -84,6 +87,40 @@ public class FeatureExceptionsTest {
         assertThat(byEmail.getMessage()).isEqualTo("Authenticated user not found: john@example.com");
         assertThat(noAggregate.getMessage())
                 .isEqualTo("No customer aggregate for authenticated principal: john@example.com");
+    }
+
+    @Test
+    public void test_car_brand_not_found_is_a_404_with_its_own_code() {
+        //when
+        CarBrandNotFoundException exception = new CarBrandNotFoundException(42);
+
+        //then
+        assertThat(exception.getErrorCode().code()).isEqualTo("CAR_BRAND_NOT_FOUND");
+        assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
+        assertThat(exception.getMessage()).isEqualTo("Car brand not found: 42");
+    }
+
+    @Test
+    public void test_service_category_not_found_is_a_404_with_its_own_code() {
+        //when
+        ServiceCategoryNotFoundException exception = new ServiceCategoryNotFoundException(7);
+
+        //then
+        assertThat(exception.getErrorCode().code()).isEqualTo("SERVICE_CATEGORY_NOT_FOUND");
+        assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
+        assertThat(exception.getMessage()).isEqualTo("Service category not found: 7");
+    }
+
+    @Test
+    public void test_invalid_branch_registration_publishes_the_offending_path() {
+        //when
+        InvalidBranchRegistrationException exception =
+                InvalidBranchRegistrationException.unknownReference("serviceBays[0].type", "service bay type", "Lift");
+
+        //then
+        assertThat(exception.getErrorCode().code()).isEqualTo("INVALID_BRANCH_REGISTRATION");
+        assertThat(exception.category()).isEqualTo(ErrorCategory.VALIDATION);
+        assertThat(exception.details()).containsExactly(entry("serviceBays[0].type", "Unknown service bay type: Lift"));
     }
 
     @Test

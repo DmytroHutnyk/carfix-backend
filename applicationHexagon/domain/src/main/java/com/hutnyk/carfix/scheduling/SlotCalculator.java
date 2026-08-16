@@ -1,7 +1,7 @@
 package com.hutnyk.carfix.scheduling;
 
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.service.Service;
-import com.hutnyk.carfix.user.UserId;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -189,14 +189,14 @@ public final class SlotCalculator {
     private static Optional<SegmentPlan> trySegment(Service service, TimeRange segmentTime,
                                                     List<EmployeeSchedule> employees,
                                                     List<EquipmentSchedule> equipment) {
-        List<List<UserId>> employeeCandidates = service.getEmployeeRequirements().stream()
+        List<List<EmployeeId>> employeeCandidates = service.getEmployeeRequirements().stream()
                 .map(req -> employees.stream()
                         .filter(e -> !Collections.disjoint(e.roleIds(), req.getRoleIds()))
                         .filter(e -> covers(e.free(), segmentTime))
                         .map(EmployeeSchedule::employeeId)
                         .toList())
                 .toList();
-        Optional<Map<Integer, UserId>> employeeMatch = RequirementMatcher.match(employeeCandidates);
+        Optional<Map<Integer, EmployeeId>> employeeMatch = RequirementMatcher.match(employeeCandidates);
         if (employeeMatch.isEmpty()) {
             return Optional.empty();
         }
@@ -213,7 +213,7 @@ public final class SlotCalculator {
             return Optional.empty();
         }
 
-        Map<Integer, UserId> employeeByRequirementId = new LinkedHashMap<>();
+        Map<Integer, EmployeeId> employeeByRequirementId = new LinkedHashMap<>();
         employeeMatch.get().forEach((slot, employeeId) -> employeeByRequirementId
                 .put(service.getEmployeeRequirements().get(slot).getId(), employeeId));
         Map<Integer, Integer> equipmentByRequirementId = new LinkedHashMap<>();

@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.in.review.commands.AddReviewCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.review.ReviewPortOut;
 import com.hutnyk.carfix.review.exception.ReviewAlreadyExistsException;
@@ -20,6 +22,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class ReviewServiceTest {
 
@@ -89,6 +92,21 @@ public class ReviewServiceTest {
 
         @Override
         public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Branch insert(Branch branch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void insertOpeningHours(List<OpeningHours> openingHours) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
             throw new UnsupportedOperationException();
         }
     }

@@ -20,7 +20,7 @@ public class OpeningCalendarTest {
     private static final LocalDate SUNDAY = LocalDate.of(2026, 8, 16);
 
     private static OpeningHours weekly(DayOfWeek day, int open, int close) {
-        return OpeningHours.of(null, day, LocalTime.of(open, 0), LocalTime.of(close, 0), BRANCH_ID);
+        return OpeningHours.of(null, day, LocalTime.of(open, 0), LocalTime.of(close, 0), OpeningHoursMode.OPEN, BRANCH_ID);
     }
 
     private static List<OpeningHours> monToFri(int open, int close) {

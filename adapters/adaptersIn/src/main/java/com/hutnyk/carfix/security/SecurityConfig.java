@@ -81,6 +81,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/car-catalog/**").permitAll()
+                        .requestMatchers("/api/service-categories/**").permitAll()
                         .requestMatchers("/api/search/**").permitAll()
                         .requestMatchers("/api/branches/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/logout").permitAll()

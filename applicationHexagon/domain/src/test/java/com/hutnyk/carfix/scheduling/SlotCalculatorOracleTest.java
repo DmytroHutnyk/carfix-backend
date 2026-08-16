@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.service.EmployeeRequirement;
 import com.hutnyk.carfix.service.EquipmentRequirement;
 import com.hutnyk.carfix.service.Service;
 import com.hutnyk.carfix.service.ServiceStatus;
-import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -115,7 +115,7 @@ class SlotCalculatorOracleTest {
         List<EmployeeSchedule> employees = new ArrayList<>();
         int employeeCount = (generous ? 2 : 1) + rnd.nextInt(3);
         for (int i = 0; i < employeeCount; i++) {
-            employees.add(new EmployeeSchedule(UserId.of(new UUID(0L, i + 1L)),
+            employees.add(new EmployeeSchedule(EmployeeId.of(new UUID(0L, i + 1L)),
                     nonEmptySubset(rnd, ROLES, p), freeRanges(rnd, generous)));
         }
 
@@ -565,7 +565,7 @@ class SlotCalculatorOracleTest {
                                                    int from, int to) {
         List<String> problems = new ArrayList<>();
 
-        Map<Integer, UserId> employees = segment.employeeByRequirementId();
+        Map<Integer, EmployeeId> employees = segment.employeeByRequirementId();
         Set<Integer> employeeReqIds = service.getEmployeeRequirements().stream()
                 .map(EmployeeRequirement::getId).collect(java.util.stream.Collectors.toSet());
         if (!employees.keySet().equals(employeeReqIds)) {
@@ -577,7 +577,7 @@ class SlotCalculatorOracleTest {
                     + service.getId());
         }
         for (EmployeeRequirement req : service.getEmployeeRequirements()) {
-            UserId assigned = employees.get(req.getId());
+            EmployeeId assigned = employees.get(req.getId());
             if (assigned == null) {
                 continue;
             }
@@ -658,7 +658,7 @@ class SlotCalculatorOracleTest {
         return String.format("%02d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60);
     }
 
-    private static String short_(UserId id) {
+    private static String short_(EmployeeId id) {
         return "E" + id.id().getLeastSignificantBits();
     }
 
@@ -1041,8 +1041,8 @@ class SlotCalculatorOracleTest {
     @Test
     void after_an_on_grid_segment_end_only_the_next_two_grid_points_are_offered() {
         //given
-        UserId anna = UserId.of(new UUID(0L, 1L));
-        UserId jan = UserId.of(new UUID(0L, 2L));
+        EmployeeId anna = EmployeeId.of(new UUID(0L, 1L));
+        EmployeeId jan = EmployeeId.of(new UUID(0L, 2L));
         List<Service> services = List.of(svc(1, 60, Set.of(10)), svc(2, 30, Set.of(11)));
 
         //when / then — first segment ends 10:00, so 10:00 and 10:15 work but 10:30 does not
@@ -1055,7 +1055,7 @@ class SlotCalculatorOracleTest {
     }
 
     private static List<LocalDateTime> startsWithSecondEmployeeFreeFrom(
-            List<Service> services, UserId anna, UserId jan, int minute) {
+            List<Service> services, EmployeeId anna, EmployeeId jan, int minute) {
         return SlotCalculator.computeVisits(services,
                 List.of(new BaySchedule(100, 1, List.of(hours(9, 13)))),
                 List.of(new EmployeeSchedule(anna, Set.of(10), List.of(hours(9, 10))),
@@ -1093,14 +1093,14 @@ class SlotCalculatorOracleTest {
         //when
         List<VisitPlan> plans = SlotCalculator.computeVisits(List.of(svc(1, 60, Set.of(10))),
                 List.of(new BaySchedule(100, 1, List.of(hours(9, 10)))),
-                List.of(new EmployeeSchedule(UserId.of(lowest), Set.of(10), List.of(hours(8, 14))),
-                        new EmployeeSchedule(UserId.of(highBitSet), Set.of(10),
+                List.of(new EmployeeSchedule(EmployeeId.of(lowest), Set.of(10), List.of(hours(8, 14))),
+                        new EmployeeSchedule(EmployeeId.of(highBitSet), Set.of(10),
                                 List.of(hours(8, 14)))),
                 List.of(), DAY);
 
         //then
         assertThat(plans.getFirst().segments().getFirst().employeeByRequirementId())
-                .containsEntry(10, UserId.of(highBitSet));
+                .containsEntry(10, EmployeeId.of(highBitSet));
     }
 
     /** A same-date availability row may legitimately end at next-day 00:00; no start may cross it. */
@@ -1112,7 +1112,7 @@ class SlotCalculatorOracleTest {
         //when
         List<VisitPlan> plans = SlotCalculator.computeVisits(List.of(svc(1, 15, Set.of(10))),
                 List.of(new BaySchedule(100, 1, List.of(lateShift))),
-                List.of(new EmployeeSchedule(UserId.of(new UUID(0L, 1L)), Set.of(10),
+                List.of(new EmployeeSchedule(EmployeeId.of(new UUID(0L, 1L)), Set.of(10),
                         List.of(lateShift))), List.of(), DAY);
 
         //then
@@ -1136,7 +1136,7 @@ class SlotCalculatorOracleTest {
     }
 
     private static List<EmployeeSchedule> mechanicAllDay() {
-        return List.of(new EmployeeSchedule(UserId.of(new UUID(0L, 1L)), Set.of(10),
+        return List.of(new EmployeeSchedule(EmployeeId.of(new UUID(0L, 1L)), Set.of(10),
                 List.of(hours(8, 14))));
     }
 }

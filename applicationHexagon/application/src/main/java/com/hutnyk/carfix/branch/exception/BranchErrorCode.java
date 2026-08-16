@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum BranchErrorCode implements ErrorCode {
 
     BRANCH_NOT_FOUND(ErrorCategory.NOT_FOUND),
-    INVALID_REVIEWS_SORT(ErrorCategory.VALIDATION);
+    INVALID_REVIEWS_SORT(ErrorCategory.VALIDATION),
+    INVALID_BRANCH_REGISTRATION(ErrorCategory.VALIDATION);
 
     private final ErrorCategory category;
 

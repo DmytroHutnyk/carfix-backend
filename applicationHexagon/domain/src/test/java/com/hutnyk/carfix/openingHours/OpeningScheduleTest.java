@@ -15,7 +15,7 @@ public class OpeningScheduleTest {
     private static final LocalDate MONDAY = LocalDate.of(2026, 8, 17);
 
     private static OpeningHours hours(DayOfWeek day, int opens, int closes) {
-        return OpeningHours.of(null, day, LocalTime.of(opens, 0), LocalTime.of(closes, 0), BRANCH_ID);
+        return OpeningHours.of(null, day, LocalTime.of(opens, 0), LocalTime.of(closes, 0), OpeningHoursMode.OPEN, BRANCH_ID);
     }
 
     private static OpeningSchedule mondayEightToSix(List<OpeningHoursException> exceptions) {

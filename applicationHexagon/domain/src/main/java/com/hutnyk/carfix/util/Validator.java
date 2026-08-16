@@ -67,6 +67,19 @@ public class Validator {
     }
 
     /**
+     * Validates an international phone number: a leading '+' followed by 5–15 digits
+     * (branch phones are stored as one international string, e.g. +48221234567).
+     */
+    public static String validateInternationalPhoneNumber(String phoneNumber, String fieldName) {
+        notBlank(phoneNumber, fieldName);
+
+        if (!phoneNumber.matches("^\\+[0-9]{5,15}$")) {
+            throw new DomainObjectValidationException(ValidationErrorType.INVALID_PHONE_FORMAT, fieldName, phoneNumber);
+        }
+        return phoneNumber;
+    }
+
+    /**
      * Validates that a date is today or in the future.
      *
      * @param date the date to validate

@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.service.EmployeeRequirement;
 import com.hutnyk.carfix.service.EquipmentRequirement;
 import com.hutnyk.carfix.service.Service;
 import com.hutnyk.carfix.service.ServiceStatus;
-import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -21,10 +21,10 @@ import org.junit.jupiter.api.Test;
 public class SlotCalculatorTest {
 
     private static final BranchId BRANCH_ID = BranchId.genId();
-    private static final UserId ANNA =
-            UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
-    private static final UserId JAN =
-            UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+    private static final EmployeeId ANNA =
+            EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    private static final EmployeeId JAN =
+            EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-000000000002"));
     private static final int LIFT = 1;
     private static final int PIT = 2;
     private static final int ALIGNMENT_RIG = 3;
@@ -68,7 +68,7 @@ public class SlotCalculatorTest {
         return new BaySchedule(100, bayTypeId, List.of(free));
     }
 
-    private static EmployeeSchedule employee(UserId id, Set<Integer> roles, TimeRange... free) {
+    private static EmployeeSchedule employee(EmployeeId id, Set<Integer> roles, TimeRange... free) {
         return new EmployeeSchedule(id, roles, List.of(free));
     }
 
@@ -290,7 +290,7 @@ public class SlotCalculatorTest {
         int roleA = 30;
         int roleB = 31;
         int roleC = 32;
-        UserId ec = UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000003"));
+        EmployeeId ec = EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-000000000003"));
         List<Service> services = List.of(
                 service(1, 15, List.of(EmployeeRequirement.of(1, "A", Set.of(roleA))), List.of()),
                 service(2, 15, List.of(EmployeeRequirement.of(2, "B", Set.of(roleB))), List.of()),

@@ -6,6 +6,7 @@ import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursExceptionEntity;
 import java.time.LocalDate;
@@ -31,6 +32,7 @@ public class OpeningHoursMapperTest {
         entity.setDayOfWeek(DayOfWeek.FRIDAY);
         entity.setStartTime(LocalTime.of(8, 0));
         entity.setCloseTime(LocalTime.of(18, 0));
+        entity.setMode(OpeningHoursMode.OPEN);
         entity.setBranchEntity(branch());
         //when
         OpeningHours domain = OpeningHoursMapper.toDomain(entity);
@@ -39,6 +41,7 @@ public class OpeningHoursMapperTest {
         assertThat(domain.getDayOfWeek()).isEqualTo(DayOfWeek.FRIDAY);
         assertThat(domain.getStartTime()).isEqualTo(LocalTime.of(8, 0));
         assertThat(domain.getCloseTime()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(domain.getMode()).isEqualTo(OpeningHoursMode.OPEN);
         assertThat(domain.getBranchId().id()).isEqualTo(BRANCH_ID);
     }
 

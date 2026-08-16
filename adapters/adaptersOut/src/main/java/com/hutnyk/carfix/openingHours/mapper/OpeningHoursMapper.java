@@ -18,6 +18,7 @@ public final class OpeningHoursMapper {
                 e.getDayOfWeek(),
                 e.getStartTime(),
                 e.getCloseTime(),
+                e.getMode(),
                 BranchId.of(e.getBranchEntity().getId()));
     }
 

@@ -18,6 +18,7 @@ public enum ValidationErrorType implements ErrorCode {
     INVALID_PHONE_FORMAT("INVALID_PHONE_FORMAT", "Phone number format is not valid"),
     INVALID_COUNTRY_CODE("INVALID_COUNTRY_CODE", "Country code is not valid"),
     INVALID_ISO_CODE("INVALID_ISO_CODE", "ISO code is not valid"),
+    INVALID_TIMEZONE("INVALID_TIMEZONE", "Timezone is not a valid IANA zone id"),
     INVALID_VIN_FORMAT("INVALID_VIN_FORMAT", "VIN format is not valid"),
     INVALID_PLATES_FORMAT("INVALID_PLATES_FORMAT", "License plates format is not valid"),
     

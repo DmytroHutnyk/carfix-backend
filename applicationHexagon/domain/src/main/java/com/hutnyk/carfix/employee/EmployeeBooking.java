@@ -2,7 +2,6 @@ package com.hutnyk.carfix.employee;
 
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.scheduling.TimeRange;
-import com.hutnyk.carfix.user.UserId;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -19,12 +18,12 @@ public final class EmployeeBooking {
 
     private final TimeRange bookedTime;
     private final LocalDate date;
-    private final UserId employeeId;
+    private final EmployeeId employeeId;
     private final BookingId bookingId;
 
     @Builder
     private EmployeeBooking(
-            Integer id, TimeRange bookedTime, LocalDate date, UserId employeeId, BookingId bookingId) {
+            Integer id, TimeRange bookedTime, LocalDate date, EmployeeId employeeId, BookingId bookingId) {
         this.id = id;
         this.bookedTime = Validator.notNull(bookedTime, "bookedTime");
         this.date = Validator.notNull(date, "date");
@@ -33,7 +32,7 @@ public final class EmployeeBooking {
     }
 
     public static EmployeeBooking of(
-            Integer id, TimeRange bookedTime, LocalDate date, UserId employeeId, BookingId bookingId) {
+            Integer id, TimeRange bookedTime, LocalDate date, EmployeeId employeeId, BookingId bookingId) {
         return EmployeeBooking.builder()
                 .id(id)
                 .bookedTime(bookedTime)

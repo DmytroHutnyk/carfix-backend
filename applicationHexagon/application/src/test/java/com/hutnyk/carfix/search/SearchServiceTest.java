@@ -9,6 +9,7 @@ import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.employee.EmployeeBooking;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
@@ -220,7 +221,12 @@ public class SearchServiceTest {
         public List<Service> loadByIds(Collection<Integer> serviceIds) {
             return toReturn;
         }
-    }
+    
+        @Override
+        public Service insert(Service service) {
+            throw new UnsupportedOperationException();
+        }
+}
 
     private static final class StubAvailabilityPortOut implements AvailabilityPortOut {
         final List<ServiceBay> bays = new ArrayList<>();
@@ -342,7 +348,7 @@ public class SearchServiceTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(bayId,
                 TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, bayId));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(bayId,
-                TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2, UserId.of(mechanicId)));
+                TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2, EmployeeId.of(mechanicId)));
         return new WorkshopResultView(branchId, "Branch", "Street", "1", CITY, new BigDecimal("52.2"), new BigDecimal("21.0"),
                 null, null, null, List.of(new MatchedServiceView(serviceId, SERVICE_NAME, BigDecimal.TEN, (short) 60, "Engine")),
                 "Europe/Warsaw", null);

@@ -12,4 +12,7 @@ public interface ServicePortOut {
      * Ids that match no service are simply absent — the result is not padded and not ordered by input.
      */
     List<Service> loadByIds(Collection<Integer> serviceIds);
+
+    /** Persists the service, its bay-type links and every requirement slot; ids are filled in on the result. */
+    Service insert(Service service);
 }

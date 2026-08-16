@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.scheduling.TimeRange;
-import com.hutnyk.carfix.user.UserId;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,7 +16,7 @@ public class EmployeeAvailabilityTest {
     private static final LocalDate DATE = LocalDate.of(2026, 8, 12);
     private static final TimeRange RANGE = TimeRange.of(
             LocalDateTime.of(2026, 8, 12, 9, 0), LocalDateTime.of(2026, 8, 12, 17, 0));
-    private static final UserId EMPLOYEE_ID = UserId.of(UUID.randomUUID());
+    private static final EmployeeId EMPLOYEE_ID = EmployeeId.of(UUID.randomUUID());
 
     @Test
     public void test_of_builds_availability_with_series() {

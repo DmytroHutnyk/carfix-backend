@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.review.BranchRating;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
@@ -22,6 +24,7 @@ import com.hutnyk.carfix.in.scheduling.query.SlotView;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
@@ -35,7 +38,6 @@ import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
 import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
-import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -92,7 +94,7 @@ public class SlotServiceTest {
 
     private static List<OpeningHours> allWeek(LocalTime open, LocalTime close) {
         return Arrays.stream(DayOfWeek.values())
-                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .map(day -> OpeningHours.of(null, day, open, close, OpeningHoursMode.OPEN, BRANCH_ID))
                 .toList();
     }
 
@@ -121,7 +123,22 @@ public class SlotServiceTest {
         public Optional<BranchView> findViewById(BranchId branchId) {
             throw new UnsupportedOperationException();
         }
-    }
+    
+        @Override
+        public Branch insert(Branch branch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void insertOpeningHours(List<OpeningHours> openingHours) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
+            throw new UnsupportedOperationException();
+        }
+}
 
     private static class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
@@ -132,7 +149,12 @@ public class SlotServiceTest {
             lastLoadByIds = serviceIds;
             return toReturn;
         }
-    }
+    
+        @Override
+        public Service insert(Service service) {
+            throw new UnsupportedOperationException();
+        }
+}
 
     private static class StubAvailabilityPortOut implements AvailabilityPortOut {
         List<ServiceBay> bays = new ArrayList<>();
@@ -297,7 +319,7 @@ public class SlotServiceTest {
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, 100));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2,
-                com.hutnyk.carfix.user.UserId.of(EMPLOYEE_ID)));
+                EmployeeId.of(EMPLOYEE_ID)));
     }
 
     private void seedJack(TimeRange availableTomorrow) {
@@ -437,10 +459,10 @@ public class SlotServiceTest {
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2,
-                UserId.of(EMPLOYEE_ID)));
+                EmployeeId.of(EMPLOYEE_ID)));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 2, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 3,
-                UserId.of(SENIOR_ID)));
+                EmployeeId.of(SENIOR_ID)));
 
         BranchSlotsView view = slotService.getSlots(query(List.of(1, 2), TODAY, TOMORROW));
 
@@ -485,7 +507,7 @@ public class SlotServiceTest {
                 2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 1, 100));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 2,
-                com.hutnyk.carfix.user.UserId.of(EMPLOYEE_ID)));
+                EmployeeId.of(EMPLOYEE_ID)));
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TODAY));
         assertThat(view.days().getFirst().slots().getFirst().startTime())
                 .isEqualTo(LocalTime.of(10, 15));
@@ -518,7 +540,7 @@ public class SlotServiceTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 2, UserId.of(EMPLOYEE_ID)));
+                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 2, EmployeeId.of(EMPLOYEE_ID)));
 
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TODAY));
 
@@ -551,7 +573,7 @@ public class SlotServiceTest {
         seedHappyPath();
         availabilityPortOut.employeeOccupancy.add(EmployeeBooking.of(
                 1, TimeRange.of(TOMORROW.atTime(10, 0), TOMORROW.atTime(11, 0)),
-                TOMORROW, UserId.of(EMPLOYEE_ID), BookingId.genId()));
+                TOMORROW, EmployeeId.of(EMPLOYEE_ID), BookingId.genId()));
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TOMORROW));
         assertThat(view.days().getLast().slots()).containsExactly(
                 new SlotView(LocalTime.of(9, 0), LocalTime.of(10, 0)),
@@ -591,7 +613,7 @@ public class SlotServiceTest {
     private static List<OpeningHours> monToFri(LocalTime open, LocalTime close) {
         return List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
                 .stream()
-                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .map(day -> OpeningHours.of(null, day, open, close, OpeningHoursMode.OPEN, BRANCH_ID))
                 .toList();
     }
 
@@ -599,7 +621,7 @@ public class SlotServiceTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 10, TimeRange.of(date.atTime(from), date.atTime(to)), date, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                11, TimeRange.of(date.atTime(from), date.atTime(to)), date, 2, UserId.of(EMPLOYEE_ID)));
+                11, TimeRange.of(date.atTime(from), date.atTime(to)), date, 2, EmployeeId.of(EMPLOYEE_ID)));
     }
 
     private static List<LocalTime> starts(BranchSlotsView view, LocalDate date) {
@@ -697,8 +719,8 @@ public class SlotServiceTest {
         //given
         seedHappyPath();
         availabilityPortOut.openingHours = new ArrayList<>();
-        availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(10, 0), BRANCH_ID));
-        availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(11, 0), LocalTime.of(12, 0), BRANCH_ID));
+        availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(10, 0), OpeningHoursMode.OPEN, BRANCH_ID));
+        availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(11, 0), LocalTime.of(12, 0), OpeningHoursMode.OPEN, BRANCH_ID));
         //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW));
         //then
