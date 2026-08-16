@@ -350,6 +350,15 @@ public class BookingServiceTest {
             this.lastExceptionsTo = to;
             return openingHoursExceptions;
         }
+
+        @Override public Map<BranchId, List<OpeningHours>> loadOpeningHoursByBranch(Collection<BranchId> branchIds) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public Map<BranchId, List<OpeningHoursException>> loadOpeningHoursExceptionsByBranch(
+                Collection<BranchId> branchIds, LocalDate from, LocalDate to) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static Booking booking(BookingStatus status) {

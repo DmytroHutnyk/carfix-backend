@@ -27,8 +27,10 @@ import com.hutnyk.carfix.in.search.query.WorkshopResultView;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
+import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
@@ -56,6 +58,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -308,6 +311,18 @@ public class SearchServiceTest {
         public List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public Map<BranchId, List<OpeningHours>> loadOpeningHoursByBranch(Collection<BranchId> branchIds) {
+            return branchIds.stream().distinct()
+                    .collect(Collectors.toMap(id -> id, SearchServiceTest::allWeek));
+        }
+
+        @Override
+        public Map<BranchId, List<OpeningHoursException>> loadOpeningHoursExceptionsByBranch(
+                Collection<BranchId> branchIds, LocalDate from, LocalDate to) {
+            return Map.of();
+        }
     }
 
     private final StubSearchPortOut searchPortOut = new StubSearchPortOut();
@@ -335,6 +350,13 @@ public class SearchServiceTest {
                                                          LocalTime timeFrom, LocalTime timeTo, int page, int size) {
         return new WorkshopSearchQuery(q, serviceName, null, CITY, null, null, null, null, null, null, page, size,
                 null, null, new AvailabilityWindow(from, to, timeFrom, timeTo));
+    }
+
+    private static List<OpeningHours> allWeek(BranchId branchId) {
+        return Arrays.stream(DayOfWeek.values())
+                .map(day -> OpeningHours.of(null, day, LocalTime.of(6, 0), LocalTime.of(22, 0),
+                        OpeningHoursMode.OPEN, branchId))
+                .toList();
     }
 
     /* A candidate branch that layer 2 will keep: lift bay + mechanic + service, all free tomorrow 09-12 */

@@ -2,6 +2,7 @@ package com.hutnyk.carfix.openingHours;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
@@ -10,6 +11,7 @@ import com.hutnyk.carfix.scheduling.TimeRange;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class OpeningCalendarTest {
@@ -18,6 +20,9 @@ public class OpeningCalendarTest {
     private static final LocalDate FRIDAY = LocalDate.of(2026, 8, 14);
     private static final LocalDate SATURDAY = LocalDate.of(2026, 8, 15);
     private static final LocalDate SUNDAY = LocalDate.of(2026, 8, 16);
+    private static final LocalDate MONDAY = LocalDate.of(2026, 8, 17);
+    private static final LocalDate TUESDAY = LocalDate.of(2026, 8, 18);
+    private static final LocalDate WEDNESDAY = LocalDate.of(2026, 8, 19);
 
     private static OpeningHours weekly(DayOfWeek day, int open, int close) {
         return OpeningHours.of(null, day, LocalTime.of(open, 0), LocalTime.of(close, 0), OpeningHoursMode.OPEN, BRANCH_ID);
@@ -145,6 +150,40 @@ public class OpeningCalendarTest {
         assertThat(calendar.openRanges(FRIDAY)).isEmpty();
         assertThat(calendar.openRanges(FRIDAY.plusWeeks(1)))
                 .containsExactly(range(FRIDAY.plusWeeks(1), 8, 18));
+    }
+
+    @Test
+    void test_open_ranges_by_date_keeps_only_open_dates_in_order() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of());
+        //when
+        Map<LocalDate, List<TimeRange>> openByDate = calendar.openRangesByDate(SATURDAY, WEDNESDAY);
+        //then
+        assertThat(openByDate).containsExactly(
+                entry(MONDAY, List.of(range(MONDAY, 8, 18))),
+                entry(TUESDAY, List.of(range(TUESDAY, 8, 18))),
+                entry(WEDNESDAY, List.of(range(WEDNESDAY, 8, 18))));
+    }
+
+    @Test
+    void test_open_ranges_by_date_drops_a_date_closed_by_exception() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of(closedOn(TUESDAY)));
+        //when
+        Map<LocalDate, List<TimeRange>> openByDate = calendar.openRangesByDate(SATURDAY, WEDNESDAY);
+        //then
+        assertThat(openByDate).containsOnlyKeys(MONDAY, WEDNESDAY);
+    }
+
+    @Test
+    void test_open_ranges_by_date_adds_a_date_opened_by_exception() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of(openOn(SATURDAY, 9, 13)));
+        //when
+        Map<LocalDate, List<TimeRange>> openByDate = calendar.openRangesByDate(SATURDAY, WEDNESDAY);
+        //then
+        assertThat(openByDate).containsOnlyKeys(SATURDAY, MONDAY, TUESDAY, WEDNESDAY);
+        assertThat(openByDate.get(SATURDAY)).containsExactly(range(SATURDAY, 9, 13));
     }
 
     @Test

@@ -62,17 +62,9 @@ public final class BranchScheduleLoader {
     }
 
     public Map<LocalDate, List<TimeRange>> openRangesByDate(BranchId branchId, LocalDate from, LocalDate to) {
-        OpeningCalendar calendar = OpeningCalendar.of(
+        return OpeningCalendar.of(
                 availabilityPortOut.loadOpeningHours(branchId),
-                availabilityPortOut.loadOpeningHoursExceptions(branchId, from, to));
-        Map<LocalDate, List<TimeRange>> openByDate = new LinkedHashMap<>();
-        for (LocalDate date : from.datesUntil(to.plusDays(1)).toList()) {
-            List<TimeRange> open = calendar.openRanges(date);
-            if (!open.isEmpty()) {
-                openByDate.put(date, open);
-            }
-        }
-        return Collections.unmodifiableMap(openByDate);
+                availabilityPortOut.loadOpeningHoursExceptions(branchId, from, to)).openRangesByDate(from, to);
     }
 
     public BranchResources loadResources(BranchId branchId, List<Service> services, Set<Integer> commonBayTypes) {

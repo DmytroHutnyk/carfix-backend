@@ -50,4 +50,10 @@ public interface AvailabilityPortOut {
 
     /** [from, to] both inclusive */
     List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to);
+
+    Map<BranchId, List<OpeningHours>> loadOpeningHoursByBranch(Collection<BranchId> branchIds);
+
+    /** [from, to] both inclusive */
+    Map<BranchId, List<OpeningHoursException>> loadOpeningHoursExceptionsByBranch(
+            Collection<BranchId> branchIds, LocalDate from, LocalDate to);
 }

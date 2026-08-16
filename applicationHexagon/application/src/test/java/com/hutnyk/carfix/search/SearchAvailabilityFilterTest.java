@@ -15,8 +15,10 @@ import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
 import com.hutnyk.carfix.in.search.query.AvailableStartView;
 import com.hutnyk.carfix.in.search.query.MatchedServiceView;
 import com.hutnyk.carfix.in.search.query.WorkshopResultView;
+import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
 import com.hutnyk.carfix.scheduling.TimeRange;
@@ -36,7 +38,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -90,6 +94,17 @@ public class SearchAvailabilityFilterTest {
         return TimeRange.of(date.atTime(fromHour, 0), date.atTime(toHour, 0));
     }
 
+    private static List<OpeningHours> allWeek(UUID branchId, int open, int close) {
+        return Arrays.stream(DayOfWeek.values())
+                .map(day -> OpeningHours.of(null, day, LocalTime.of(open, 0), LocalTime.of(close, 0),
+                        OpeningHoursMode.OPEN, BranchId.of(branchId)))
+                .toList();
+    }
+
+    private static OpeningHoursException closedOn(UUID branchId, LocalDate date) {
+        return OpeningHoursException.of(null, date, null, null, false, "holiday", BranchId.of(branchId));
+    }
+
     private static final class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
         Collection<Integer> receivedIds;
@@ -127,6 +142,11 @@ public class SearchAvailabilityFilterTest {
         Collection<Integer> receivedBayAvailabilityIds;
         LocalDate receivedFrom;
         LocalDate receivedTo;
+        int openingHoursCalls;
+        final Map<BranchId, List<OpeningHours>> openingHours = new HashMap<>(Map.of(
+                BranchId.of(BRANCH_A), allWeek(BRANCH_A, 6, 23),
+                BranchId.of(BRANCH_B), allWeek(BRANCH_B, 6, 23)));
+        final Map<BranchId, List<OpeningHoursException>> openingHoursExceptions = new HashMap<>();
 
         @Override
         public Map<BranchId, List<ServiceBay>> loadActiveBaysByBranch(Collection<BranchId> branchIds) {
@@ -204,6 +224,18 @@ public class SearchAvailabilityFilterTest {
         @Override
         public List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<BranchId, List<OpeningHours>> loadOpeningHoursByBranch(Collection<BranchId> branchIds) {
+            openingHoursCalls++;
+            return openingHours;
+        }
+
+        @Override
+        public Map<BranchId, List<OpeningHoursException>> loadOpeningHoursExceptionsByBranch(
+                Collection<BranchId> branchIds, LocalDate from, LocalDate to) {
+            return openingHoursExceptions;
         }
     }
 
@@ -382,6 +414,7 @@ public class SearchAvailabilityFilterTest {
         assertThat(availabilityPortOut.receivedBayAvailabilityIds).containsExactlyInAnyOrder(BAY_A, BAY_B);
         assertThat(availabilityPortOut.receivedFrom).isEqualTo(TOMORROW);
         assertThat(availabilityPortOut.receivedTo).isEqualTo(DAY_AFTER);
+        assertThat(availabilityPortOut.openingHoursCalls).isEqualTo(1);
     }
 
     @Test
@@ -424,6 +457,59 @@ public class SearchAvailabilityFilterTest {
         //given
         seedBranchA();
         servicePortOut.toReturn = List.of();
+
+        //when
+        List<WorkshopResultView> result = filter.filter(
+                List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
+
+        //then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void test_starts_outside_opening_hours_are_dropped() {
+        //given
+        seedBranchA();
+        availabilityPortOut.bayAvailability.clear();
+        availabilityPortOut.employeeAvailability.clear();
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(1, at(TOMORROW, 8, 18), TOMORROW, 1, BAY_A));
+        availabilityPortOut.employeeAvailability.add(
+                EmployeeAvailability.of(1, at(TOMORROW, 8, 18), TOMORROW, 2, EmployeeId.of(MECHANIC_A)));
+        availabilityPortOut.openingHours.put(BranchId.of(BRANCH_A), allWeek(BRANCH_A, 10, 12));
+
+        //when
+        List<WorkshopResultView> result = filter.filter(
+                List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
+
+        //then — the 60 minute service must fit inside 10:00-12:00
+        assertThat(startsOf(result.getFirst()))
+                .containsExactly(TOMORROW + "T10:00", TOMORROW + "T10:15", TOMORROW + "T10:30");
+    }
+
+    @Test
+    void test_closed_exception_day_is_skipped() {
+        //given
+        seedBranchA();
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 1, BAY_A));
+        availabilityPortOut.employeeAvailability.add(
+                EmployeeAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 2, EmployeeId.of(MECHANIC_A)));
+        availabilityPortOut.openingHoursExceptions.put(
+                BranchId.of(BRANCH_A), List.of(closedOn(BRANCH_A, TOMORROW)));
+
+        //when
+        List<WorkshopResultView> result = filter.filter(
+                List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, DAY_AFTER, null, null));
+
+        //then
+        assertThat(startsOf(result.getFirst()))
+                .containsExactly(DAY_AFTER + "T09:00", DAY_AFTER + "T09:15", DAY_AFTER + "T09:30");
+    }
+
+    @Test
+    void test_branch_without_opening_rows_dropped() {
+        //given
+        seedBranchA();
+        availabilityPortOut.openingHours.remove(BranchId.of(BRANCH_A));
 
         //when
         List<WorkshopResultView> result = filter.filter(

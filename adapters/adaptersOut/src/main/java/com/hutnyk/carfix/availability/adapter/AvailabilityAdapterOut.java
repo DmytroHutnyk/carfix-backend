@@ -186,6 +186,24 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
                 .toList();
     }
 
+    @Override
+    public Map<BranchId, List<OpeningHours>> loadOpeningHoursByBranch(Collection<BranchId> branchIds) {
+        if (branchIds.isEmpty()) return Map.of();
+        return openingHoursRepository.findAllByBranchEntityIdIn(ids(branchIds)).stream()
+                .map(OpeningHoursMapper::toDomain)
+                .collect(Collectors.groupingBy(OpeningHours::getBranchId));
+    }
+
+    @Override
+    public Map<BranchId, List<OpeningHoursException>> loadOpeningHoursExceptionsByBranch(
+            Collection<BranchId> branchIds, LocalDate from, LocalDate to) {
+        if (branchIds.isEmpty()) return Map.of();
+        List<LocalDate> dates = from.datesUntil(to.plusDays(1)).toList();
+        return openingHoursExceptionRepository.findAllByBranchEntityIdInAndDateIn(ids(branchIds), dates).stream()
+                .map(OpeningHoursMapper::toDomain)
+                .collect(Collectors.groupingBy(OpeningHoursException::getBranchId));
+    }
+
     private static List<UUID> ids(Collection<BranchId> branchIds) {
         return branchIds.stream().map(BranchId::id).toList();
     }

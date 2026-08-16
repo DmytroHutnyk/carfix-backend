@@ -6,8 +6,10 @@ import com.hutnyk.carfix.util.Validator;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +55,17 @@ public final class OpeningCalendar {
 
     public boolean isOpen(LocalDate date) {
         return !openRanges(date).isEmpty();
+    }
+
+    public Map<LocalDate, List<TimeRange>> openRangesByDate(LocalDate from, LocalDate to) {
+        Map<LocalDate, List<TimeRange>> openByDate = new LinkedHashMap<>();
+        for (LocalDate date : from.datesUntil(to.plusDays(1)).toList()) {
+            List<TimeRange> open = openRanges(date);
+            if (!open.isEmpty()) {
+                openByDate.put(date, open);
+            }
+        }
+        return Collections.unmodifiableMap(openByDate);
     }
 
     private static TimeRange range(LocalDate date, LocalTime start, LocalTime close) {

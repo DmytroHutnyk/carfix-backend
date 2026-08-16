@@ -12,6 +12,9 @@ import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
 import com.hutnyk.carfix.in.search.query.AvailableStartView;
 import com.hutnyk.carfix.in.search.query.MatchedServiceView;
 import com.hutnyk.carfix.in.search.query.WorkshopResultView;
+import com.hutnyk.carfix.openingHours.OpeningCalendar;
+import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
 import com.hutnyk.carfix.scheduling.BaySchedule;
@@ -85,11 +88,20 @@ public final class SearchAvailabilityFilter {
         Map<UUID, List<Job>> jobsByBranch = loadJobs(candidates);
         Calendars calendars = loadCalendars(jobsByBranch.values().stream().flatMap(List::stream).toList(),
                 window.from(), window.to());
+        List<BranchId> branchIds = candidates.stream().map(c -> BranchId.of(c.branchId())).toList();
+        Map<BranchId, List<OpeningHours>> hours = availabilityPortOut.loadOpeningHoursByBranch(branchIds);
+        Map<BranchId, List<OpeningHoursException>> exceptions =
+                availabilityPortOut.loadOpeningHoursExceptionsByBranch(branchIds, window.from(), window.to());
 
         List<WorkshopResultView> kept = new ArrayList<>();
         for (WorkshopResultView candidate : candidates) {
+            BranchId branchId = BranchId.of(candidate.branchId());
+            Map<LocalDate, List<TimeRange>> openByDate = OpeningCalendar.of(
+                            hours.getOrDefault(branchId, List.of()),
+                            exceptions.getOrDefault(branchId, List.of()))
+                    .openRangesByDate(window.from(), window.to());
             List<AvailableStartView> starts = firstStarts(candidate,
-                    jobsByBranch.getOrDefault(candidate.branchId(), List.of()), calendars, window);
+                    jobsByBranch.getOrDefault(candidate.branchId(), List.of()), calendars, window, openByDate);
             if (!starts.isEmpty()) {
                 kept.add(candidate.withNextAvailableStarts(starts));
             }
@@ -135,8 +147,6 @@ public final class SearchAvailabilityFilter {
         return jobs;
     }
 
-    // Calendar indexing, the three schedule builders and both qualifier predicates duplicate
-    // SlotService on purpose: M5 extracts them into BranchScheduleLoader; unify after that merges
     private Calendars loadCalendars(List<Job> jobs, LocalDate from, LocalDate to) {
         List<Integer> bayIds = jobs.stream().flatMap(j -> j.bays().stream()).map(ServiceBay::getId).distinct().toList();
         List<UUID> employeeIds = jobs.stream().flatMap(j -> j.employees().stream())
@@ -165,7 +175,8 @@ public final class SearchAvailabilityFilter {
     }
 
     private List<AvailableStartView> firstStarts(WorkshopResultView candidate, List<Job> jobs,
-                                                 Calendars calendars, AvailabilityWindow window) {
+                                                 Calendars calendars, AvailabilityWindow window,
+                                                 Map<LocalDate, List<TimeRange>> openByDate) {
         if (jobs.isEmpty()) {
             return List.of();
         }
@@ -179,6 +190,10 @@ public final class SearchAvailabilityFilter {
             if (date.isBefore(today)) {
                 continue;
             }
+            List<TimeRange> open = openByDate.get(date);
+            if (open == null) {
+                continue;
+            }
             // Later days cannot produce earlier starts, so a full set after a whole day is final
             if (starts.size() >= MAX_STARTS_PER_BRANCH) {
                 break;
@@ -188,8 +203,8 @@ public final class SearchAvailabilityFilter {
             LocalDateTime notBefore = date.isEqual(today) && now.isAfter(dayWindow.lower()) ? now : dayWindow.lower();
             for (Job job : jobs) {
                 List<VisitPlan> plans = SlotCalculator.computeVisits(List.of(job.service()),
-                        baySchedules(job, calendars, date), employeeSchedules(job, calendars, date),
-                        equipmentSchedules(job, calendars, date), notBefore);
+                        baySchedules(job, calendars, date, open), employeeSchedules(job, calendars, date, open),
+                        equipmentSchedules(job, calendars, date, open), notBefore);
                 plans.stream().map(VisitPlan::start).filter(dayWindow::contains).forEach(starts::add);
             }
         }
@@ -199,26 +214,26 @@ public final class SearchAvailabilityFilter {
                 .toList();
     }
 
-    private static List<BaySchedule> baySchedules(Job job, Calendars c, LocalDate date) {
+    private static List<BaySchedule> baySchedules(Job job, Calendars c, LocalDate date, List<TimeRange> open) {
         return job.bays().stream()
                 .map(b -> new BaySchedule(b.getId(), b.getServiceBayTypeId(),
-                        freeOf(c.bayAvailability(), c.bayOccupancy(), date, b.getId())))
+                        freeOf(c.bayAvailability(), c.bayOccupancy(), date, b.getId(), open)))
                 .filter(s -> !s.free().isEmpty())
                 .toList();
     }
 
-    private static List<EmployeeSchedule> employeeSchedules(Job job, Calendars c, LocalDate date) {
+    private static List<EmployeeSchedule> employeeSchedules(Job job, Calendars c, LocalDate date, List<TimeRange> open) {
         return job.employees().stream()
                 .map(e -> new EmployeeSchedule(EmployeeId.of(e.employeeId()), e.roleIds(),
-                        freeOf(c.employeeAvailability(), c.employeeOccupancy(), date, EmployeeId.of(e.employeeId()))))
+                        freeOf(c.employeeAvailability(), c.employeeOccupancy(), date, EmployeeId.of(e.employeeId()), open)))
                 .filter(s -> !s.free().isEmpty())
                 .toList();
     }
 
-    private static List<EquipmentSchedule> equipmentSchedules(Job job, Calendars c, LocalDate date) {
+    private static List<EquipmentSchedule> equipmentSchedules(Job job, Calendars c, LocalDate date, List<TimeRange> open) {
         return job.equipment().stream()
                 .map(e -> new EquipmentSchedule(e.getId(), e.getEquipmentTypeId(),
-                        freeOf(c.equipmentAvailability(), c.equipmentOccupancy(), date, e.getId())))
+                        freeOf(c.equipmentAvailability(), c.equipmentOccupancy(), date, e.getId(), open)))
                 .filter(s -> !s.free().isEmpty())
                 .toList();
     }
@@ -241,9 +256,11 @@ public final class SearchAvailabilityFilter {
 
     private static <K> List<TimeRange> freeOf(Map<LocalDate, Map<K, List<TimeRange>>> avail,
                                               Map<LocalDate, Map<K, List<TimeRange>>> occ,
-                                              LocalDate date, K resourceId) {
-        return TimeRanges.free(
-                avail.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of()),
-                occ.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of()));
+                                              LocalDate date, K resourceId, List<TimeRange> open) {
+        return TimeRanges.intersect(
+                TimeRanges.free(
+                        avail.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of()),
+                        occ.getOrDefault(date, Map.of()).getOrDefault(resourceId, List.of())),
+                open);
     }
 }
