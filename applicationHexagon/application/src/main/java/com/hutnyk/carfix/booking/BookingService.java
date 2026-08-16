@@ -6,6 +6,7 @@ import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.booking.BookingPortIn;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.out.booking.BookingNotificationPortOut;
 import com.hutnyk.carfix.out.booking.BookingPortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class BookingService implements BookingPortIn {
 
     private final CustomerPortOut customerPortOut;
     private final BookingPortOut bookingPortOut;
+    private final BookingNotificationPortOut bookingNotificationPortOut;
 
     @Override
     @Transactional(readOnly = true)
@@ -38,8 +40,12 @@ public class BookingService implements BookingPortIn {
 
         bookingPortOut.update(booking.cancel());
 
-        return bookingPortOut.findViewByIdAndCustomerId(bookingId, customerId)
+        BookingView cancelled = bookingPortOut.findViewByIdAndCustomerId(bookingId, customerId)
                 .orElseThrow(() -> new UnexpectedStateException(
                         "Booking disappeared right after cancel: " + bookingId));
+
+        bookingNotificationPortOut.sendBookingCancelled(customer.getUser(), cancelled);
+
+        return cancelled;
     }
 }

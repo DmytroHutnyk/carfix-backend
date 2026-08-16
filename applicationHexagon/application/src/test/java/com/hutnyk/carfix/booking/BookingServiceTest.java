@@ -11,6 +11,7 @@ import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
 import com.hutnyk.carfix.in.booking.query.BookingServiceView;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.out.booking.BookingNotificationPortOut;
 import com.hutnyk.carfix.out.booking.BookingPortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
 import com.hutnyk.carfix.user.PasswordHash;
@@ -126,8 +127,28 @@ public class BookingServiceTest {
         }
     }
 
+    private static final class RecordingNotifier implements BookingNotificationPortOut {
+        User confirmedTo;
+        BookingView confirmed;
+        User cancelledTo;
+        BookingView cancelled;
+
+        @Override
+        public void sendBookingConfirmed(User customer, BookingView booking) {
+            this.confirmedTo = customer;
+            this.confirmed = booking;
+        }
+
+        @Override
+        public void sendBookingCancelled(User customer, BookingView booking) {
+            this.cancelledTo = customer;
+            this.cancelled = booking;
+        }
+    }
+
     private final StubBookingPortOut bookingPortOut = new StubBookingPortOut();
-    private final BookingService service = new BookingService(new StubCustomerPortOut(), bookingPortOut);
+    private final RecordingNotifier notifier = new RecordingNotifier();
+    private final BookingService service = new BookingService(new StubCustomerPortOut(), bookingPortOut, notifier);
 
     @Test
     public void getMyBookingsResolvesCustomerAndReturnsViews() {
@@ -165,5 +186,36 @@ public class BookingServiceTest {
         assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
                 .isInstanceOf(BookingCancellationNotAllowedException.class);
         assertThat(bookingPortOut.updated).isNull();
+    }
+
+    @Test
+    public void cancelBookingEmailsTheCustomerWithTheFreshCancelledView() {
+        bookingPortOut.stored = booking(BookingStatus.SCHEDULED);
+
+        BookingView result = service.cancelBooking(EMAIL, BOOKING_ID);
+
+        assertThat(notifier.cancelledTo.getEmail()).isEqualTo(EMAIL);
+        assertThat(notifier.cancelledTo.getId()).isEqualTo(CUSTOMER_ID);
+        assertThat(notifier.cancelled).isSameAs(result);
+        assertThat(notifier.cancelled.status()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(notifier.confirmed).isNull();
+    }
+
+    @Test
+    public void cancelBookingOfUnknownIdSendsNoEmail() {
+        bookingPortOut.stored = null;
+
+        assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
+                .isInstanceOf(BookingNotFoundException.class);
+        assertThat(notifier.cancelled).isNull();
+    }
+
+    @Test
+    public void cancelBookingRefusedByTheDomainSendsNoEmail() {
+        bookingPortOut.stored = booking(BookingStatus.COMPLETED);
+
+        assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
+                .isInstanceOf(BookingCancellationNotAllowedException.class);
+        assertThat(notifier.cancelled).isNull();
     }
 }
