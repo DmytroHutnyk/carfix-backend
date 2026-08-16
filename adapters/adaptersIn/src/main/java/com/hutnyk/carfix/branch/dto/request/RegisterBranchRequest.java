@@ -27,7 +27,7 @@ public record RegisterBranchRequest(
         RegisterBranchAddressRequest address,
 
         @NotNull @Size(max = 7)
-        List<@Valid RegisterBranchOpeningHoursRequest> openingHours,
+        List<@NotNull @Valid RegisterBranchOpeningHoursRequest> openingHours,
 
         @NotNull
         List<@NotNull Integer> carBrandIds,
@@ -36,20 +36,20 @@ public record RegisterBranchRequest(
         List<@NotBlank @Size(max = 40) String> serviceBayTypes,
 
         @NotNull
-        List<@Valid RegisterBranchServiceBayRequest> serviceBays,
+        List<@NotNull @Valid RegisterBranchServiceBayRequest> serviceBays,
 
         @NotNull
         List<@NotBlank @Size(max = 40) String> equipmentTypes,
 
         @NotNull
-        List<@Valid RegisterBranchEquipmentRequest> equipment,
+        List<@NotNull @Valid RegisterBranchEquipmentRequest> equipment,
 
         @NotNull
         List<@NotBlank @Size(max = 50) String> roles,
 
         @NotNull
-        List<@Valid RegisterBranchEmployeeRequest> employees,
+        List<@NotNull @Valid RegisterBranchEmployeeRequest> employees,
 
         @NotNull
-        List<@Valid RegisterBranchServiceRequest> services
+        List<@NotNull @Valid RegisterBranchServiceRequest> services
 ) {}

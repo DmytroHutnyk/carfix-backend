@@ -5,7 +5,10 @@ import com.hutnyk.carfix.owner.Owner;
 import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.mapper.UserToResponseMapper;
 
-public class OwnerToResponseMapper {
+public final class OwnerToResponseMapper {
+
+    private OwnerToResponseMapper() {}
+
     public static OwnerAccountResponse toResponse(Owner owner) {
         if (owner == null) {
             return null;

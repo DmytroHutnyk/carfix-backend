@@ -4,7 +4,9 @@ import com.hutnyk.carfix.owner.Owner;
 import com.hutnyk.carfix.owner.entity.OwnerEntity;
 import com.hutnyk.carfix.user.mapper.UserMapper;
 
-public class OwnerMapper {
+public final class OwnerMapper {
+
+    private OwnerMapper() {}
 
     public static Owner toDomain(OwnerEntity entity) {
         if (entity == null) {

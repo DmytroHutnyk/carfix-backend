@@ -175,4 +175,18 @@ public class OwnerBranchControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MALFORMED_REQUEST"));
     }
+
+    @Test
+    public void test_null_list_element_is_400_not_500() throws Exception {
+        //given
+        String body = FULL_BODY.replace("\"equipmentRequirements\": [{\"name\": \"Lift\", \"types\": [\"2-post lift\"]}]",
+                "\"equipmentRequirements\": [null]");
+
+        //when + then
+        mockMvc.perform(post("/api/owner/branches").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors['services[0].equipmentRequirements[0]']").exists());
+        assertThat(stub.received).isNull();
+    }
 }

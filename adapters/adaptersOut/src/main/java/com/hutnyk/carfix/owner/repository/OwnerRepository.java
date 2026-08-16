@@ -15,5 +15,5 @@ public interface OwnerRepository extends JpaRepository<OwnerEntity, UUID> {
             JOIN FETCH o.userEntity u
             WHERE u.email = :email
             """)
-    Optional<OwnerEntity> findByEmail(@Param("email") String email);
+    Optional<OwnerEntity> findWithUserByEmail(@Param("email") String email);
 }

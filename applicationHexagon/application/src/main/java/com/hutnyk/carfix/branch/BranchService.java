@@ -112,7 +112,7 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
                 a.postalCode(), cityId, a.latitude(), a.longitude(), a.googlePlaceId()));
 
         BranchId branchId = BranchId.genId();
-        Branch branch = branchPortOut.insert(Branch.create(branchId, cmd.name(), cmd.phoneNumber(), cmd.email(),
+        Branch branch = branchPortOut.insert(Branch.create(branchId, cmd.name().trim(), cmd.phoneNumber(), cmd.email(),
                 cmd.timezone(), address.getId(), owner.getUser().getId()));
 
         branchPortOut.insertOpeningHours(cmd.openingHours().stream()
@@ -127,7 +127,7 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
             bayTypeIds.put(key(name), serviceBayPortOut.insertType(ServiceBayType.create(name.trim(), branchId)).getId());
         }
         for (RegisterBranchServiceBayCommand bay : cmd.serviceBays()) {
-            serviceBayPortOut.insert(ServiceBay.create(bay.name(), bayTypeIds.get(key(bay.type())), branchId));
+            serviceBayPortOut.insert(ServiceBay.create(bay.name().trim(), bayTypeIds.get(key(bay.type())), branchId));
         }
 
         Map<String, Integer> equipmentTypeIds = new HashMap<>();
@@ -135,7 +135,7 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
             equipmentTypeIds.put(key(name), equipmentPortOut.insertType(EquipmentType.create(name.trim(), branchId)).getId());
         }
         for (RegisterBranchEquipmentCommand unit : cmd.equipment()) {
-            equipmentPortOut.insert(Equipment.create(unit.name(), equipmentTypeIds.get(key(unit.type())), branchId));
+            equipmentPortOut.insert(Equipment.create(unit.name().trim(), equipmentTypeIds.get(key(unit.type())), branchId));
         }
 
         Map<String, Integer> roleIds = new HashMap<>();
@@ -143,12 +143,12 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
             roleIds.put(key(name), rolePortOut.insert(Role.create(name.trim(), branchId)).getId());
         }
         for (RegisterBranchEmployeeCommand employee : cmd.employees()) {
-            employeePortOut.insert(Employee.create(EmployeeId.genId(), employee.firstName(), employee.lastName(),
+            employeePortOut.insert(Employee.create(EmployeeId.genId(), employee.firstName().trim(), employee.lastName().trim(),
                     branchId, resolve(roleIds, employee.roles())));
         }
 
         for (RegisterBranchServiceCommand s : cmd.services()) {
-            servicePortOut.insert(Service.of(null, s.name(), s.description(), s.durationMinutes(), s.price(),
+            servicePortOut.insert(Service.of(null, s.name().trim(), s.description(), s.durationMinutes(), s.price(),
                     s.status(), branchId, s.categoryId(),
                     resolve(bayTypeIds, s.bayTypes()),
                     s.employeeRequirements().stream()

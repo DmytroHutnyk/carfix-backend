@@ -22,6 +22,6 @@ public record RegisterBranchServiceRequest(
         @NotNull Integer categoryId,
         @NotNull ServiceStatus status,
         @NotEmpty List<@NotBlank @Size(max = 40) String> bayTypes,
-        @NotEmpty List<@Valid RegisterBranchEmployeeRequirementRequest> employeeRequirements,
-        @NotNull List<@Valid RegisterBranchEquipmentRequirementRequest> equipmentRequirements
+        @NotEmpty List<@NotNull @Valid RegisterBranchEmployeeRequirementRequest> employeeRequirements,
+        @NotNull List<@NotNull @Valid RegisterBranchEquipmentRequirementRequest> equipmentRequirements
 ) {}

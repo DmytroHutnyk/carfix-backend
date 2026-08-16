@@ -17,6 +17,6 @@ public class OwnerAdapterOut implements OwnerPortOut {
 
     @Override
     public Optional<Owner> loadOwnerByUsername(String email) {
-        return ownerRepository.findByEmail(email).map(OwnerMapper::toDomain);
+        return ownerRepository.findWithUserByEmail(email).map(OwnerMapper::toDomain);
     }
 }
