@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.carProfile.CarProfileId;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.scheduling.SegmentPlan;
@@ -14,7 +15,6 @@ import com.hutnyk.carfix.scheduling.VisitPlan;
 import com.hutnyk.carfix.service.EmployeeRequirement;
 import com.hutnyk.carfix.service.Service;
 import com.hutnyk.carfix.service.ServiceStatus;
-import com.hutnyk.carfix.user.UserId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -33,7 +33,7 @@ import java.util.UUID;
 public class BookingTest {
 
     private static final BranchId BRANCH_ID = BranchId.genId();
-    private static final UserId ANNA = UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    private static final EmployeeId ANNA = EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
     private static Booking withStatus(BookingStatus status) {
         return Booking.of(

@@ -3,11 +3,11 @@ package com.hutnyk.carfix.scheduling;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.service.EmployeeRequirement;
 import com.hutnyk.carfix.service.EquipmentRequirement;
 import com.hutnyk.carfix.service.Service;
 import com.hutnyk.carfix.service.ServiceStatus;
-import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -233,7 +233,7 @@ class SlotCalculatorPlanVisitEquivalenceTest {
             Set<Integer> roles = random.nextInt(10) < 7 && !demandedRoles.isEmpty()
                     ? nonEmptySubset(random, demandedRoles)
                     : nonEmptySubset(random, ROLES);
-            employees.add(new EmployeeSchedule(userId(i + 1), roles, randomFree(random)));
+            employees.add(new EmployeeSchedule(employeeId(i + 1), roles, randomFree(random)));
         }
 
         List<EquipmentSchedule> equipment = new ArrayList<>();
@@ -304,8 +304,8 @@ class SlotCalculatorPlanVisitEquivalenceTest {
         return pool.get(random.nextInt(pool.size()));
     }
 
-    private static UserId userId(int n) {
-        return UserId.of(UUID.fromString("00000000-0000-0000-0000-%012d".formatted(n)));
+    private static EmployeeId employeeId(int n) {
+        return EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-%012d".formatted(n)));
     }
 
     private static LocalDateTime gridPoint(int minuteOfDay) {
@@ -332,7 +332,7 @@ class SlotCalculatorPlanVisitEquivalenceTest {
                 .collect(Collectors.joining(" | "));
     }
 
-    private static String shortId(UserId id) {
+    private static String shortId(EmployeeId id) {
         String text = id.id().toString();
         return text.substring(text.length() - 3);
     }

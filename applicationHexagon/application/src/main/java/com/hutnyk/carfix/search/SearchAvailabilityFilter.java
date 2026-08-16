@@ -3,6 +3,7 @@ package com.hutnyk.carfix.search;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
@@ -25,7 +26,6 @@ import com.hutnyk.carfix.service.ServiceStatus;
 import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
-import com.hutnyk.carfix.user.UserId;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -68,8 +68,8 @@ public final class SearchAvailabilityFilter {
 
     private record Calendars(Map<LocalDate, Map<Integer, List<TimeRange>>> bayAvailability,
                              Map<LocalDate, Map<Integer, List<TimeRange>>> bayOccupancy,
-                             Map<LocalDate, Map<UserId, List<TimeRange>>> employeeAvailability,
-                             Map<LocalDate, Map<UserId, List<TimeRange>>> employeeOccupancy,
+                             Map<LocalDate, Map<EmployeeId, List<TimeRange>>> employeeAvailability,
+                             Map<LocalDate, Map<EmployeeId, List<TimeRange>>> employeeOccupancy,
                              Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentAvailability,
                              Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentOccupancy) {
     }
@@ -209,8 +209,8 @@ public final class SearchAvailabilityFilter {
 
     private static List<EmployeeSchedule> employeeSchedules(Job job, Calendars c, LocalDate date) {
         return job.employees().stream()
-                .map(e -> new EmployeeSchedule(UserId.of(e.employeeId()), e.roleIds(),
-                        freeOf(c.employeeAvailability(), c.employeeOccupancy(), date, UserId.of(e.employeeId()))))
+                .map(e -> new EmployeeSchedule(EmployeeId.of(e.employeeId()), e.roleIds(),
+                        freeOf(c.employeeAvailability(), c.employeeOccupancy(), date, EmployeeId.of(e.employeeId()))))
                 .filter(s -> !s.free().isEmpty())
                 .toList();
     }

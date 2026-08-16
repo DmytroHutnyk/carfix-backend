@@ -3,6 +3,7 @@ package com.hutnyk.carfix.scheduling;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
@@ -16,7 +17,6 @@ import com.hutnyk.carfix.service.ServiceStatus;
 import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
-import com.hutnyk.carfix.user.UserId;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -105,11 +105,11 @@ public final class BranchScheduleLoader {
                 availabilityPortOut.loadBayOccupancy(bayIds, from, to),
                 ServiceBayBooking::getDate, ServiceBayBooking::getServiceBayId,
                 ServiceBayBooking::getBookedTime);
-        Map<LocalDate, Map<UserId, List<TimeRange>>> employeeAvailability = byDateAndResource(
+        Map<LocalDate, Map<EmployeeId, List<TimeRange>>> employeeAvailability = byDateAndResource(
                 availabilityPortOut.loadEmployeeAvailability(employeeIds, from, to),
                 EmployeeAvailability::getDate, EmployeeAvailability::getEmployeeId,
                 EmployeeAvailability::getAvailableTime);
-        Map<LocalDate, Map<UserId, List<TimeRange>>> employeeOccupancy = byDateAndResource(
+        Map<LocalDate, Map<EmployeeId, List<TimeRange>>> employeeOccupancy = byDateAndResource(
                 availabilityPortOut.loadEmployeeOccupancy(employeeIds, from, to),
                 EmployeeBooking::getDate, EmployeeBooking::getEmployeeId,
                 EmployeeBooking::getBookedTime);
@@ -134,8 +134,8 @@ public final class BranchScheduleLoader {
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EmployeeSchedule> employeeSchedules = resources.employees().stream()
-                    .map(e -> new EmployeeSchedule(UserId.of(e.employeeId()), e.roleIds(),
-                            freeOf(employeeAvailability, employeeOccupancy, date, UserId.of(e.employeeId()), open)))
+                    .map(e -> new EmployeeSchedule(EmployeeId.of(e.employeeId()), e.roleIds(),
+                            freeOf(employeeAvailability, employeeOccupancy, date, EmployeeId.of(e.employeeId()), open)))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EquipmentSchedule> equipmentSchedules = resources.equipment().stream()

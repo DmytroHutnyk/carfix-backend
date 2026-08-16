@@ -7,6 +7,7 @@ import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.review.BranchRating;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
@@ -37,7 +38,6 @@ import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
 import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
-import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -319,7 +319,7 @@ public class SlotServiceTest {
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, 100));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2,
-                com.hutnyk.carfix.user.UserId.of(EMPLOYEE_ID)));
+                EmployeeId.of(EMPLOYEE_ID)));
     }
 
     private void seedJack(TimeRange availableTomorrow) {
@@ -459,10 +459,10 @@ public class SlotServiceTest {
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 2,
-                UserId.of(EMPLOYEE_ID)));
+                EmployeeId.of(EMPLOYEE_ID)));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 2, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 3,
-                UserId.of(SENIOR_ID)));
+                EmployeeId.of(SENIOR_ID)));
 
         BranchSlotsView view = slotService.getSlots(query(List.of(1, 2), TODAY, TOMORROW));
 
@@ -507,7 +507,7 @@ public class SlotServiceTest {
                 2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 1, 100));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
                 2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(12, 0)), TODAY, 2,
-                com.hutnyk.carfix.user.UserId.of(EMPLOYEE_ID)));
+                EmployeeId.of(EMPLOYEE_ID)));
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TODAY));
         assertThat(view.days().getFirst().slots().getFirst().startTime())
                 .isEqualTo(LocalTime.of(10, 15));
@@ -540,7 +540,7 @@ public class SlotServiceTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 2, UserId.of(EMPLOYEE_ID)));
+                2, TimeRange.of(TODAY.atTime(9, 0), TODAY.atTime(13, 0)), TODAY, 2, EmployeeId.of(EMPLOYEE_ID)));
 
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TODAY));
 
@@ -573,7 +573,7 @@ public class SlotServiceTest {
         seedHappyPath();
         availabilityPortOut.employeeOccupancy.add(EmployeeBooking.of(
                 1, TimeRange.of(TOMORROW.atTime(10, 0), TOMORROW.atTime(11, 0)),
-                TOMORROW, UserId.of(EMPLOYEE_ID), BookingId.genId()));
+                TOMORROW, EmployeeId.of(EMPLOYEE_ID), BookingId.genId()));
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TOMORROW));
         assertThat(view.days().getLast().slots()).containsExactly(
                 new SlotView(LocalTime.of(9, 0), LocalTime.of(10, 0)),
@@ -621,7 +621,7 @@ public class SlotServiceTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 10, TimeRange.of(date.atTime(from), date.atTime(to)), date, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                11, TimeRange.of(date.atTime(from), date.atTime(to)), date, 2, UserId.of(EMPLOYEE_ID)));
+                11, TimeRange.of(date.atTime(from), date.atTime(to)), date, 2, EmployeeId.of(EMPLOYEE_ID)));
     }
 
     private static List<LocalTime> starts(BranchSlotsView view, LocalDate date) {

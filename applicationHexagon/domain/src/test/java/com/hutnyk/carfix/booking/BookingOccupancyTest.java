@@ -3,12 +3,12 @@ package com.hutnyk.carfix.booking;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
 import com.hutnyk.carfix.scheduling.SegmentPlan;
 import com.hutnyk.carfix.scheduling.TimeRange;
 import com.hutnyk.carfix.scheduling.VisitPlan;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
-import com.hutnyk.carfix.user.UserId;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -21,8 +21,8 @@ public class BookingOccupancyTest {
 
     private static final LocalDate DATE = LocalDate.of(2030, 6, 12);
     private static final BookingId BOOKING_ID = BookingId.genId();
-    private static final UserId ANNA = UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
-    private static final UserId JAN = UserId.of(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+    private static final EmployeeId ANNA = EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    private static final EmployeeId JAN = EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-000000000002"));
 
     private static LocalDateTime at(int h, int m) {
         return DATE.atTime(h, m);

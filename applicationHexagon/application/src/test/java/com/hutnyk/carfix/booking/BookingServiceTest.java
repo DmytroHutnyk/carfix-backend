@@ -19,6 +19,7 @@ import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
@@ -492,7 +493,7 @@ public class BookingServiceTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 2, UserId.of(ANNA)));
+                1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 2, EmployeeId.of(ANNA)));
     }
 
     @Test
@@ -541,7 +542,7 @@ public class BookingServiceTest {
         assertThat(occupancy.bays().getFirst().getBookedTime())
                 .isEqualTo(TimeRange.of(TOMORROW.atTime(9, 15), TOMORROW.atTime(10, 15)));
         assertThat(occupancy.bays().getFirst().getBookingId()).isEqualTo(inserted.getId());
-        assertThat(occupancy.employees()).extracting(EmployeeBooking::getEmployeeId).containsExactly(UserId.of(ANNA));
+        assertThat(occupancy.employees()).extracting(EmployeeBooking::getEmployeeId).containsExactly(EmployeeId.of(ANNA));
         assertThat(occupancy.equipment()).isEmpty();
     }
 
@@ -597,7 +598,7 @@ public class BookingServiceTest {
     public void createBookingConflictsWhenNoAssignmentExistsAtThatStart() {
         seedBookableTomorrow();
         availabilityPortOut.employeeOccupancy.add(EmployeeBooking.of(
-                7, TimeRange.of(TOMORROW.atTime(9, 30), TOMORROW.atTime(10, 0)), TOMORROW, UserId.of(ANNA), BookingId.genId()));
+                7, TimeRange.of(TOMORROW.atTime(9, 30), TOMORROW.atTime(10, 0)), TOMORROW, EmployeeId.of(ANNA), BookingId.genId()));
 
         assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 15))))
                 .isInstanceOf(SlotNotAvailableException.class);
@@ -738,7 +739,7 @@ public class BookingServiceTest {
                 .isEqualTo(TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(11, 0)));
         assertThat(occupancy.employees()).extracting(e -> e.getBookedTime().lower())
                 .containsExactly(TOMORROW.atTime(9, 0), TOMORROW.atTime(10, 0));
-        assertThat(occupancy.employees()).allSatisfy(e -> assertThat(e.getEmployeeId()).isEqualTo(UserId.of(ANNA)));
+        assertThat(occupancy.employees()).allSatisfy(e -> assertThat(e.getEmployeeId()).isEqualTo(EmployeeId.of(ANNA)));
         assertThat(occupancy.equipment()).isEmpty();
     }
 

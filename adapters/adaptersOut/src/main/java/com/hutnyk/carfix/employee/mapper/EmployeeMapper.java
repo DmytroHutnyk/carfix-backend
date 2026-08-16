@@ -59,7 +59,7 @@ public class EmployeeMapper {
                 TimeRangeMapper.toDomain(e.getAvailableTime()),
                 e.getDate(),
                 e.getSeriesId(),
-                UserId.of(e.getEmployeeEntity().getId()));
+                EmployeeId.of(e.getEmployeeEntity().getId()));
     }
 
     public static EmployeeBooking toDomain(EmployeeBookingEntity e) {
@@ -68,7 +68,7 @@ public class EmployeeMapper {
                 e.getId(),
                 TimeRangeMapper.toDomain(e.getBookedTime()),
                 e.getDate(),
-                UserId.of(e.getEmployeeEntity().getId()),
+                EmployeeId.of(e.getEmployeeEntity().getId()),
                 BookingId.of(e.getBookingEntity().getId()));
     }
 

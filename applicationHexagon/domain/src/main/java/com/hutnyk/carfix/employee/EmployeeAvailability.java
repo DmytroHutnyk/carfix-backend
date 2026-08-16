@@ -1,7 +1,6 @@
 package com.hutnyk.carfix.employee;
 
 import com.hutnyk.carfix.scheduling.TimeRange;
-import com.hutnyk.carfix.user.UserId;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -21,11 +20,11 @@ public final class EmployeeAvailability {
 
     //Nullable — null for a one-off entry, set for every row of one recurrence series
     private final Integer seriesId;
-    private final UserId employeeId;
+    private final EmployeeId employeeId;
 
     @Builder
     private EmployeeAvailability(
-            Integer id, TimeRange availableTime, LocalDate date, Integer seriesId, UserId employeeId) {
+            Integer id, TimeRange availableTime, LocalDate date, Integer seriesId, EmployeeId employeeId) {
         this.id = id;
         this.availableTime = Validator.notNull(availableTime, "availableTime");
         this.date = Validator.notNull(date, "date");
@@ -34,7 +33,7 @@ public final class EmployeeAvailability {
     }
 
     public static EmployeeAvailability of(
-            Integer id, TimeRange availableTime, LocalDate date, Integer seriesId, UserId employeeId) {
+            Integer id, TimeRange availableTime, LocalDate date, Integer seriesId, EmployeeId employeeId) {
         return EmployeeAvailability.builder()
                 .id(id)
                 .availableTime(availableTime)

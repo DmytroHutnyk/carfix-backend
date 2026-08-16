@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
@@ -27,7 +28,6 @@ import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
 import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
-import com.hutnyk.carfix.user.UserId;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -218,7 +218,7 @@ public class SearchAvailabilityFilterTest {
         availabilityPortOut.bays.add(ServiceBay.of(BAY_A, "Bay A", ServiceBayStatus.ACTIVE, null, LIFT, BranchId.of(BRANCH_A)));
         availabilityPortOut.employeesA.add(new EmployeeCandidateView(MECHANIC_A, Set.of(MECHANIC)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(1, at(TOMORROW, 9, 12), TOMORROW, 1, BAY_A));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(1, at(TOMORROW, 9, 12), TOMORROW, 2, UserId.of(MECHANIC_A)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(1, at(TOMORROW, 9, 12), TOMORROW, 2, EmployeeId.of(MECHANIC_A)));
     }
 
     private void seedBranchB() {
@@ -226,7 +226,7 @@ public class SearchAvailabilityFilterTest {
         availabilityPortOut.bays.add(ServiceBay.of(BAY_B, "Bay B", ServiceBayStatus.ACTIVE, null, LIFT, BranchId.of(BRANCH_B)));
         availabilityPortOut.employeesB.add(new EmployeeCandidateView(MECHANIC_B, Set.of(MECHANIC)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(2, at(TOMORROW, 9, 12), TOMORROW, 3, BAY_B));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(2, at(TOMORROW, 9, 12), TOMORROW, 4, UserId.of(MECHANIC_B)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(2, at(TOMORROW, 9, 12), TOMORROW, 4, EmployeeId.of(MECHANIC_B)));
     }
 
     private static List<String> startsOf(WorkshopResultView view) {
@@ -302,9 +302,9 @@ public class SearchAvailabilityFilterTest {
         availabilityPortOut.bayAvailability.clear();
         availabilityPortOut.employeeAvailability.clear();
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(1, at(TOMORROW, 11, 12), TOMORROW, 1, BAY_A));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(1, at(TOMORROW, 11, 12), TOMORROW, 2, UserId.of(MECHANIC_A)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(1, at(TOMORROW, 11, 12), TOMORROW, 2, EmployeeId.of(MECHANIC_A)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 1, BAY_A));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 2, UserId.of(MECHANIC_A)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 2, EmployeeId.of(MECHANIC_A)));
 
         //when
         List<WorkshopResultView> result = filter.filter(
@@ -321,9 +321,9 @@ public class SearchAvailabilityFilterTest {
         seedBranchA();
         LocalDate yesterday = TODAY.minusDays(1);
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(3, at(yesterday, 9, 12), yesterday, 1, BAY_A));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(3, at(yesterday, 9, 12), yesterday, 2, UserId.of(MECHANIC_A)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(3, at(yesterday, 9, 12), yesterday, 2, EmployeeId.of(MECHANIC_A)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(4, at(TODAY, 9, 12), TODAY, 1, BAY_A));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(4, at(TODAY, 9, 12), TODAY, 2, UserId.of(MECHANIC_A)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(4, at(TODAY, 9, 12), TODAY, 2, EmployeeId.of(MECHANIC_A)));
 
         //when
         List<WorkshopResultView> result = filter.filter(
@@ -341,9 +341,9 @@ public class SearchAvailabilityFilterTest {
         seedBranchB();
         LocalDate yesterday = TODAY.minusDays(1);
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(5, at(yesterday, 9, 23), yesterday, 1, BAY_A));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(5, at(yesterday, 9, 23), yesterday, 2, UserId.of(MECHANIC_A)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(5, at(yesterday, 9, 23), yesterday, 2, EmployeeId.of(MECHANIC_A)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(6, at(yesterday, 9, 23), yesterday, 3, BAY_B));
-        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(6, at(yesterday, 9, 23), yesterday, 4, UserId.of(MECHANIC_B)));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(6, at(yesterday, 9, 23), yesterday, 4, EmployeeId.of(MECHANIC_B)));
 
         //when — Pago Pago is UTC-11, so at the fixed instant branch B is still on 2026-08-12 at 21:07
         List<WorkshopResultView> result = filter.filter(

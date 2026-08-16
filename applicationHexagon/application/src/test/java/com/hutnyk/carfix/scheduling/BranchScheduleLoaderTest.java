@@ -7,6 +7,7 @@ import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
@@ -27,7 +28,6 @@ import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
 import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
-import com.hutnyk.carfix.user.UserId;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -212,7 +212,7 @@ public class BranchScheduleLoaderTest {
         availabilityPortOut.bayOccupancy.add(ServiceBayBooking.of(
                 1, TimeRange.of(DAY.atTime(10, 0), DAY.atTime(11, 0)), DAY, 100, BookingId.genId()));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                1, TimeRange.of(DAY.atTime(9, 0), DAY.atTime(12, 0)), DAY, 2, UserId.of(ANNA)));
+                1, TimeRange.of(DAY.atTime(9, 0), DAY.atTime(12, 0)), DAY, 2, EmployeeId.of(ANNA)));
 
         Map<LocalDate, DaySchedules> schedules = loader.loadSchedules(resources, DAY, DAY.plusDays(1),
                 loader.openRangesByDate(BRANCH_ID, DAY, DAY.plusDays(1)));
@@ -223,7 +223,7 @@ public class BranchScheduleLoaderTest {
         assertThat(day.bays().getFirst().free()).containsExactly(
                 TimeRange.of(DAY.atTime(9, 0), DAY.atTime(10, 0)),
                 TimeRange.of(DAY.atTime(11, 0), DAY.atTime(12, 0)));
-        assertThat(day.employees()).extracting(EmployeeSchedule::employeeId).containsExactly(UserId.of(ANNA));
+        assertThat(day.employees()).extracting(EmployeeSchedule::employeeId).containsExactly(EmployeeId.of(ANNA));
         assertThat(day.equipment()).isEmpty();
         DaySchedules next = schedules.get(DAY.plusDays(1));
         assertThat(next.bays()).isEmpty();
@@ -253,7 +253,7 @@ public class BranchScheduleLoaderTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 1, TimeRange.of(DAY.atTime(9, 0), DAY.atTime(12, 0)), DAY, 1, 100));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                1, TimeRange.of(DAY.atTime(9, 0), DAY.atTime(12, 0)), DAY, 2, UserId.of(ANNA)));
+                1, TimeRange.of(DAY.atTime(9, 0), DAY.atTime(12, 0)), DAY, 2, EmployeeId.of(ANNA)));
         availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
 
         Map<LocalDate, DaySchedules> schedules = loader.loadSchedules(resources, DAY.plusDays(2), DAY.plusDays(3),
@@ -287,7 +287,7 @@ public class BranchScheduleLoaderTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 1, TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)), DAY, 1, 100));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
-                1, TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)), DAY, 2, UserId.of(ANNA)));
+                1, TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)), DAY, 2, EmployeeId.of(ANNA)));
         availabilityPortOut.equipmentAvailability.add(EquipmentAvailability.of(
                 1, TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)), DAY, null, 500));
         availabilityPortOut.openingHours = new ArrayList<>(allWeek(LocalTime.of(10, 0), LocalTime.of(12, 0)));
