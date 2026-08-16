@@ -68,6 +68,13 @@ public class BranchScheduleLoaderTest {
                 .toList();
     }
 
+    private static List<OpeningHours> monToFri(LocalTime open, LocalTime close) {
+        return Arrays.stream(DayOfWeek.values())
+                .filter(day -> day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY)
+                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .toList();
+    }
+
     private static class StubServicePortOut implements ServicePortOut {
         List<Service> toReturn = List.of();
 
@@ -215,5 +222,80 @@ public class BranchScheduleLoaderTest {
         assertThat(availabilityPortOut.lastBayIds).containsExactly(100);
         assertThat(availabilityPortOut.lastEmployeeIds).containsExactly(ANNA);
         assertThat(availabilityPortOut.lastEquipmentIds).isEmpty();
+    }
+
+    @Test
+    void test_openRangesByDate_keeps_only_the_open_dates_ascending() {
+        availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
+
+        Map<LocalDate, List<TimeRange>> open = loader.openRangesByDate(BRANCH_ID, DAY, DAY.plusDays(4));
+
+        assertThat(open).containsOnlyKeys(DAY, DAY.plusDays(1), DAY.plusDays(2));
+        assertThat(open.keySet()).containsExactly(DAY, DAY.plusDays(1), DAY.plusDays(2));
+        assertThat(open.get(DAY)).containsExactly(TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)));
+        assertThat(availabilityPortOut.lastOpeningHoursBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastExceptionsFrom).isEqualTo(DAY);
+        assertThat(availabilityPortOut.lastExceptionsTo).isEqualTo(DAY.plusDays(4));
+    }
+
+    @Test
+    void test_loadSchedules_builds_no_day_for_a_closed_date() {
+        BranchResources resources = seedLiftBayAndMechanic();
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                1, TimeRange.of(DAY.atTime(9, 0), DAY.atTime(12, 0)), DAY, 1, 100));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                1, TimeRange.of(DAY.atTime(9, 0), DAY.atTime(12, 0)), DAY, 2, UserId.of(ANNA)));
+        availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
+
+        Map<LocalDate, DaySchedules> schedules = loader.loadSchedules(resources, DAY.plusDays(2), DAY.plusDays(3),
+                loader.openRangesByDate(BRANCH_ID, DAY.plusDays(2), DAY.plusDays(3)));
+
+        assertThat(schedules).containsOnlyKeys(DAY.plusDays(2));
+    }
+
+    @Test
+    void test_loadSchedules_loads_no_availability_when_every_date_is_closed() {
+        BranchResources resources = seedLiftBayAndMechanic();
+        availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
+
+        Map<LocalDate, DaySchedules> schedules = loader.loadSchedules(resources, DAY.plusDays(3), DAY.plusDays(4),
+                loader.openRangesByDate(BRANCH_ID, DAY.plusDays(3), DAY.plusDays(4)));
+
+        assertThat(schedules).isEmpty();
+        assertThat(availabilityPortOut.lastBayIds).isNull();
+        assertThat(availabilityPortOut.lastEmployeeIds).isNull();
+        assertThat(availabilityPortOut.lastEquipmentIds).isNull();
+    }
+
+    @Test
+    void test_loadSchedules_clips_every_resource_kind_to_the_open_ranges() {
+        Service withJack = service(1, Set.of(LIFT), ServiceStatus.ACTIVE, BRANCH_ID,
+                List.of(EquipmentRequirement.of(1, "Jack", Set.of(JACK_TYPE))));
+        availabilityPortOut.bays.add(ServiceBay.of(100, "Lift bay", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        availabilityPortOut.equipment.add(Equipment.of(500, "Jack", null, EquipmentStatus.ACTIVE, JACK_TYPE, BRANCH_ID));
+        BranchResources resources = loader.loadResources(BRANCH_ID, List.of(withJack), Set.of(LIFT));
+        availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
+                1, TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)), DAY, 1, 100));
+        availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
+                1, TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)), DAY, 2, UserId.of(ANNA)));
+        availabilityPortOut.equipmentAvailability.add(EquipmentAvailability.of(
+                1, TimeRange.of(DAY.atTime(8, 0), DAY.atTime(18, 0)), DAY, null, 500));
+        availabilityPortOut.openingHours = new ArrayList<>(allWeek(LocalTime.of(10, 0), LocalTime.of(12, 0)));
+
+        Map<LocalDate, DaySchedules> schedules = loader.loadSchedules(resources, DAY, DAY,
+                loader.openRangesByDate(BRANCH_ID, DAY, DAY));
+
+        TimeRange openWindow = TimeRange.of(DAY.atTime(10, 0), DAY.atTime(12, 0));
+        DaySchedules day = schedules.get(DAY);
+        assertThat(day.bays().getFirst().free()).containsExactly(openWindow);
+        assertThat(day.employees().getFirst().free()).containsExactly(openWindow);
+        assertThat(day.equipment().getFirst().free()).containsExactly(openWindow);
+    }
+
+    private BranchResources seedLiftBayAndMechanic() {
+        availabilityPortOut.bays.add(ServiceBay.of(100, "Lift bay", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        return loader.loadResources(BRANCH_ID, List.of(service(1, Set.of(LIFT))), Set.of(LIFT));
     }
 }

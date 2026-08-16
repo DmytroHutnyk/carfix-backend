@@ -75,6 +75,7 @@ public class BookingServiceTest {
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
     private static final LocalDate TODAY = LocalDate.of(2030, 6, 12);
     private static final LocalDate TOMORROW = TODAY.plusDays(1);
+    private static final LocalDate SATURDAY = LocalDate.of(2030, 6, 15);
     private static final Clock CLOCK = Clock.fixed(
             TODAY.atTime(10, 7).atZone(WARSAW).toInstant(), ZoneId.of("UTC"));
     private static final BranchId BRANCH_ID = BranchId.genId();
@@ -109,6 +110,13 @@ public class BookingServiceTest {
 
     private static List<OpeningHours> allWeek(LocalTime open, LocalTime close) {
         return Arrays.stream(DayOfWeek.values())
+                .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
+                .toList();
+    }
+
+    private static List<OpeningHours> monToFri(LocalTime open, LocalTime close) {
+        return Arrays.stream(DayOfWeek.values())
+                .filter(day -> day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY)
                 .map(day -> OpeningHours.of(null, day, open, close, BRANCH_ID))
                 .toList();
     }
@@ -664,5 +672,43 @@ public class BookingServiceTest {
                 .containsExactly(TOMORROW.atTime(9, 0), TOMORROW.atTime(10, 0));
         assertThat(occupancy.employees()).allSatisfy(e -> assertThat(e.getEmployeeId()).isEqualTo(UserId.of(ANNA)));
         assertThat(occupancy.equipment()).isEmpty();
+    }
+
+    @Test
+    public void createBookingRejectsAStartOutsideOpeningHours() {
+        seedBookableTomorrow();
+        availabilityPortOut.openingHours = new ArrayList<>(allWeek(LocalTime.of(10, 0), LocalTime.of(12, 0)));
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(9, 0))))
+                .isInstanceOf(SlotNotAvailableException.class);
+        assertThat(bookingPortOut.inserted).isNull();
+    }
+
+    @Test
+    public void createBookingInsideOpeningHoursSucceeds() {
+        seedBookableTomorrow();
+        availabilityPortOut.openingHours = new ArrayList<>(allWeek(LocalTime.of(10, 0), LocalTime.of(12, 0)));
+
+        BookingView result = service.createBooking(EMAIL, command(List.of(1), TOMORROW, LocalTime.of(10, 0)));
+
+        assertThat(result.status()).isEqualTo(BookingStatus.SCHEDULED);
+        assertThat(bookingPortOut.inserted.getDate()).isEqualTo(TOMORROW);
+        assertThat(bookingPortOut.inserted.getStartTime()).isEqualTo(LocalTime.of(10, 0));
+        assertThat(bookingPortOut.inserted.getEndTime()).isEqualTo(LocalTime.of(11, 0));
+    }
+
+    @Test
+    public void createBookingRejectsAClosedDay() {
+        seedBookableOn(SATURDAY);
+        availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
+
+        assertThatThrownBy(() -> service.createBooking(EMAIL, command(List.of(1), SATURDAY, LocalTime.of(9, 0))))
+                .isInstanceOf(SlotNotAvailableException.class);
+        assertThat(bookingPortOut.inserted).isNull();
+        assertThat(availabilityPortOut.lastOpeningHoursBranchId).isEqualTo(BRANCH_ID);
+        assertThat(availabilityPortOut.lastExceptionsFrom).isEqualTo(SATURDAY);
+        assertThat(availabilityPortOut.lastExceptionsTo).isEqualTo(SATURDAY);
+        assertThat(availabilityPortOut.lastBaysBranchId).isNull();
+        assertThat(availabilityPortOut.lastBayAvailIds).isNull();
     }
 }
