@@ -11,7 +11,7 @@ import com.hutnyk.carfix.employee.repository.EmployeeAvailabilityRepository;
 import com.hutnyk.carfix.employee.repository.EmployeeRepository;
 import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
-import com.hutnyk.carfix.openingHours.OpeningSchedule;
+import com.hutnyk.carfix.openingHours.OpeningCalendar;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursExceptionEntity;
 import com.hutnyk.carfix.openingHours.mapper.OpeningHoursMapper;
@@ -86,7 +86,7 @@ public class OwnerBranchAdapterOut implements OwnerBranchPortOut {
                     LocalDate today = localNow.toLocalDate();
                     return BranchMapper.toOwnerSummaryView(
                             branch,
-                            openingSchedule(hours.get(id), exceptions.get(id)).isOpenAt(localNow),
+                            openingCalendar(hours.get(id), exceptions.get(id)).isOpenAt(localNow),
                             sumBookings(bookingRows, id, today, status -> status != BookingStatus.CANCELLED),
                             sumBookings(bookingRows, id, today, status -> status == BookingStatus.COMPLETED),
                             onDuty(onDutyRows, id, today),
@@ -96,9 +96,9 @@ public class OwnerBranchAdapterOut implements OwnerBranchPortOut {
                 .toList();
     }
 
-    private static OpeningSchedule openingSchedule(
+    private static OpeningCalendar openingCalendar(
             List<OpeningHoursEntity> hours, List<OpeningHoursExceptionEntity> exceptions) {
-        return OpeningSchedule.of(
+        return OpeningCalendar.of(
                 nullToEmpty(hours).stream().map(OpeningHoursMapper::toDomain).toList(),
                 nullToEmpty(exceptions).stream().map(OpeningHoursMapper::toDomain).toList());
     }

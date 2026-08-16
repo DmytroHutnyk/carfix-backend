@@ -187,6 +187,51 @@ public class OpeningCalendarTest {
     }
 
     @Test
+    void test_is_open_at_includes_the_start_and_excludes_the_close() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of());
+        //when //then
+        assertThat(calendar.isOpenAt(MONDAY.atTime(7, 59))).isFalse();
+        assertThat(calendar.isOpenAt(MONDAY.atTime(8, 0))).isTrue();
+        assertThat(calendar.isOpenAt(MONDAY.atTime(10, 30))).isTrue();
+        assertThat(calendar.isOpenAt(MONDAY.atTime(18, 0))).isFalse();
+    }
+
+    @Test
+    void test_is_open_at_is_false_on_a_weekday_without_rows() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of());
+        //when //then
+        assertThat(calendar.isOpenAt(SUNDAY.atTime(10, 0))).isFalse();
+    }
+
+    @Test
+    void test_is_open_at_follows_a_closed_exception() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of(closedOn(MONDAY)));
+        //when //then
+        assertThat(calendar.isOpenAt(MONDAY.atTime(10, 0))).isFalse();
+        assertThat(calendar.isOpenAt(MONDAY.plusWeeks(1).atTime(10, 0))).isTrue();
+    }
+
+    @Test
+    void test_is_open_at_follows_an_open_exception() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(monToFri(8, 18), List.of(openOn(MONDAY, 12, 14)));
+        //when //then
+        assertThat(calendar.isOpenAt(MONDAY.atTime(10, 0))).isFalse();
+        assertThat(calendar.isOpenAt(MONDAY.atTime(13, 0))).isTrue();
+    }
+
+    @Test
+    void test_is_open_at_is_false_without_any_rows() {
+        //given
+        OpeningCalendar calendar = OpeningCalendar.of(List.of(), List.of());
+        //when //then
+        assertThat(calendar.isOpenAt(MONDAY.atTime(10, 0))).isFalse();
+    }
+
+    @Test
     void test_row_with_close_not_after_start_fails_loud_when_applied() {
         //given
         OpeningCalendar calendar = OpeningCalendar.of(List.of(weekly(DayOfWeek.FRIDAY, 18, 8)), List.of());

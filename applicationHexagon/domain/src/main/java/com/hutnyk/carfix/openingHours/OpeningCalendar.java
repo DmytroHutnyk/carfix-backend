@@ -4,6 +4,7 @@ import com.hutnyk.carfix.scheduling.TimeRange;
 import com.hutnyk.carfix.scheduling.TimeRanges;
 import com.hutnyk.carfix.util.Validator;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +56,11 @@ public final class OpeningCalendar {
 
     public boolean isOpen(LocalDate date) {
         return !openRanges(date).isEmpty();
+    }
+
+    public boolean isOpenAt(LocalDateTime moment) {
+        Validator.notNull(moment, "moment");
+        return openRanges(moment.toLocalDate()).stream().anyMatch(range -> range.contains(moment));
     }
 
     public Map<LocalDate, List<TimeRange>> openRangesByDate(LocalDate from, LocalDate to) {
