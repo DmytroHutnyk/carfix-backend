@@ -1,6 +1,8 @@
 package com.hutnyk.carfix.branch.mapper;
 
 import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.branch.Branch;
+import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
 import com.hutnyk.carfix.in.branch.query.BranchBrandView;
@@ -8,10 +10,13 @@ import com.hutnyk.carfix.in.branch.query.BranchOpeningHoursView;
 import com.hutnyk.carfix.in.branch.query.BranchServiceCategoryView;
 import com.hutnyk.carfix.in.branch.query.BranchServiceView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
 import com.hutnyk.carfix.service.entity.ServiceCategoryEntity;
 import com.hutnyk.carfix.service.entity.ServiceEntity;
+import com.hutnyk.carfix.user.UserId;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -20,6 +25,51 @@ import java.util.List;
 public final class BranchMapper {
 
     private BranchMapper() {
+    }
+
+    public static BranchEntity toEntity(Branch branch, AddressEntity address) {
+        if (branch == null) {
+            return null;
+        }
+        BranchEntity entity = new BranchEntity();
+        entity.setId(branch.getId().id());
+        entity.setName(branch.getName());
+        entity.setPhoneNumber(branch.getPhoneNumber());
+        entity.setEmail(branch.getEmail());
+        entity.setStatus(branch.getStatus());
+        entity.setTz(branch.getTz().getId());
+        entity.setAddressEntity(address);
+        entity.setOwnerId(branch.getOwnerId().id());
+        return entity;
+    }
+
+    public static Branch toDomain(BranchEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return Branch.of(
+                BranchId.of(entity.getId()),
+                entity.getName(),
+                entity.getPhoneNumber(),
+                entity.getEmail(),
+                entity.getStatus(),
+                ZoneId.of(entity.getTz()),
+                entity.getAddressEntity().getId(),
+                UserId.of(entity.getOwnerId()));
+    }
+
+    public static OpeningHoursEntity toEntity(OpeningHours hours, BranchEntity branch) {
+        if (hours == null) {
+            return null;
+        }
+        OpeningHoursEntity entity = new OpeningHoursEntity();
+        entity.setId(hours.getId());
+        entity.setDayOfWeek(hours.getDayOfWeek());
+        entity.setStartTime(hours.getStartTime());
+        entity.setCloseTime(hours.getCloseTime());
+        entity.setMode(hours.getMode());
+        entity.setBranchEntity(branch);
+        return entity;
     }
 
     public static BranchView toView(

@@ -9,6 +9,7 @@ import com.hutnyk.carfix.branch.exception.InvalidReviewsSortException;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.review.ReviewPortOut;
 import com.hutnyk.carfix.review.BranchRating;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public class BranchServiceTest {
@@ -51,6 +53,21 @@ public class BranchServiceTest {
         @Override
         public boolean existsActiveById(BranchId branchId) {
             return branchExists;
+        }
+
+        @Override
+        public Branch insert(Branch branch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void insertOpeningHours(List<OpeningHours> openingHours) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
+            throw new UnsupportedOperationException();
         }
     }
 

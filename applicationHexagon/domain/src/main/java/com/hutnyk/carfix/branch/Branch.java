@@ -1,14 +1,16 @@
 package com.hutnyk.carfix.branch;
 
+import com.hutnyk.carfix.exception.DomainObjectValidationException;
+import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.user.UserId;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.time.DateTimeException;
 import java.time.ZoneId;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class Branch {
@@ -35,7 +37,7 @@ public final class Branch {
             UserId ownerId) {
         this.id = Validator.notNull(id, "id");
         this.name = Validator.notBlank(name, "name");
-        this.phoneNumber = Validator.validatePhoneNumber(phoneNumber, "phoneNumber");
+        this.phoneNumber = Validator.validateInternationalPhoneNumber(phoneNumber, "phoneNumber");
         this.email = Validator.validateEmail(email, "email");
         this.status = Validator.notNull(status, "status");
         this.tz = Validator.notNull(tz, "tz");
@@ -62,5 +64,26 @@ public final class Branch {
                 .addressId(addressId)
                 .ownerId(ownerId)
                 .build();
+    }
+
+    /** A branch the owner registers: ACTIVE right away (no verification flow exists yet). */
+    public static Branch create(
+            BranchId id,
+            String name,
+            String phoneNumber,
+            String email,
+            String timezone,
+            Integer addressId,
+            UserId ownerId) {
+        return of(id, name, phoneNumber, email, BranchStatus.ACTIVE, parseZone(timezone), addressId, ownerId);
+    }
+
+    private static ZoneId parseZone(String timezone) {
+        Validator.notBlank(timezone, "timezone");
+        try {
+            return ZoneId.of(timezone.trim());
+        } catch (DateTimeException e) {
+            throw new DomainObjectValidationException(ValidationErrorType.INVALID_TIMEZONE, "timezone", timezone);
+        }
     }
 }
