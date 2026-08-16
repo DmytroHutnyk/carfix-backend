@@ -5,9 +5,11 @@ import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
 import com.hutnyk.carfix.in.branch.query.BranchBrandView;
 import com.hutnyk.carfix.in.branch.query.BranchOpeningHoursView;
+import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.in.branch.query.BranchServiceCategoryView;
 import com.hutnyk.carfix.in.branch.query.BranchServiceView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
 import com.hutnyk.carfix.service.entity.ServiceCategoryEntity;
 import com.hutnyk.carfix.service.entity.ServiceEntity;
@@ -58,6 +60,36 @@ public final class BranchMapper {
                                 oh.getDayOfWeek(), oh.getStartTime(), oh.getCloseTime()))
                         .toList(),
                 groupByCategory(services));
+    }
+
+
+    public static OwnerBranchSummaryView toOwnerSummaryView(
+            BranchEntity branch,
+            boolean openNow,
+            int bookingsToday,
+            int completedToday,
+            int employeesOnDutyToday,
+            int employeesTotal,
+            List<BranchReviewView> latestReviews) {
+        if (branch == null) {
+            return null;
+        }
+        AddressEntity address = branch.getAddressEntity();
+        return new OwnerBranchSummaryView(
+                branch.getId(),
+                branch.getName(),
+                branch.getStatus(),
+                address.getStreetName(),
+                address.getBuildingNumber(),
+                address.getCityEntity().getName(),
+                branch.getRating(),
+                branch.getReviewCount(),
+                openNow,
+                bookingsToday,
+                completedToday,
+                employeesOnDutyToday,
+                employeesTotal,
+                latestReviews);
     }
 
     private static List<BranchServiceCategoryView> groupByCategory(List<ServiceEntity> services) {

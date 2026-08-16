@@ -51,4 +51,14 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
                                           @Param("start") LocalTime start,
                                           @Param("end") LocalTime end,
                                           @Param("statuses") Collection<BookingStatus> statuses);
+
+    /* Rows: [UUID branchId, LocalDate date, BookingStatus status, Long count]. */
+    @Query("""
+            SELECT b.branchEntity.id, b.date, b.status, COUNT(b)
+            FROM BookingEntity b
+            WHERE b.branchEntity.id IN :branchIds AND b.date IN :dates
+            GROUP BY b.branchEntity.id, b.date, b.status
+            """)
+    List<Object[]> countByBranchDateAndStatus(@Param("branchIds") Collection<UUID> branchIds,
+                                              @Param("dates") Collection<LocalDate> dates);
 }
