@@ -32,6 +32,17 @@ public final class TimeRanges {
         return List.copyOf(merged);
     }
 
+    public static List<TimeRange> intersect(List<TimeRange> a, List<TimeRange> b) {
+        List<TimeRange> mergedB = union(b);
+        List<TimeRange> result = new ArrayList<>();
+        for (TimeRange x : union(a)) {
+            for (TimeRange y : mergedB) {
+                x.intersect(y).ifPresent(result::add);
+            }
+        }
+        return List.copyOf(result);
+    }
+
     public static List<TimeRange> subtractAll(List<TimeRange> base, List<TimeRange> cuts) {
         List<TimeRange> result = union(base);
         for (TimeRange cut : cuts) {

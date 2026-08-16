@@ -3,6 +3,7 @@ package com.hutnyk.carfix.scheduling;
 import com.hutnyk.carfix.service.Service;
 import com.hutnyk.carfix.user.UserId;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,11 +20,40 @@ public final class SlotCalculator {
 
     private static final int GRID_MINUTES = 15;
     private static final int MAX_GAP_MINUTES = 15;
+    public static final int MAX_SERVICES_PER_VISIT = 3;
 
     private SlotCalculator() {
     }
 
+    /**
+     * Whether a wall-clock time is a legal visit start: exactly on the 15-minute grid the planner
+     * steps by. Callers use it to reject a nonsense start up front instead of letting it fall
+     * through as "no slot".
+     */
+    public static boolean isOnGrid(LocalTime time) {
+        return time.getMinute() % GRID_MINUTES == 0 && time.getSecond() == 0 && time.getNano() == 0;
+    }
+
     private record SegmentKey(Integer serviceId, LocalDateTime start) {
+    }
+
+    private record VisitInputs(List<Service> services, List<BaySchedule> bays,
+                               List<EmployeeSchedule> employees, List<EquipmentSchedule> equipment,
+                               int minSpanMinutes, List<List<Service>> orders) {
+    }
+
+    private static VisitInputs normalize(List<Service> services, List<BaySchedule> bays,
+                                         List<EmployeeSchedule> employees,
+                                         List<EquipmentSchedule> equipment) {
+        List<Service> sortedServices = services.stream()
+                .sorted(Comparator.comparing(Service::getId)).toList();
+        return new VisitInputs(
+                sortedServices,
+                bays.stream().sorted(Comparator.comparing(BaySchedule::bayId)).toList(),
+                employees.stream().sorted(Comparator.comparing(s -> s.employeeId().id())).toList(),
+                equipment.stream().sorted(Comparator.comparing(EquipmentSchedule::equipmentId)).toList(),
+                sortedServices.stream().mapToInt(Service::getDurationMinutes).sum(),
+                permutations(sortedServices));
     }
 
     public static List<VisitPlan> computeVisits(
@@ -37,30 +67,20 @@ public final class SlotCalculator {
             return List.of();
         }
 
-        List<Service> sortedServices = services.stream()
-                .sorted(Comparator.comparing(Service::getId)).toList();
-        List<BaySchedule> sortedBays = bays.stream()
-                .sorted(Comparator.comparing(BaySchedule::bayId)).toList();
-        List<EmployeeSchedule> sortedEmployees = employees.stream()
-                .sorted(Comparator.comparing(s -> s.employeeId().id())).toList();
-        List<EquipmentSchedule> sortedEquipment = equipment.stream()
-                .sorted(Comparator.comparing(EquipmentSchedule::equipmentId)).toList();
-
-        int minSpanMinutes = sortedServices.stream().mapToInt(Service::getDurationMinutes).sum();
-        List<List<Service>> orders = permutations(sortedServices);
+        VisitInputs inputs = normalize(services, bays, employees, equipment);
 
         Map<SegmentKey, Optional<SegmentPlan>> segmentCache = new HashMap<>();
         SortedMap<LocalDateTime, VisitPlan> byStart = new TreeMap<>();
-        for (BaySchedule bay : sortedBays) {
-            if (!acceptsEveryService(sortedServices, bay)) {
+        for (BaySchedule bay : inputs.bays()) {
+            if (!acceptsEveryService(inputs.services(), bay)) {
                 continue;
             }
             for (TimeRange window : bay.free()) {
                 LocalDateTime start = ceilToGrid(max(window.lower(), notBefore));
-                while (!start.plusMinutes(minSpanMinutes).isAfter(window.upper())) {
+                while (!start.plusMinutes(inputs.minSpanMinutes()).isAfter(window.upper())) {
                     if (!byStart.containsKey(start)) {
-                        findPlan(orders, bay, window, start, sortedEmployees, sortedEquipment,
-                                segmentCache)
+                        findPlan(inputs.orders(), bay, window, start, inputs.employees(),
+                                inputs.equipment(), segmentCache)
                                 .ifPresent(plan -> byStart.putIfAbsent(plan.start(), plan));
                     }
                     start = start.plusMinutes(GRID_MINUTES);
@@ -68,6 +88,40 @@ public final class SlotCalculator {
             }
         }
         return List.copyOf(byStart.values());
+    }
+
+    public static Optional<VisitPlan> planVisit(
+            List<Service> services,
+            List<BaySchedule> bays,
+            List<EmployeeSchedule> employees,
+            List<EquipmentSchedule> equipment,
+            LocalDateTime start,
+            LocalDateTime notBefore) {
+
+        if (services.isEmpty() || start.isBefore(notBefore) || !start.equals(ceilToGrid(start))) {
+            return Optional.empty();
+        }
+
+        VisitInputs inputs = normalize(services, bays, employees, equipment);
+        Map<SegmentKey, Optional<SegmentPlan>> segmentCache = new HashMap<>();
+
+        for (BaySchedule bay : inputs.bays()) {
+            if (!acceptsEveryService(inputs.services(), bay)) {
+                continue;
+            }
+            for (TimeRange window : bay.free()) {
+                if (window.lower().isAfter(start)
+                        || start.plusMinutes(inputs.minSpanMinutes()).isAfter(window.upper())) {
+                    continue;
+                }
+                Optional<VisitPlan> plan = findPlan(inputs.orders(), bay, window, start,
+                        inputs.employees(), inputs.equipment(), segmentCache);
+                if (plan.isPresent()) {
+                    return plan;
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     private static Optional<VisitPlan> findPlan(List<List<Service>> orders, BaySchedule bay,

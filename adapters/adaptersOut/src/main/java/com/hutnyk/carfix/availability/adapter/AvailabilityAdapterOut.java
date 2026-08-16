@@ -18,6 +18,11 @@ import com.hutnyk.carfix.equipment.repository.EquipmentAvailabilityRepository;
 import com.hutnyk.carfix.equipment.repository.EquipmentBookingRepository;
 import com.hutnyk.carfix.equipment.repository.EquipmentRepository;
 import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
+import com.hutnyk.carfix.openingHours.mapper.OpeningHoursMapper;
+import com.hutnyk.carfix.openingHours.repository.OpeningHoursExceptionRepository;
+import com.hutnyk.carfix.openingHours.repository.OpeningHoursRepository;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
@@ -49,6 +54,8 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
     private final EmployeeBookingRepository employeeBookingRepository;
     private final EquipmentAvailabilityRepository equipmentAvailabilityRepository;
     private final EquipmentBookingRepository equipmentBookingRepository;
+    private final OpeningHoursRepository openingHoursRepository;
+    private final OpeningHoursExceptionRepository openingHoursExceptionRepository;
 
     @Override
     public List<ServiceBay> loadActiveBays(BranchId branchId) {
@@ -160,6 +167,22 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
         return equipmentBookingRepository.findAllByEquipmentEntityIdInAndDateBetween(equipmentIds, from, to)
                 .stream()
                 .map(EquipmentMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<OpeningHours> loadOpeningHours(BranchId branchId) {
+        return openingHoursRepository.findAllByBranchEntityId(branchId.id())
+                .stream()
+                .map(OpeningHoursMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to) {
+        return openingHoursExceptionRepository.findAllByBranchEntityIdAndDateBetween(branchId.id(), from, to)
+                .stream()
+                .map(OpeningHoursMapper::toDomain)
                 .toList();
     }
 

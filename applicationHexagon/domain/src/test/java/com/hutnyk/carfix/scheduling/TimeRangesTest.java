@@ -68,4 +68,54 @@ public class TimeRangesTest {
         assertThat(TimeRanges.free(availability, occupancy))
                 .containsExactly(range(9, 10), range(10, 30, 12, 0), range(13, 16));
     }
+
+    @Test
+    void test_intersect_disjoint_lists_is_empty() {
+        //given
+        List<TimeRange> a = List.of(range(9, 12));
+        List<TimeRange> b = List.of(range(12, 14));
+        //when
+        List<TimeRange> result = TimeRanges.intersect(a, b);
+        //then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void test_intersect_keeps_only_the_overlap() {
+        //given
+        List<TimeRange> a = List.of(range(9, 12));
+        List<TimeRange> b = List.of(range(10, 14));
+        //when
+        List<TimeRange> result = TimeRanges.intersect(a, b);
+        //then
+        assertThat(result).containsExactly(range(10, 12));
+    }
+
+    @Test
+    void test_intersect_splits_across_pieces_of_the_other_list() {
+        //given
+        List<TimeRange> a = List.of(range(8, 18));
+        List<TimeRange> b = List.of(range(9, 12), range(13, 17));
+        //when
+        List<TimeRange> result = TimeRanges.intersect(a, b);
+        //then
+        assertThat(result).containsExactly(range(9, 12), range(13, 17));
+    }
+
+    @Test
+    void test_intersect_unions_unsorted_overlapping_inputs_first() {
+        //given
+        List<TimeRange> a = List.of(range(11, 14), range(9, 12));
+        List<TimeRange> b = List.of(range(10, 30, 13, 0), range(8, 10));
+        //when
+        List<TimeRange> result = TimeRanges.intersect(a, b);
+        //then
+        assertThat(result).containsExactly(range(9, 0, 10, 0), range(10, 30, 13, 0));
+    }
+
+    @Test
+    void test_intersect_with_empty_list_is_empty() {
+        assertThat(TimeRanges.intersect(List.of(range(9, 12)), List.of())).isEmpty();
+        assertThat(TimeRanges.intersect(List.of(), List.of(range(9, 12)))).isEmpty();
+    }
 }

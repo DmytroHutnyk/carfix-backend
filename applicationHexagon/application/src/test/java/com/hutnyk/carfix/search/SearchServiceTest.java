@@ -26,6 +26,8 @@ import com.hutnyk.carfix.in.search.query.WorkshopResultView;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchPage;
 import com.hutnyk.carfix.in.search.query.WorkshopSearchQuery;
 import com.hutnyk.carfix.in.search.query.WorkshopSuggestionView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
@@ -288,6 +290,16 @@ public class SearchServiceTest {
 
         @Override
         public List<Equipment> loadActiveEquipment(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<OpeningHours> loadOpeningHours(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to) {
             throw new UnsupportedOperationException();
         }
     }

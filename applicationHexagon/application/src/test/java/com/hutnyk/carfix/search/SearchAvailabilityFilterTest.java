@@ -14,6 +14,8 @@ import com.hutnyk.carfix.in.search.query.AvailabilityWindow;
 import com.hutnyk.carfix.in.search.query.AvailableStartView;
 import com.hutnyk.carfix.in.search.query.MatchedServiceView;
 import com.hutnyk.carfix.in.search.query.WorkshopResultView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
 import com.hutnyk.carfix.scheduling.TimeRange;
@@ -186,6 +188,16 @@ public class SearchAvailabilityFilterTest {
 
         @Override
         public List<Equipment> loadActiveEquipment(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<OpeningHours> loadOpeningHours(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to) {
             throw new UnsupportedOperationException();
         }
     }
