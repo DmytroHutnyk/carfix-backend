@@ -3,20 +3,60 @@ package com.hutnyk.carfix.branch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hutnyk.carfix.address.Address;
+import com.hutnyk.carfix.address.City;
+import com.hutnyk.carfix.address.CountryIso;
+import com.hutnyk.carfix.address.Region;
 import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
+import com.hutnyk.carfix.branch.exception.InvalidBranchRegistrationException;
 import com.hutnyk.carfix.branch.exception.InvalidReviewsSortException;
+import com.hutnyk.carfix.carCatalog.CarBrand;
+import com.hutnyk.carfix.carCatalog.CarModel;
+import com.hutnyk.carfix.carCatalog.ModelVersion;
+import com.hutnyk.carfix.carCatalog.exception.CarBrandNotFoundException;
+import com.hutnyk.carfix.employee.Employee;
+import com.hutnyk.carfix.equipment.Equipment;
+import com.hutnyk.carfix.equipment.EquipmentType;
+import com.hutnyk.carfix.in.address.query.AddressView;
+import com.hutnyk.carfix.in.branch.commands.RegisterBranchCommand;
+import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceBayCommand;
+import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
+import com.hutnyk.carfix.out.address.AddressPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
+import com.hutnyk.carfix.out.carCatalog.CarCatalogPortOut;
+import com.hutnyk.carfix.out.employee.EmployeePortOut;
+import com.hutnyk.carfix.out.equipment.EquipmentPortOut;
+import com.hutnyk.carfix.out.owner.OwnerPortOut;
 import com.hutnyk.carfix.out.review.ReviewPortOut;
+import com.hutnyk.carfix.out.role.RolePortOut;
+import com.hutnyk.carfix.out.service.ServiceCategoryPortOut;
+import com.hutnyk.carfix.out.service.ServicePortOut;
+import com.hutnyk.carfix.out.serviceBay.ServiceBayPortOut;
+import com.hutnyk.carfix.owner.Owner;
 import com.hutnyk.carfix.review.BranchRating;
 import com.hutnyk.carfix.review.Review;
+import com.hutnyk.carfix.role.Role;
+import com.hutnyk.carfix.service.Service;
+import com.hutnyk.carfix.service.ServiceCategory;
+import com.hutnyk.carfix.service.exception.ServiceCategoryNotFoundException;
+import com.hutnyk.carfix.serviceBay.ServiceBay;
+import com.hutnyk.carfix.serviceBay.ServiceBayType;
+import com.hutnyk.carfix.user.PasswordHash;
+import com.hutnyk.carfix.user.PhoneNumber;
+import com.hutnyk.carfix.user.User;
+import com.hutnyk.carfix.user.UserId;
+import com.hutnyk.carfix.user.UserRole;
+import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,6 +65,8 @@ import java.util.UUID;
 public class BranchServiceTest {
 
     private static final UUID BRANCH_ID = UUID.randomUUID();
+    private static final String OWNER_EMAIL = "owner@carfix.dev";
+    private static final UserId OWNER_ID = UserId.genId();
 
     private static BranchView view() {
         return new BranchView(
@@ -36,68 +78,40 @@ public class BranchServiceTest {
                 List.of(), List.of(), List.of());
     }
 
+    private static Owner owner() {
+        User user = User.builder()
+                .id(OWNER_ID).name("Marek").surname("Kowalski")
+                .phoneNumber(new PhoneNumber("+48", "600100200")).email(OWNER_EMAIL).role(UserRole.OWNER)
+                .passwordHash(PasswordHash.of("$2a$10$storedhashvalue")).dateOfBirth(null).addressId(null)
+                .build();
+        return Owner.of(user, "AutoSerwis Kowalski", "5252445567", "146892132");
+    }
+
+    /* ---------- stubs: every port records what it received and hands back ids ---------- */
+
     private static final class StubBranchPortOut implements BranchPortOut {
         BranchView view;
         boolean branchExists = true;
+        Branch inserted;
+        List<OpeningHours> hours;
+        Set<Integer> linkedBrands;
 
-        @Override
-        public void updateRating(BranchId branchId, BranchRating rating) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Optional<BranchView> findViewById(BranchId branchId) {
-            return Optional.ofNullable(view);
-        }
-
-        @Override
-        public boolean existsActiveById(BranchId branchId) {
-            return branchExists;
-        }
-
-        @Override
-        public Branch insert(Branch branch) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void insertOpeningHours(List<OpeningHours> openingHours) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
-            throw new UnsupportedOperationException();
-        }
+        @Override public void updateRating(BranchId branchId, BranchRating rating) { throw new UnsupportedOperationException(); }
+        @Override public Optional<BranchView> findViewById(BranchId branchId) { return Optional.ofNullable(view); }
+        @Override public boolean existsActiveById(BranchId branchId) { return branchExists; }
+        @Override public Branch insert(Branch branch) { this.inserted = branch; return branch; }
+        @Override public void insertOpeningHours(List<OpeningHours> openingHours) { this.hours = openingHours; }
+        @Override public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) { this.linkedBrands = carBrandIds; }
     }
 
     private static final class StubReviewPortOut implements ReviewPortOut {
         BranchReviewsQuery receivedQuery;
 
-        @Override
-        public boolean existsByBookingId(BookingId bookingId) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Optional<Review> findByBookingId(BookingId bookingId) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Review insert(Review review) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Optional<BranchId> findBranchIdByBookingId(BookingId bookingId) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public List<Integer> findStarsByBranchId(BranchId branchId) {
-            throw new UnsupportedOperationException();
-        }
+        @Override public boolean existsByBookingId(BookingId bookingId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<Review> findByBookingId(BookingId bookingId) { throw new UnsupportedOperationException(); }
+        @Override public Review insert(Review review) { throw new UnsupportedOperationException(); }
+        @Override public Optional<BranchId> findBranchIdByBookingId(BookingId bookingId) { throw new UnsupportedOperationException(); }
+        @Override public List<Integer> findStarsByBranchId(BranchId branchId) { throw new UnsupportedOperationException(); }
 
         @Override
         public BranchReviewsPage findReviewsPage(BranchReviewsQuery query) {
@@ -106,9 +120,90 @@ public class BranchServiceTest {
         }
     }
 
+    private static final class StubOwnerPortOut implements OwnerPortOut {
+        Owner owner = owner();
+        @Override public Optional<Owner> loadOwnerByUsername(String email) { return Optional.ofNullable(owner); }
+    }
+
+    private static final class StubAddressPortOut implements AddressPortOut {
+        Address inserted;
+        final List<Region> regions = new ArrayList<>();
+        final List<City> cities = new ArrayList<>();
+
+        @Override public Optional<AddressView> loadView(Integer addressId) { throw new UnsupportedOperationException(); }
+        @Override public Address update(Address address) { throw new UnsupportedOperationException(); }
+        @Override public void deleteById(Integer addressId) { throw new UnsupportedOperationException(); }
+
+        @Override
+        public Address insert(Address address) {
+            inserted = Address.of(55, address.getStreetName(), address.getBuildingNumber(), address.getFlatNumber(),
+                    address.getPostalCode(), address.getCityId(), address.getLatitude(), address.getLongitude(),
+                    address.getGooglePlaceId());
+            return inserted;
+        }
+        @Override public Optional<Region> findRegion(String name, CountryIso countryIso) { return regions.stream().findFirst(); }
+        @Override public Region insertRegion(Region region) { Region r = Region.of(100, region.getName(), region.getCountryIso()); regions.add(r); return r; }
+        @Override public Optional<City> findCity(String name, Integer regionId) { return cities.stream().findFirst(); }
+        @Override public City insertCity(City city) { City c = City.of(200, city.getName(), city.getRegionId()); cities.add(c); return c; }
+    }
+
+    private static final class StubCarCatalogPortOut implements CarCatalogPortOut {
+        int brandLoads;
+        @Override public List<CarBrand> findAllBrands() { brandLoads++; return List.of(CarBrand.of(1, "Audi"), CarBrand.of(2, "BMW"), CarBrand.of(3, "Toyota")); }
+        @Override public List<CarModel> findModelsByBrandId(Integer brandId) { throw new UnsupportedOperationException(); }
+        @Override public List<ModelVersion> findVersionsByModelId(Integer modelId) { throw new UnsupportedOperationException(); }
+        @Override public boolean existsVersionById(Integer id) { throw new UnsupportedOperationException(); }
+    }
+
+    private static final class StubServiceBayPortOut implements ServiceBayPortOut {
+        final List<ServiceBayType> types = new ArrayList<>();
+        final List<ServiceBay> bays = new ArrayList<>();
+        @Override public ServiceBayType insertType(ServiceBayType type) { ServiceBayType t = ServiceBayType.of(400 + types.size(), type.getName(), type.getBranchId()); types.add(t); return t; }
+        @Override public ServiceBay insert(ServiceBay bay) { bays.add(bay); return bay; }
+    }
+
+    private static final class StubEquipmentPortOut implements EquipmentPortOut {
+        final List<EquipmentType> types = new ArrayList<>();
+        final List<Equipment> units = new ArrayList<>();
+        @Override public EquipmentType insertType(EquipmentType type) { EquipmentType t = EquipmentType.of(500 + types.size(), type.getName(), type.getBranchId()); types.add(t); return t; }
+        @Override public Equipment insert(Equipment equipment) { units.add(equipment); return equipment; }
+    }
+
+    private static final class StubRolePortOut implements RolePortOut {
+        final List<Role> roles = new ArrayList<>();
+        @Override public Role insert(Role role) { Role r = Role.of(600 + roles.size(), role.getName(), role.getBranchId()); roles.add(r); return r; }
+    }
+
+    private static final class StubEmployeePortOut implements EmployeePortOut {
+        final List<Employee> employees = new ArrayList<>();
+        @Override public Employee insert(Employee employee) { employees.add(employee); return employee; }
+    }
+
+    private static final class StubServicePortOut implements ServicePortOut {
+        final List<Service> services = new ArrayList<>();
+        @Override public Service insert(Service service) { services.add(service); return service; }
+    }
+
+    private static final class StubServiceCategoryPortOut implements ServiceCategoryPortOut {
+        @Override public List<ServiceCategory> findAll() { return List.of(ServiceCategory.of(1, "Brakes"), ServiceCategory.of(2, "Maintenance")); }
+    }
+
     private final StubBranchPortOut branchStub = new StubBranchPortOut();
     private final StubReviewPortOut reviewStub = new StubReviewPortOut();
-    private final BranchService service = new BranchService(branchStub, reviewStub);
+    private final StubOwnerPortOut ownerStub = new StubOwnerPortOut();
+    private final StubAddressPortOut addressStub = new StubAddressPortOut();
+    private final StubCarCatalogPortOut carCatalogStub = new StubCarCatalogPortOut();
+    private final StubServiceBayPortOut serviceBayStub = new StubServiceBayPortOut();
+    private final StubEquipmentPortOut equipmentStub = new StubEquipmentPortOut();
+    private final StubRolePortOut roleStub = new StubRolePortOut();
+    private final StubEmployeePortOut employeeStub = new StubEmployeePortOut();
+    private final StubServicePortOut serviceStub = new StubServicePortOut();
+    private final StubServiceCategoryPortOut serviceCategoryStub = new StubServiceCategoryPortOut();
+
+    private final BranchService service = new BranchService(branchStub, reviewStub, ownerStub, addressStub,
+            carCatalogStub, serviceBayStub, equipmentStub, roleStub, employeeStub, serviceStub, serviceCategoryStub);
+
+    /* ---------- reads (unchanged behaviour) ---------- */
 
     @Test
     public void test_getBranch_returns_view() {
@@ -176,5 +271,164 @@ public class BranchServiceTest {
 
         //then
         assertThat(reviewStub.receivedQuery.size()).isEqualTo(50);
+    }
+
+    /* ---------- registerBranch ---------- */
+
+    @Test
+    public void test_registerBranch_persists_the_whole_workshop_and_resolves_names_to_ids() {
+        //given
+        RegisterBranchCommand cmd = BranchRegistrationValidatorTest.valid();
+
+        //when
+        Branch result = service.registerBranch(OWNER_EMAIL, cmd);
+
+        //then — branch + address
+        assertThat(result).isSameAs(branchStub.inserted);
+        assertThat(result.getStatus()).isEqualTo(BranchStatus.ACTIVE);
+        assertThat(result.getOwnerId()).isEqualTo(OWNER_ID);
+        assertThat(result.getAddressId()).isEqualTo(55);
+        assertThat(result.getTz().getId()).isEqualTo("Europe/Warsaw");
+        assertThat(addressStub.inserted.getCityId()).isEqualTo(200);
+        assertThat(addressStub.regions).extracting(Region::getCountryIso).containsExactly(CountryIso.PL);
+        // hours + brands
+        assertThat(branchStub.hours).hasSize(2);
+        assertThat(branchStub.hours.get(1).getMode()).isEqualTo(OpeningHoursMode.BY_APPOINTMENT);
+        assertThat(branchStub.hours).allSatisfy(h -> assertThat(h.getBranchId()).isEqualTo(result.getId()));
+        assertThat(branchStub.linkedBrands).containsExactlyInAnyOrder(1, 2);
+        // types are branch-scoped, references resolved case-insensitively
+        assertThat(serviceBayStub.types).extracting(ServiceBayType::getName).containsExactly("Basic", "With lift");
+        assertThat(serviceBayStub.types).allSatisfy(t -> assertThat(t.getBranchId()).isEqualTo(result.getId()));
+        Integer basicId = serviceBayStub.types.get(0).getId();
+        Integer withLiftId = serviceBayStub.types.get(1).getId();
+        assertThat(serviceBayStub.bays).extracting(ServiceBay::getName, ServiceBay::getServiceBayTypeId)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("Bay 1", basicId),
+                        org.assertj.core.groups.Tuple.tuple("Bay 2", withLiftId));
+        Integer liftTypeId = equipmentStub.types.get(0).getId();
+        assertThat(equipmentStub.units).singleElement()
+                .satisfies(u -> assertThat(u.getEquipmentTypeId()).isEqualTo(liftTypeId));
+        Integer mechanicId = roleStub.roles.get(0).getId();
+        Integer evId = roleStub.roles.get(1).getId();
+        assertThat(employeeStub.employees).singleElement().satisfies(e -> {
+            assertThat(e.getFirstName()).isEqualTo("Oleh");
+            assertThat(e.getRoleIds()).containsExactly(evId);
+            assertThat(e.getBranchId()).isEqualTo(result.getId());
+        });
+        // service graph
+        assertThat(serviceStub.services).singleElement().satisfies(s -> {
+            assertThat(s.getBranchId()).isEqualTo(result.getId());
+            assertThat(s.getServiceCategoryId()).isEqualTo(2);
+            assertThat(s.getServiceBayTypeIds()).containsExactly(basicId);
+            assertThat(s.getEmployeeRequirements()).singleElement()
+                    .satisfies(r -> assertThat(r.getRoleIds()).containsExactlyInAnyOrder(mechanicId, evId));
+            assertThat(s.getEquipmentRequirements()).singleElement()
+                    .satisfies(r -> assertThat(r.getEquipmentTypeIds()).containsExactly(liftTypeId));
+        });
+    }
+
+    @Test
+    public void test_registerBranch_with_empty_lists_creates_just_the_branch() {
+        //given
+        RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
+        RegisterBranchCommand minimal = new RegisterBranchCommand(c.name(), c.phoneNumber(), c.email(), c.timezone(),
+                c.address(), List.of(), Set.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+
+        //when
+        Branch result = service.registerBranch(OWNER_EMAIL, minimal);
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(branchStub.hours).isEmpty();
+        assertThat(branchStub.linkedBrands).isNull();
+        assertThat(carCatalogStub.brandLoads).isZero();
+        assertThat(serviceBayStub.types).isEmpty();
+        assertThat(serviceStub.services).isEmpty();
+    }
+
+    @Test
+    public void test_registerBranch_rejects_inconsistent_payload_before_writing_anything() {
+        //given
+        RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
+        RegisterBranchCommand bad = BranchRegistrationValidatorTest.with(c, c.serviceBayTypes(),
+                List.of(new RegisterBranchServiceBayCommand("Bay 1", "Pit")), c.equipmentTypes(), c.equipment(),
+                c.roles(), c.employees(), c.services(), c.openingHours());
+
+        //when + then
+        assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
+                .isInstanceOf(InvalidBranchRegistrationException.class);
+        assertThat(addressStub.inserted).isNull();
+        assertThat(branchStub.inserted).isNull();
+    }
+
+    @Test
+    public void test_registerBranch_unknown_car_brand_is_not_found_and_writes_nothing() {
+        //given
+        RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
+        RegisterBranchCommand bad = new RegisterBranchCommand(c.name(), c.phoneNumber(), c.email(), c.timezone(),
+                c.address(), c.openingHours(), Set.of(1, 99), c.serviceBayTypes(), c.serviceBays(), c.equipmentTypes(),
+                c.equipment(), c.roles(), c.employees(), c.services());
+
+        //when + then
+        assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
+                .isInstanceOf(CarBrandNotFoundException.class)
+                .hasMessage("Car brand not found: 99");
+        assertThat(branchStub.inserted).isNull();
+    }
+
+    @Test
+    public void test_registerBranch_unknown_service_category_is_not_found_and_writes_nothing() {
+        //given
+        RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
+        RegisterBranchServiceCommand s = c.services().get(0);
+        RegisterBranchCommand bad = BranchRegistrationValidatorTest.with(c, c.serviceBayTypes(), c.serviceBays(),
+                c.equipmentTypes(), c.equipment(), c.roles(), c.employees(),
+                List.of(new RegisterBranchServiceCommand(s.name(), s.description(), s.durationMinutes(), s.price(), 77,
+                        s.status(), s.bayTypes(), s.employeeRequirements(), s.equipmentRequirements())),
+                c.openingHours());
+
+        //when + then
+        assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
+                .isInstanceOf(ServiceCategoryNotFoundException.class);
+        assertThat(branchStub.inserted).isNull();
+    }
+
+    @Test
+    public void test_registerBranch_without_owner_row_is_an_authentication_failure() {
+        //given
+        ownerStub.owner = null;
+
+        //when + then
+        assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, BranchRegistrationValidatorTest.valid()))
+                .isInstanceOf(AuthenticatedUserMissingException.class);
+        assertThat(branchStub.inserted).isNull();
+    }
+
+    @Test
+    public void test_registerBranch_bad_timezone_surfaces_as_domain_validation() {
+        //given
+        RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
+        RegisterBranchCommand bad = new RegisterBranchCommand(c.name(), c.phoneNumber(), c.email(), "Mars/Olympus",
+                c.address(), c.openingHours(), c.carBrandIds(), c.serviceBayTypes(), c.serviceBays(), c.equipmentTypes(),
+                c.equipment(), c.roles(), c.employees(), c.services());
+
+        //when + then
+        assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
+                .isInstanceOf(com.hutnyk.carfix.exception.DomainObjectValidationException.class)
+                .extracting("fieldName").isEqualTo("timezone");
+    }
+
+    @Test
+    public void test_registerBranch_reuses_existing_region_and_city() {
+        //given
+        addressStub.regions.add(Region.of(5, "Masovian Voivodeship", CountryIso.PL));
+        addressStub.cities.add(City.of(9, "Warsaw", 5));
+
+        //when
+        service.registerBranch(OWNER_EMAIL, BranchRegistrationValidatorTest.valid());
+
+        //then
+        assertThat(addressStub.inserted.getCityId()).isEqualTo(9);
+        assertThat(addressStub.regions).hasSize(1);
+        assertThat(addressStub.cities).hasSize(1);
     }
 }

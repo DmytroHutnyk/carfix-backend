@@ -1,15 +1,13 @@
-package com.hutnyk.carfix.branch.exception;
+package com.hutnyk.carfix.service.exception;
 
 import com.hutnyk.carfix.exception.ErrorCategory;
 import com.hutnyk.carfix.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public enum BranchErrorCode implements ErrorCode {
+public enum ServiceErrorCode implements ErrorCode {
 
-    BRANCH_NOT_FOUND(ErrorCategory.NOT_FOUND),
-    INVALID_REVIEWS_SORT(ErrorCategory.VALIDATION),
-    INVALID_BRANCH_REGISTRATION(ErrorCategory.VALIDATION);
+    SERVICE_CATEGORY_NOT_FOUND(ErrorCategory.NOT_FOUND);
 
     private final ErrorCategory category;
 
