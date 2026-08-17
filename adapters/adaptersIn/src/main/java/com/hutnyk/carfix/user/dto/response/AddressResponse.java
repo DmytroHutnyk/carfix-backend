@@ -5,6 +5,7 @@ import com.hutnyk.carfix.address.CountryIso;
 import java.math.BigDecimal;
 
 public record AddressResponse(
+        Integer id,
         String streetName,
         String buildingNumber,
         String flatNumber,

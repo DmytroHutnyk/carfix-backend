@@ -33,6 +33,7 @@ public class UserToResponseMapper {
         }
 
         return new AddressResponse(
+                view.id(),
                 view.streetName(),
                 view.buildingNumber(),
                 view.flatNumber(),
