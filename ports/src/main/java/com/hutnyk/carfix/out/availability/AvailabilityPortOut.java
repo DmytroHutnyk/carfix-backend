@@ -3,6 +3,7 @@ package com.hutnyk.carfix.out.availability;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentAvailability;
 import com.hutnyk.carfix.equipment.EquipmentBooking;
@@ -17,7 +18,6 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public interface AvailabilityPortOut {
 
@@ -37,9 +37,9 @@ public interface AvailabilityPortOut {
 
     List<ServiceBayBooking> loadBayOccupancy(Collection<Integer> bayIds, LocalDate from, LocalDate to);
 
-    List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> employeeIds, LocalDate from, LocalDate to);
+    List<EmployeeAvailability> loadEmployeeAvailability(Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to);
 
-    List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> employeeIds, LocalDate from, LocalDate to);
+    List<EmployeeBooking> loadEmployeeOccupancy(Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to);
 
     List<EquipmentAvailability> loadEquipmentAvailability(Collection<Integer> equipmentIds, LocalDate from, LocalDate to);
 

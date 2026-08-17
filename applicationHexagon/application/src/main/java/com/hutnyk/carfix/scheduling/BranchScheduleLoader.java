@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -86,7 +85,7 @@ public final class BranchScheduleLoader {
             return Map.of();
         }
         List<Integer> bayIds = resources.bays().stream().map(ServiceBay::getId).toList();
-        List<UUID> employeeIds = resources.employees().stream().map(EmployeeCandidateView::employeeId).toList();
+        List<EmployeeId> employeeIds = resources.employees().stream().map(EmployeeCandidateView::employeeId).toList();
         List<Integer> equipmentIds = resources.equipment().stream().map(Equipment::getId).toList();
 
         Map<LocalDate, Map<Integer, List<TimeRange>>> bayAvailability = byDateAndResource(
@@ -126,8 +125,8 @@ public final class BranchScheduleLoader {
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EmployeeSchedule> employeeSchedules = resources.employees().stream()
-                    .map(e -> new EmployeeSchedule(EmployeeId.of(e.employeeId()), e.roleIds(),
-                            freeOf(employeeAvailability, employeeOccupancy, date, EmployeeId.of(e.employeeId()), open)))
+                    .map(e -> new EmployeeSchedule(e.employeeId(), e.roleIds(),
+                            freeOf(employeeAvailability, employeeOccupancy, date, e.employeeId(), open)))
                     .filter(s -> !s.free().isEmpty())
                     .toList();
             List<EquipmentSchedule> equipmentSchedules = resources.equipment().stream()

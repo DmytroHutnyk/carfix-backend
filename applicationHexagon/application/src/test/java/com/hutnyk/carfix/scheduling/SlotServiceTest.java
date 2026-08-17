@@ -174,10 +174,10 @@ public class SlotServiceTest {
         Collection<Integer> lastBayOccIds;
         LocalDate lastBayOccFrom;
         LocalDate lastBayOccTo;
-        Collection<UUID> lastEmployeeAvailIds;
+        Collection<EmployeeId> lastEmployeeAvailIds;
         LocalDate lastEmployeeAvailFrom;
         LocalDate lastEmployeeAvailTo;
-        Collection<UUID> lastEmployeeOccIds;
+        Collection<EmployeeId> lastEmployeeOccIds;
         LocalDate lastEmployeeOccFrom;
         LocalDate lastEmployeeOccTo;
         Collection<Integer> lastEquipmentAvailIds;
@@ -252,7 +252,7 @@ public class SlotServiceTest {
 
         @Override
         public List<EmployeeAvailability> loadEmployeeAvailability(
-                Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+                Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
             lastEmployeeAvailIds = employeeIds;
             lastEmployeeAvailFrom = from;
             lastEmployeeAvailTo = to;
@@ -261,7 +261,7 @@ public class SlotServiceTest {
 
         @Override
         public List<EmployeeBooking> loadEmployeeOccupancy(
-                Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+                Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
             lastEmployeeOccIds = employeeIds;
             lastEmployeeOccFrom = from;
             lastEmployeeOccTo = to;
@@ -325,7 +325,7 @@ public class SlotServiceTest {
     private void seedHappyPath() {
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)));
         availabilityPortOut.bays.add(ServiceBay.of(100, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(EMPLOYEE_ID, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(EMPLOYEE_ID), Set.of(MECHANIC)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, 100));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
@@ -417,7 +417,7 @@ public class SlotServiceTest {
     void test_no_qualified_employee_returns_empty_days_without_calendar_loads() {
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)));
         availabilityPortOut.bays.add(ServiceBay.of(100, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(EMPLOYEE_ID, Set.of(MECHANIC + 99)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(EMPLOYEE_ID), Set.of(MECHANIC + 99)));
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TODAY, TODAY));
         assertThat(view.chainable()).isTrue();
         assertThat(view.days().getFirst().slots()).isEmpty();
@@ -443,10 +443,10 @@ public class SlotServiceTest {
         assertThat(availabilityPortOut.lastBayOccIds).containsExactly(BAY_ID);
         assertThat(availabilityPortOut.lastEmployeeAvailFrom).isEqualTo(TODAY);
         assertThat(availabilityPortOut.lastEmployeeAvailTo).isEqualTo(TOMORROW);
-        assertThat(availabilityPortOut.lastEmployeeAvailIds).containsExactly(EMPLOYEE_ID);
+        assertThat(availabilityPortOut.lastEmployeeAvailIds).containsExactly(EmployeeId.of(EMPLOYEE_ID));
         assertThat(availabilityPortOut.lastEmployeeOccFrom).isEqualTo(TODAY);
         assertThat(availabilityPortOut.lastEmployeeOccTo).isEqualTo(TOMORROW);
-        assertThat(availabilityPortOut.lastEmployeeOccIds).containsExactly(EMPLOYEE_ID);
+        assertThat(availabilityPortOut.lastEmployeeOccIds).containsExactly(EmployeeId.of(EMPLOYEE_ID));
     }
 
     @Test
@@ -464,8 +464,8 @@ public class SlotServiceTest {
     void test_two_chained_services_sharing_a_bay_type_yield_combined_slots() {
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)), seniorService(2, Set.of(LIFT)));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(EMPLOYEE_ID, Set.of(MECHANIC)));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(SENIOR_ID, Set.of(SENIOR)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(EMPLOYEE_ID), Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(SENIOR_ID), Set.of(SENIOR)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 1, TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
@@ -699,7 +699,7 @@ public class SlotServiceTest {
         //given
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(EMPLOYEE_ID, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(EMPLOYEE_ID), Set.of(MECHANIC)));
         LocalDate saturday = TOMORROW.plusDays(1);
         seedDay(saturday, LocalTime.of(9, 0), LocalTime.of(12, 0));
         availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));

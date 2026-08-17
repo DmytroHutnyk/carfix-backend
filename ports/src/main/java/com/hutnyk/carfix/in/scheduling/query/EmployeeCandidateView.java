@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.in.scheduling.query;
 
-import java.util.Set;
-import java.util.UUID;
+import com.hutnyk.carfix.employee.EmployeeId;
 
-public record EmployeeCandidateView(UUID employeeId, Set<Integer> roleIds) {}
+import java.util.Set;
+
+public record EmployeeCandidateView(EmployeeId employeeId, Set<Integer> roleIds) {}

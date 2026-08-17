@@ -85,7 +85,7 @@ public class EmployeeMapper {
     public static EmployeeCandidateView toCandidateView(EmployeeEntity e) {
         if (e == null) return null;
         return new EmployeeCandidateView(
-                e.getId(),
+                EmployeeId.of(e.getId()),
                 e.getRoles().stream().map(RoleEntity::getId).collect(Collectors.toSet()));
     }
 }

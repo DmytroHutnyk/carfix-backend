@@ -182,12 +182,12 @@ public class SearchAvailabilityFilterTest {
         }
 
         @Override
-        public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+        public List<EmployeeAvailability> loadEmployeeAvailability(Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
             return employeeAvailability;
         }
 
         @Override
-        public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+        public List<EmployeeBooking> loadEmployeeOccupancy(Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
             return employeeOccupancy;
         }
 
@@ -248,7 +248,7 @@ public class SearchAvailabilityFilterTest {
     private void seedBranchA() {
         servicePortOut.toReturn = List.of(service(SERVICE_A, BRANCH_A, List.of()));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_A, "Bay A", ServiceBayStatus.ACTIVE, null, LIFT, BranchId.of(BRANCH_A)));
-        availabilityPortOut.employeesA.add(new EmployeeCandidateView(MECHANIC_A, Set.of(MECHANIC)));
+        availabilityPortOut.employeesA.add(new EmployeeCandidateView(EmployeeId.of(MECHANIC_A), Set.of(MECHANIC)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(1, at(TOMORROW, 9, 12), TOMORROW, 1, BAY_A));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(1, at(TOMORROW, 9, 12), TOMORROW, 2, EmployeeId.of(MECHANIC_A)));
     }
@@ -256,7 +256,7 @@ public class SearchAvailabilityFilterTest {
     private void seedBranchB() {
         servicePortOut.toReturn = List.of(service(SERVICE_A, BRANCH_A, List.of()), service(SERVICE_B, BRANCH_B, List.of()));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_B, "Bay B", ServiceBayStatus.ACTIVE, null, LIFT, BranchId.of(BRANCH_B)));
-        availabilityPortOut.employeesB.add(new EmployeeCandidateView(MECHANIC_B, Set.of(MECHANIC)));
+        availabilityPortOut.employeesB.add(new EmployeeCandidateView(EmployeeId.of(MECHANIC_B), Set.of(MECHANIC)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(2, at(TOMORROW, 9, 12), TOMORROW, 3, BAY_B));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(2, at(TOMORROW, 9, 12), TOMORROW, 4, EmployeeId.of(MECHANIC_B)));
     }
@@ -422,7 +422,7 @@ public class SearchAvailabilityFilterTest {
         //given
         seedBranchA();
         availabilityPortOut.employeesA.clear();
-        availabilityPortOut.employeesA.add(new EmployeeCandidateView(MECHANIC_A, Set.of(MECHANIC + 99)));
+        availabilityPortOut.employeesA.add(new EmployeeCandidateView(EmployeeId.of(MECHANIC_A), Set.of(MECHANIC + 99)));
 
         //when
         List<WorkshopResultView> result = filter.filter(

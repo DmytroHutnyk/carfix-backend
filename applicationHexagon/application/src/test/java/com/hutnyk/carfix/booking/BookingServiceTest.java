@@ -258,10 +258,10 @@ public class BookingServiceTest {
         Collection<Integer> lastBayOccIds;
         LocalDate lastBayOccFrom;
         LocalDate lastBayOccTo;
-        Collection<UUID> lastEmployeeAvailIds;
+        Collection<EmployeeId> lastEmployeeAvailIds;
         LocalDate lastEmployeeAvailFrom;
         LocalDate lastEmployeeAvailTo;
-        Collection<UUID> lastEmployeeOccIds;
+        Collection<EmployeeId> lastEmployeeOccIds;
         LocalDate lastEmployeeOccFrom;
         LocalDate lastEmployeeOccTo;
         Collection<Integer> lastEquipmentAvailIds;
@@ -312,14 +312,14 @@ public class BookingServiceTest {
             return bayOccupancy;
         }
 
-        @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> ids, LocalDate from, LocalDate to) {
+        @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<EmployeeId> ids, LocalDate from, LocalDate to) {
             this.lastEmployeeAvailIds = ids;
             this.lastEmployeeAvailFrom = from;
             this.lastEmployeeAvailTo = to;
             return employeeAvailability;
         }
 
-        @Override public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> ids, LocalDate from, LocalDate to) {
+        @Override public List<EmployeeBooking> loadEmployeeOccupancy(Collection<EmployeeId> ids, LocalDate from, LocalDate to) {
             this.lastEmployeeOccIds = ids;
             this.lastEmployeeOccFrom = from;
             this.lastEmployeeOccTo = to;
@@ -498,7 +498,7 @@ public class BookingServiceTest {
     private void seedBookableOn(LocalDate date) {
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT), "150.00"));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(ANNA), Set.of(MECHANIC)));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
                 1, TimeRange.of(date.atTime(9, 0), date.atTime(12, 0)), date, 1, BAY_ID));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(
@@ -721,10 +721,10 @@ public class BookingServiceTest {
         assertThat(availabilityPortOut.lastBayAvailFrom).isEqualTo(TOMORROW);
         assertThat(availabilityPortOut.lastBayAvailTo).isEqualTo(TOMORROW);
         assertThat(availabilityPortOut.lastBayOccIds).containsExactly(BAY_ID);
-        assertThat(availabilityPortOut.lastEmployeeAvailIds).containsExactly(ANNA);
+        assertThat(availabilityPortOut.lastEmployeeAvailIds).containsExactly(EmployeeId.of(ANNA));
         assertThat(availabilityPortOut.lastEmployeeAvailFrom).isEqualTo(TOMORROW);
         assertThat(availabilityPortOut.lastEmployeeAvailTo).isEqualTo(TOMORROW);
-        assertThat(availabilityPortOut.lastEmployeeOccIds).containsExactly(ANNA);
+        assertThat(availabilityPortOut.lastEmployeeOccIds).containsExactly(EmployeeId.of(ANNA));
         assertThat(availabilityPortOut.lastEquipmentAvailIds).isEmpty();
     }
 

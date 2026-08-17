@@ -4,6 +4,7 @@ import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.employee.EmployeeAvailability;
 import com.hutnyk.carfix.employee.EmployeeBooking;
+import com.hutnyk.carfix.employee.EmployeeId;
 import com.hutnyk.carfix.employee.EmployeeStatus;
 import com.hutnyk.carfix.employee.mapper.EmployeeMapper;
 import com.hutnyk.carfix.employee.repository.EmployeeAvailabilityRepository;
@@ -132,9 +133,10 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
 
     @Override
     public List<EmployeeAvailability> loadEmployeeAvailability(
-            Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+            Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
         if (employeeIds.isEmpty()) return List.of();
-        return employeeAvailabilityRepository.findAllByEmployeeEntityIdInAndDateBetween(employeeIds, from, to)
+        return employeeAvailabilityRepository.findAllByEmployeeEntityIdInAndDateBetween(
+                        employeeIds.stream().map(EmployeeId::id).toList(), from, to)
                 .stream()
                 .map(EmployeeMapper::toDomain)
                 .toList();
@@ -142,9 +144,10 @@ public class AvailabilityAdapterOut implements AvailabilityPortOut {
 
     @Override
     public List<EmployeeBooking> loadEmployeeOccupancy(
-            Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+            Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
         if (employeeIds.isEmpty()) return List.of();
-        return employeeBookingRepository.findAllByEmployeeEntityIdInAndDateBetween(employeeIds, from, to)
+        return employeeBookingRepository.findAllByEmployeeEntityIdInAndDateBetween(
+                        employeeIds.stream().map(EmployeeId::id).toList(), from, to)
                 .stream()
                 .map(EmployeeMapper::toDomain)
                 .toList();

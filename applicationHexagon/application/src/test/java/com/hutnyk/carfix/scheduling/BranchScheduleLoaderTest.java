@@ -103,7 +103,7 @@ public class BranchScheduleLoaderTest {
         List<OpeningHours> openingHours = new ArrayList<>(allWeek(LocalTime.of(6, 0), LocalTime.of(22, 0)));
         List<OpeningHoursException> openingHoursExceptions = new ArrayList<>();
         Collection<Integer> lastBayIds;
-        Collection<UUID> lastEmployeeIds;
+        Collection<EmployeeId> lastEmployeeIds;
         Collection<Integer> lastEquipmentIds;
         BranchId lastOpeningHoursBranchId;
         LocalDate lastExceptionsFrom;
@@ -117,8 +117,8 @@ public class BranchScheduleLoaderTest {
         @Override public Map<BranchId, List<Equipment>> loadActiveEquipmentByBranch(Collection<BranchId> branchIds) { throw new UnsupportedOperationException(); }
         @Override public List<ServiceBayAvailability> loadBayAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) { lastBayIds = ids; return bayAvailability; }
         @Override public List<ServiceBayBooking> loadBayOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) { return bayOccupancy; }
-        @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> ids, LocalDate from, LocalDate to) { lastEmployeeIds = ids; return employeeAvailability; }
-        @Override public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> ids, LocalDate from, LocalDate to) { return employeeOccupancy; }
+        @Override public List<EmployeeAvailability> loadEmployeeAvailability(Collection<EmployeeId> ids, LocalDate from, LocalDate to) { lastEmployeeIds = ids; return employeeAvailability; }
+        @Override public List<EmployeeBooking> loadEmployeeOccupancy(Collection<EmployeeId> ids, LocalDate from, LocalDate to) { return employeeOccupancy; }
         @Override public List<EquipmentAvailability> loadEquipmentAvailability(Collection<Integer> ids, LocalDate from, LocalDate to) { lastEquipmentIds = ids; return equipmentAvailability; }
         @Override public List<EquipmentBooking> loadEquipmentOccupancy(Collection<Integer> ids, LocalDate from, LocalDate to) { return equipmentOccupancy; }
 
@@ -173,15 +173,15 @@ public class BranchScheduleLoaderTest {
                 List.of(EquipmentRequirement.of(1, "Jack", Set.of(JACK_TYPE))));
         availabilityPortOut.bays.add(ServiceBay.of(100, "Lift bay", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
         availabilityPortOut.bays.add(ServiceBay.of(101, "Pit bay", ServiceBayStatus.ACTIVE, null, PIT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(JAN, Set.of(SENIOR)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(ANNA), Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(JAN), Set.of(SENIOR)));
         availabilityPortOut.equipment.add(Equipment.of(500, "Jack", null, EquipmentStatus.ACTIVE, JACK_TYPE, BRANCH_ID));
         availabilityPortOut.equipment.add(Equipment.of(501, "Welder", null, EquipmentStatus.ACTIVE, 99, BRANCH_ID));
 
         BranchResources resources = loader.loadResources(BRANCH_ID, List.of(withJack), Set.of(LIFT));
 
         assertThat(resources.bays()).extracting(ServiceBay::getId).containsExactly(100);
-        assertThat(resources.employees()).extracting(EmployeeCandidateView::employeeId).containsExactly(ANNA);
+        assertThat(resources.employees()).extracting(EmployeeCandidateView::employeeId).containsExactly(EmployeeId.of(ANNA));
         assertThat(resources.equipment()).extracting(Equipment::getId).containsExactly(500);
         assertThat(resources.canServe()).isTrue();
     }
@@ -196,7 +196,7 @@ public class BranchScheduleLoaderTest {
         availabilityPortOut.bays.add(ServiceBay.of(100, "Lift bay", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
         assertThat(loader.loadResources(BRANCH_ID, List.of(withJack), Set.of(LIFT)).canServe()).isFalse();
 
-        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(ANNA), Set.of(MECHANIC)));
         assertThat(loader.loadResources(BRANCH_ID, List.of(withJack), Set.of(LIFT)).canServe()).isFalse();
 
         availabilityPortOut.equipment.add(Equipment.of(500, "Jack", null, EquipmentStatus.ACTIVE, JACK_TYPE, BRANCH_ID));
@@ -207,7 +207,7 @@ public class BranchScheduleLoaderTest {
     void test_loadSchedules_folds_free_time_per_resource_per_date_and_keeps_every_date() {
         Service svc = service(1, Set.of(LIFT));
         availabilityPortOut.bays.add(ServiceBay.of(100, "Lift bay", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(ANNA), Set.of(MECHANIC)));
         BranchResources resources = loader.loadResources(BRANCH_ID, List.of(svc), Set.of(LIFT));
 
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
@@ -232,7 +232,7 @@ public class BranchScheduleLoaderTest {
         assertThat(next.bays()).isEmpty();
         assertThat(next.employees()).isEmpty();
         assertThat(availabilityPortOut.lastBayIds).containsExactly(100);
-        assertThat(availabilityPortOut.lastEmployeeIds).containsExactly(ANNA);
+        assertThat(availabilityPortOut.lastEmployeeIds).containsExactly(EmployeeId.of(ANNA));
         assertThat(availabilityPortOut.lastEquipmentIds).isEmpty();
     }
 
@@ -284,7 +284,7 @@ public class BranchScheduleLoaderTest {
         Service withJack = service(1, Set.of(LIFT), ServiceStatus.ACTIVE, BRANCH_ID,
                 List.of(EquipmentRequirement.of(1, "Jack", Set.of(JACK_TYPE))));
         availabilityPortOut.bays.add(ServiceBay.of(100, "Lift bay", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(ANNA), Set.of(MECHANIC)));
         availabilityPortOut.equipment.add(Equipment.of(500, "Jack", null, EquipmentStatus.ACTIVE, JACK_TYPE, BRANCH_ID));
         BranchResources resources = loader.loadResources(BRANCH_ID, List.of(withJack), Set.of(LIFT));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(
@@ -307,7 +307,7 @@ public class BranchScheduleLoaderTest {
 
     private BranchResources seedLiftBayAndMechanic() {
         availabilityPortOut.bays.add(ServiceBay.of(100, "Lift bay", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
-        availabilityPortOut.employees.add(new EmployeeCandidateView(ANNA, Set.of(MECHANIC)));
+        availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(ANNA), Set.of(MECHANIC)));
         return loader.loadResources(BRANCH_ID, List.of(service(1, Set.of(LIFT))), Set.of(LIFT));
     }
 }

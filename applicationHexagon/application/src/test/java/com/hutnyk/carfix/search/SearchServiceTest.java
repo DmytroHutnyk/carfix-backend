@@ -268,12 +268,12 @@ public class SearchServiceTest {
         }
 
         @Override
-        public List<EmployeeAvailability> loadEmployeeAvailability(Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+        public List<EmployeeAvailability> loadEmployeeAvailability(Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
             return employeeAvailability;
         }
 
         @Override
-        public List<EmployeeBooking> loadEmployeeOccupancy(Collection<UUID> employeeIds, LocalDate from, LocalDate to) {
+        public List<EmployeeBooking> loadEmployeeOccupancy(Collection<EmployeeId> employeeIds, LocalDate from, LocalDate to) {
             return employeeOccupancy;
         }
 
@@ -366,7 +366,7 @@ public class SearchServiceTest {
                 BranchId.of(branchId), 1, Set.of(1), List.of(EmployeeRequirement.of(1, "Mechanic", Set.of(10))), List.of()));
         servicePortOut.toReturn = services;
         availabilityPortOut.bays.add(ServiceBay.of(bayId, "Bay", ServiceBayStatus.ACTIVE, null, 1, BranchId.of(branchId)));
-        availabilityPortOut.employees.put(BranchId.of(branchId), List.of(new EmployeeCandidateView(mechanicId, Set.of(10))));
+        availabilityPortOut.employees.put(BranchId.of(branchId), List.of(new EmployeeCandidateView(EmployeeId.of(mechanicId), Set.of(10))));
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(bayId,
                 TimeRange.of(TOMORROW.atTime(9, 0), TOMORROW.atTime(12, 0)), TOMORROW, 1, bayId));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(bayId,

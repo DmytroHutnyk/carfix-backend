@@ -149,7 +149,7 @@ public final class SearchAvailabilityFilter {
 
     private Calendars loadCalendars(List<Job> jobs, LocalDate from, LocalDate to) {
         List<Integer> bayIds = jobs.stream().flatMap(j -> j.bays().stream()).map(ServiceBay::getId).distinct().toList();
-        List<UUID> employeeIds = jobs.stream().flatMap(j -> j.employees().stream())
+        List<EmployeeId> employeeIds = jobs.stream().flatMap(j -> j.employees().stream())
                 .map(EmployeeCandidateView::employeeId).distinct().toList();
         List<Integer> equipmentIds = jobs.stream().flatMap(j -> j.equipment().stream())
                 .map(Equipment::getId).distinct().toList();
@@ -224,8 +224,8 @@ public final class SearchAvailabilityFilter {
 
     private static List<EmployeeSchedule> employeeSchedules(Job job, Calendars c, LocalDate date, List<TimeRange> open) {
         return job.employees().stream()
-                .map(e -> new EmployeeSchedule(EmployeeId.of(e.employeeId()), e.roleIds(),
-                        freeOf(c.employeeAvailability(), c.employeeOccupancy(), date, EmployeeId.of(e.employeeId()), open)))
+                .map(e -> new EmployeeSchedule(e.employeeId(), e.roleIds(),
+                        freeOf(c.employeeAvailability(), c.employeeOccupancy(), date, e.employeeId(), open)))
                 .filter(s -> !s.free().isEmpty())
                 .toList();
     }
