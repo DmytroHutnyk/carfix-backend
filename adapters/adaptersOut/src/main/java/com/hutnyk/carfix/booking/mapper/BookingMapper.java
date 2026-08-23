@@ -68,7 +68,7 @@ public class BookingMapper {
                 e.getStartTime(),
                 e.getEndTime(),
                 booking.effectiveStatus(now.atZone(branchZone).toLocalDateTime()),
-                booking.safeCancelUntil(branchZone),
+                booking.safeCancelUntil(branchZone, branch.getCancellationPolicy().notice()),
                 branch.getId(),
                 branch.getName(),
                 branch.getPhoneNumber(),
