@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
+import com.hutnyk.carfix.booking.exception.BookingNoShowNotAllowedException;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.employee.EmployeeId;
@@ -34,11 +35,15 @@ public class BookingTest {
 
     private static final BranchId BRANCH_ID = BranchId.genId();
     private static final EmployeeId ANNA = EmployeeId.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    private static final LocalDate BOOKED_DAY = LocalDate.of(2030, 6, 12);
+    private static final LocalDateTime START = BOOKED_DAY.atTime(10, 0);
+    private static final LocalDateTime END = BOOKED_DAY.atTime(11, 30);
+    private static final LocalDateTime BEFORE_START = START.minusMinutes(1);
 
     private static Booking withStatus(BookingStatus status) {
         return Booking.of(
                 BookingId.genId(),
-                LocalDate.of(2030, 6, 12),
+                BOOKED_DAY,
                 status,
                 LocalTime.of(10, 0),
                 LocalTime.of(11, 30),
@@ -66,7 +71,7 @@ public class BookingTest {
     public void cancelFlipsScheduledToCancelledAndKeepsEverythingElse() {
         Booking scheduled = withStatus(BookingStatus.SCHEDULED);
 
-        Booking cancelled = scheduled.cancel();
+        Booking cancelled = scheduled.cancel(BEFORE_START);
 
         assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(cancelled.getId()).isEqualTo(scheduled.getId());
@@ -78,13 +83,92 @@ public class BookingTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = BookingStatus.class, names = {"IN_PROGRESS", "COMPLETED", "CANCELLED"})
-    public void cancelRefusesEveryNonScheduledStatus(BookingStatus status) {
+    @EnumSource(value = BookingStatus.class, names = {"CANCELLED", "NO_SHOW"})
+    public void cancelRefusesAStoredFactWhateverTheClockSays(BookingStatus status) {
         Booking booking = withStatus(status);
 
-        assertThatThrownBy(booking::cancel)
+        assertThatThrownBy(() -> booking.cancel(BEFORE_START))
                 .isInstanceOf(BookingCancellationNotAllowedException.class)
                 .hasMessageContaining(status.name());
+    }
+
+    @Test
+    public void cancelRefusesABookingThatHasAlreadyStarted() {
+        Booking booking = withStatus(BookingStatus.SCHEDULED);
+
+        assertThatThrownBy(() -> booking.cancel(START))
+                .isInstanceOf(BookingCancellationNotAllowedException.class)
+                .hasMessageContaining(BookingStatus.IN_PROGRESS.name());
+    }
+
+    @Test
+    public void cancelRefusesABookingThatHasAlreadyFinished() {
+        Booking booking = withStatus(BookingStatus.SCHEDULED);
+
+        assertThatThrownBy(() -> booking.cancel(END))
+                .isInstanceOf(BookingCancellationNotAllowedException.class)
+                .hasMessageContaining(BookingStatus.COMPLETED.name());
+    }
+
+    @Test
+    public void effectiveStatusIsScheduledUntilTheInstantItStarts() {
+        Booking booking = withStatus(BookingStatus.SCHEDULED);
+
+        assertThat(booking.effectiveStatus(BEFORE_START)).isEqualTo(BookingStatus.SCHEDULED);
+        assertThat(booking.effectiveStatus(START)).isEqualTo(BookingStatus.IN_PROGRESS);
+    }
+
+    @Test
+    public void effectiveStatusIsInProgressUntilTheInstantItEnds() {
+        Booking booking = withStatus(BookingStatus.SCHEDULED);
+
+        assertThat(booking.effectiveStatus(END.minusMinutes(1))).isEqualTo(BookingStatus.IN_PROGRESS);
+        assertThat(booking.effectiveStatus(END)).isEqualTo(BookingStatus.COMPLETED);
+        assertThat(booking.effectiveStatus(END.plusYears(1))).isEqualTo(BookingStatus.COMPLETED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = BookingStatus.class, names = {"CANCELLED", "NO_SHOW"})
+    public void effectiveStatusKeepsAStoredFactAtEveryInstant(BookingStatus stored) {
+        Booking booking = withStatus(stored);
+
+        assertThat(booking.effectiveStatus(BEFORE_START)).isEqualTo(stored);
+        assertThat(booking.effectiveStatus(START)).isEqualTo(stored);
+        assertThat(booking.effectiveStatus(END)).isEqualTo(stored);
+    }
+
+    @Test
+    public void markNoShowIsAllowedFromTheSlotStartOnwards() {
+        Booking booking = withStatus(BookingStatus.SCHEDULED);
+
+        assertThat(booking.markNoShow(START).getStatus()).isEqualTo(BookingStatus.NO_SHOW);
+        assertThat(booking.markNoShow(END).getStatus()).isEqualTo(BookingStatus.NO_SHOW);
+        assertThat(booking.markNoShow(END.plusDays(3)).getStatus()).isEqualTo(BookingStatus.NO_SHOW);
+    }
+
+    @Test
+    public void markNoShowRefusesABookingThatHasNotStarted() {
+        Booking booking = withStatus(BookingStatus.SCHEDULED);
+
+        assertThatThrownBy(() -> booking.markNoShow(BEFORE_START))
+                .isInstanceOf(BookingNoShowNotAllowedException.class)
+                .hasMessageContaining(BookingStatus.SCHEDULED.name());
+    }
+
+    @Test
+    public void markNoShowRefusesACancelledBooking() {
+        Booking booking = withStatus(BookingStatus.CANCELLED);
+
+        assertThatThrownBy(() -> booking.markNoShow(END))
+                .isInstanceOf(BookingNoShowNotAllowedException.class)
+                .hasMessageContaining(BookingStatus.CANCELLED.name());
+    }
+
+    @Test
+    public void markNoShowOfAnAlreadyMarkedBookingChangesNothing() {
+        Booking booking = withStatus(BookingStatus.NO_SHOW);
+
+        assertThat(booking.markNoShow(END)).isSameAs(booking);
     }
 
     @Test
@@ -158,7 +242,7 @@ public class BookingTest {
         BookingSegment late = BookingSegment.of(27, LocalTime.of(10, 0), LocalTime.of(11, 30), BigDecimal.TEN);
         BookingSegment early = BookingSegment.of(11, LocalTime.of(9, 0), LocalTime.of(9, 50), BigDecimal.TEN);
 
-        Booking booking = Booking.of(BookingId.genId(), LocalDate.of(2030, 6, 12), BookingStatus.SCHEDULED,
+        Booking booking = Booking.of(BookingId.genId(), BOOKED_DAY, BookingStatus.SCHEDULED,
                 LocalTime.of(9, 0), LocalTime.of(11, 30), BranchId.genId(), CarProfileId.genId(), List.of(late, early));
 
         assertThat(booking.getSegments()).containsExactly(early, late);

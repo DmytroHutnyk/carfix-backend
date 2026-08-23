@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
+import com.hutnyk.carfix.booking.exception.BookingNoShowNotAllowedException;
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
 import com.hutnyk.carfix.booking.exception.CarProfileAlreadyBookedException;
 import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
@@ -39,7 +40,9 @@ import com.hutnyk.carfix.out.booking.BookingPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
+import com.hutnyk.carfix.out.owner.OwnerPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
+import com.hutnyk.carfix.owner.Owner;
 import com.hutnyk.carfix.review.BranchRating;
 import com.hutnyk.carfix.scheduling.TimeRange;
 import com.hutnyk.carfix.scheduling.exception.ServiceNotFoundException;
@@ -75,7 +78,9 @@ import java.util.UUID;
 public class BookingServiceTest {
 
     private static final String EMAIL = "john@example.com";
+    private static final String OWNER_EMAIL = "boss@speedcare.pl";
     private static final UserId CUSTOMER_ID = UserId.genId();
+    private static final UserId OWNER_ID = UserId.genId();
     private static final UUID BOOKING_ID = UUID.randomUUID();
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
     private static final LocalDate TODAY = LocalDate.of(2030, 6, 12);
@@ -105,6 +110,22 @@ public class BookingServiceTest {
                         .addressId(null)
                         .build(),
                 CustomerStatus.ACTIVE);
+    }
+
+    private static Owner owner() {
+        return Owner.of(
+                User.builder()
+                        .id(OWNER_ID)
+                        .name("Ola")
+                        .surname("Nowak")
+                        .phoneNumber(new PhoneNumber("+48", "987654321"))
+                        .email(OWNER_EMAIL)
+                        .role(UserRole.OWNER)
+                        .passwordHash(PasswordHash.of("$2a$10$storedhashvalue"))
+                        .dateOfBirth(LocalDate.of(1985, 3, 9))
+                        .addressId(null)
+                        .build(),
+                "SpeedCare", "1234567890", "123456789");
     }
 
     private static Service service(int id, Set<Integer> bayTypes, String price) {
@@ -362,13 +383,17 @@ public class BookingServiceTest {
     }
 
     private static Booking booking(BookingStatus status) {
+        return booking(status, TOMORROW);
+    }
+
+    private static Booking booking(BookingStatus status, LocalDate date) {
         return Booking.of(
                 BookingId.of(BOOKING_ID),
-                LocalDate.of(2030, 6, 12),
+                date,
                 status,
                 LocalTime.of(10, 0),
                 LocalTime.of(11, 30),
-                BranchId.genId(),
+                BRANCH_ID,
                 CarProfileId.genId(),
                 List.of());
     }
@@ -403,6 +428,7 @@ public class BookingServiceTest {
         Booking inserted;
         BookingOccupancy insertedOccupancy;
         UUID requestedCustomerId;
+        UUID requestedOwnerId;
         BookingId freedOccupancyFor;
         boolean carAlreadyBooked = false;
         CarProfileId overlapCarProfileId;
@@ -428,6 +454,12 @@ public class BookingServiceTest {
         @Override
         public Optional<Booking> findByIdAndCustomerId(UUID bookingId, UUID customerId) {
             this.requestedCustomerId = customerId;
+            return Optional.ofNullable(stored);
+        }
+
+        @Override
+        public Optional<Booking> findByIdAndOwnerId(UUID bookingId, UUID ownerId) {
+            this.requestedOwnerId = ownerId;
             return Optional.ofNullable(stored);
         }
 
@@ -458,6 +490,15 @@ public class BookingServiceTest {
         }
     }
 
+    private static final class StubOwnerPortOut implements OwnerPortOut {
+        boolean exists = true;
+
+        @Override
+        public Optional<Owner> findOwnerByUsername(String email) {
+            return exists ? Optional.of(owner()) : Optional.empty();
+        }
+    }
+
     private static final class RecordingNotifier implements BookingNotificationPortOut {
         User confirmedTo;
         BookingView confirmed;
@@ -481,10 +522,11 @@ public class BookingServiceTest {
     private final RecordingNotifier notifier = new RecordingNotifier();
     private final StubCarProfilePortOut carProfilePortOut = new StubCarProfilePortOut();
     private final StubBranchPortOut branchPortOut = new StubBranchPortOut();
+    private final StubOwnerPortOut ownerPortOut = new StubOwnerPortOut();
     private final StubServicePortOut servicePortOut = new StubServicePortOut();
     private final StubAvailabilityPortOut availabilityPortOut = new StubAvailabilityPortOut();
     private final BookingService service = new BookingService(new StubCustomerPortOut(), bookingPortOut, notifier,
-            carProfilePortOut, branchPortOut, servicePortOut, availabilityPortOut, CLOCK);
+            carProfilePortOut, branchPortOut, ownerPortOut, servicePortOut, availabilityPortOut, CLOCK);
 
     private static CreateBookingCommand command(List<Integer> serviceIds, LocalDate date, LocalTime start) {
         return new CreateBookingCommand(BRANCH_ID.id(), CAR_PROFILE_ID, serviceIds, date, start);
@@ -697,8 +739,8 @@ public class BookingServiceTest {
     }
 
     @Test
-    public void cancelBookingNonScheduledPropagatesDomainRefusalWithoutPersisting() {
-        bookingPortOut.stored = booking(BookingStatus.COMPLETED);
+    public void cancelBookingAlreadyStartedPropagatesDomainRefusalWithoutPersisting() {
+        bookingPortOut.stored = booking(BookingStatus.SCHEDULED, TODAY);
 
         assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
                 .isInstanceOf(BookingCancellationNotAllowedException.class);
@@ -813,8 +855,37 @@ public class BookingServiceTest {
     }
 
     @Test
+    public void markNoShowPersistsTheStoredFactForTheBranchOwner() {
+        bookingPortOut.stored = booking(BookingStatus.SCHEDULED, TODAY);
+
+        service.markNoShow(OWNER_EMAIL, BOOKING_ID);
+
+        assertThat(bookingPortOut.requestedOwnerId).isEqualTo(OWNER_ID.id());
+        assertThat(bookingPortOut.updated.getStatus()).isEqualTo(BookingStatus.NO_SHOW);
+        assertThat(bookingPortOut.freedOccupancyFor).isNull();
+    }
+
+    @Test
+    public void markNoShowOfAForeignOrUnknownBookingThrowsNotFound() {
+        bookingPortOut.stored = null;
+
+        assertThatThrownBy(() -> service.markNoShow(OWNER_EMAIL, BOOKING_ID))
+                .isInstanceOf(BookingNotFoundException.class);
+        assertThat(bookingPortOut.updated).isNull();
+    }
+
+    @Test
+    public void markNoShowBeforeTheSlotStartsPropagatesDomainRefusal() {
+        bookingPortOut.stored = booking(BookingStatus.SCHEDULED, TOMORROW);
+
+        assertThatThrownBy(() -> service.markNoShow(OWNER_EMAIL, BOOKING_ID))
+                .isInstanceOf(BookingNoShowNotAllowedException.class);
+        assertThat(bookingPortOut.updated).isNull();
+    }
+
+    @Test
     public void cancelBookingRefusedByTheDomainSendsNoEmail() {
-        bookingPortOut.stored = booking(BookingStatus.COMPLETED);
+        bookingPortOut.stored = booking(BookingStatus.CANCELLED);
 
         assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
                 .isInstanceOf(BookingCancellationNotAllowedException.class);

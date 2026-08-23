@@ -85,7 +85,7 @@ public class BookingAdapterOutTest {
     @Test
     public void freeOccupancyDeletesFromAllThreeOccupancyTablesByBookingId() {
         List<String> calls = new ArrayList<>();
-        BookingAdapterOut adapter = new BookingAdapterOut(null, null,
+        BookingAdapterOut adapter = new BookingAdapterOut(null, null, null,
                 recordingRepository(ServiceBayBookingRepository.class, calls),
                 recordingRepository(EmployeeBookingRepository.class, calls),
                 recordingRepository(EquipmentBookingRepository.class, calls));

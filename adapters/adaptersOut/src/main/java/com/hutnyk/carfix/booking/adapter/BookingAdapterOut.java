@@ -36,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 
 import java.sql.SQLException;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -57,6 +59,7 @@ public class BookingAdapterOut implements BookingPortOut {
     private static final int MAX_CAUSE_DEPTH = 20;
 
     private final EntityManager entityManager;
+    private final Clock clock;
     private final BookingRepository bookingRepository;
     private final ServiceBayBookingRepository serviceBayBookingRepository;
     private final EmployeeBookingRepository employeeBookingRepository;
@@ -64,20 +67,27 @@ public class BookingAdapterOut implements BookingPortOut {
 
     @Override
     public List<BookingView> findAllViewsByCustomerId(UUID customerId) {
+        Instant now = clock.instant();
         return bookingRepository.findAllByCustomerIdWithDetails(customerId).stream()
-                .map(BookingMapper::toView)
+                .map(entity -> BookingMapper.toView(entity, now))
                 .toList();
     }
 
     @Override
     public Optional<BookingView> findViewByIdAndCustomerId(UUID bookingId, UUID customerId) {
         return bookingRepository.findByIdAndCustomerIdWithDetails(bookingId, customerId)
-                .map(BookingMapper::toView);
+                .map(entity -> BookingMapper.toView(entity, clock.instant()));
     }
 
     @Override
     public Optional<Booking> findByIdAndCustomerId(UUID bookingId, UUID customerId) {
         return bookingRepository.findByIdAndCustomerIdWithDetails(bookingId, customerId)
+                .map(BookingMapper::toDomain);
+    }
+
+    @Override
+    public Optional<Booking> findByIdAndOwnerId(UUID bookingId, UUID ownerId) {
+        return bookingRepository.findByIdAndOwnerIdWithSegments(bookingId, ownerId)
                 .map(BookingMapper::toDomain);
     }
 
@@ -147,7 +157,7 @@ public class BookingAdapterOut implements BookingPortOut {
     @Override
     public boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end) {
         return bookingRepository.existsByCarProfileOverlapping(
-                carProfileId.id(), date, start, end, EnumSet.of(BookingStatus.SCHEDULED, BookingStatus.IN_PROGRESS));
+                carProfileId.id(), date, start, end, EnumSet.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW));
     }
 
     /* Postgres reports a lost race as one of a few SQLSTATEs. Hibernate wraps it in a

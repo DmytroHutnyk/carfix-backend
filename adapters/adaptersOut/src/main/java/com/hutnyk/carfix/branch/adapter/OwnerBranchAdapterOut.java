@@ -1,5 +1,6 @@
 package com.hutnyk.carfix.branch.adapter;
 
+import com.hutnyk.carfix.booking.BookingLifecycle;
 import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.booking.repository.BookingRepository;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
@@ -29,6 +30,7 @@ import org.springframework.data.domain.Sort;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +69,7 @@ public class OwnerBranchAdapterOut implements OwnerBranchPortOut {
                 .map(LocalDateTime::toLocalDate)
                 .collect(Collectors.toSet());
 
-        List<Object[]> bookingRows = bookingRepository.countByBranchDateAndStatus(branchIds, todays);
+        List<Object[]> bookingRows = bookingRepository.countByBranchDateStatusAndSpan(branchIds, todays);
         List<Object[]> onDutyRows = employeeAvailabilityRepository
                 .countDistinctEmployeesByBranchAndDate(branchIds, EmployeeStatus.ACTIVE, todays);
         Map<UUID, Integer> employeesTotal = countsByBranch(
@@ -87,8 +89,9 @@ public class OwnerBranchAdapterOut implements OwnerBranchPortOut {
                     return BranchMapper.toOwnerSummaryView(
                             branch,
                             openingCalendar(hours.get(id), exceptions.get(id)).isOpenAt(localNow),
-                            sumBookings(bookingRows, id, today, status -> status != BookingStatus.CANCELLED),
-                            sumBookings(bookingRows, id, today, status -> status == BookingStatus.COMPLETED),
+                            sumBookings(bookingRows, id, localNow, status -> status != BookingStatus.CANCELLED
+                                    && status != BookingStatus.NO_SHOW),
+                            sumBookings(bookingRows, id, localNow, status -> status == BookingStatus.COMPLETED),
                             onDuty(onDutyRows, id, today),
                             employeesTotal.getOrDefault(id, 0),
                             latestReviews(id));
@@ -103,13 +106,19 @@ public class OwnerBranchAdapterOut implements OwnerBranchPortOut {
                 nullToEmpty(exceptions).stream().map(OpeningHoursMapper::toDomain).toList());
     }
 
-    /* Rows: [branchId, date, status, count] — see BookingRepository.countByBranchDateAndStatus. */
-    private static int sumBookings(
-            List<Object[]> rows, UUID branchId, LocalDate today, Predicate<BookingStatus> statusFilter) {
+    /* Rows: [branchId, date, status, startTime, endTime, count] — see BookingRepository. The filter
+       sees the effective status, so "completed today" is the clock talking, not a stored value. */
+    static int sumBookings(
+            List<Object[]> rows, UUID branchId, LocalDateTime localNow, Predicate<BookingStatus> statusFilter) {
+        LocalDate today = localNow.toLocalDate();
         return rows.stream()
                 .filter(row -> branchId.equals(row[0]) && today.equals(row[1])
-                        && statusFilter.test((BookingStatus) row[2]))
-                .mapToInt(row -> ((Number) row[3]).intValue())
+                        && statusFilter.test(BookingLifecycle.effectiveStatus(
+                                (BookingStatus) row[2],
+                                today.atTime((LocalTime) row[3]),
+                                today.atTime((LocalTime) row[4]),
+                                localNow)))
+                .mapToInt(row -> ((Number) row[5]).intValue())
                 .sum();
     }
 

@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.booking;
 
 import com.hutnyk.carfix.booking.exception.BookingCancellationNotAllowedException;
+import com.hutnyk.carfix.booking.exception.BookingNoShowNotAllowedException;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
@@ -146,11 +147,28 @@ public final class Booking {
                 service.getPrice());
     }
 
-    public Booking cancel() {
-        if (status != BookingStatus.SCHEDULED) {
-            throw new BookingCancellationNotAllowedException(id.id(), status);
+    public BookingStatus effectiveStatus(LocalDateTime now) {
+        return BookingLifecycle.effectiveStatus(
+                status, date.atTime(startTime), date.atTime(endTime), notNull(now, "now"));
+    }
+
+    public Booking cancel(LocalDateTime now) {
+        BookingStatus effective = effectiveStatus(now);
+        if (effective != BookingStatus.SCHEDULED) {
+            throw new BookingCancellationNotAllowedException(id.id(), effective);
         }
         return withStatus(BookingStatus.CANCELLED);
+    }
+
+    public Booking markNoShow(LocalDateTime now) {
+        BookingStatus effective = effectiveStatus(now);
+        if (effective == BookingStatus.NO_SHOW) {
+            return this;
+        }
+        if (effective == BookingStatus.SCHEDULED || effective == BookingStatus.CANCELLED) {
+            throw new BookingNoShowNotAllowedException(id.id(), effective);
+        }
+        return withStatus(BookingStatus.NO_SHOW);
     }
 
     public Instant safeCancelUntil(ZoneId branchZone) {

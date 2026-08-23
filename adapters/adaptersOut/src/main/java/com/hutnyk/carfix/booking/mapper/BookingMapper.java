@@ -19,6 +19,7 @@ import com.hutnyk.carfix.in.booking.query.BookingView;
 import com.hutnyk.carfix.service.entity.ServiceEntity;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -43,9 +44,11 @@ public class BookingMapper {
         );
     }
 
-    public static BookingView toView(BookingEntity e) {
+    public static BookingView toView(BookingEntity e, Instant now) {
         if (e == null) return null;
         BranchEntity branch = e.getBranchEntity();
+        ZoneId branchZone = ZoneId.of(branch.getTz());
+        Booking booking = toDomain(e);
         AddressEntity address = branch.getAddressEntity();
         CarProfileEntity carProfile = e.getCarProfileEntity();
         ModelVersionEntity version = carProfile.getModelVersionEntity();
@@ -64,8 +67,8 @@ public class BookingMapper {
                 e.getDate(),
                 e.getStartTime(),
                 e.getEndTime(),
-                e.getStatus(),
-                toDomain(e).safeCancelUntil(ZoneId.of(branch.getTz())),
+                booking.effectiveStatus(now.atZone(branchZone).toLocalDateTime()),
+                booking.safeCancelUntil(branchZone),
                 branch.getId(),
                 branch.getName(),
                 branch.getPhoneNumber(),
