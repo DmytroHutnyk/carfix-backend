@@ -1,12 +1,21 @@
 package com.hutnyk.carfix.exception;
 
+import com.hutnyk.carfix.branch.exception.InvalidBranchRegistrationException;
+import com.hutnyk.carfix.carCatalog.exception.CarBrandNotFoundException;
 import com.hutnyk.carfix.carCatalog.exception.ModelVersionNotFoundException;
 import com.hutnyk.carfix.carProfile.exception.CarProfileNotFoundException;
+import com.hutnyk.carfix.service.exception.ServiceCategoryNotFoundException;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import com.hutnyk.carfix.user.exception.EmailAlreadyTakenException;
+import com.hutnyk.carfix.user.exception.EmailAlreadyVerifiedException;
 import com.hutnyk.carfix.user.exception.PhoneNumberAlreadyTakenException;
 import com.hutnyk.carfix.user.exception.UserAlreadyExistsException;
+import com.hutnyk.carfix.user.exception.VerificationCodeAttemptsExceededException;
+import com.hutnyk.carfix.user.exception.VerificationCodeExpiredException;
+import com.hutnyk.carfix.user.exception.VerificationCodeInvalidException;
+import com.hutnyk.carfix.user.exception.VerificationCodeNotFoundException;
+import com.hutnyk.carfix.user.exception.VerificationCodeResendTooSoonException;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -78,5 +87,76 @@ public class FeatureExceptionsTest {
         assertThat(byEmail.getMessage()).isEqualTo("Authenticated user not found: john@example.com");
         assertThat(noAggregate.getMessage())
                 .isEqualTo("No customer aggregate for authenticated principal: john@example.com");
+    }
+
+    @Test
+    public void test_car_brand_not_found_is_a_404_with_its_own_code() {
+        //when
+        CarBrandNotFoundException exception = new CarBrandNotFoundException(42);
+
+        //then
+        assertThat(exception.getErrorCode().code()).isEqualTo("CAR_BRAND_NOT_FOUND");
+        assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
+        assertThat(exception.getMessage()).isEqualTo("Car brand not found: 42");
+    }
+
+    @Test
+    public void test_service_category_not_found_is_a_404_with_its_own_code() {
+        //when
+        ServiceCategoryNotFoundException exception = new ServiceCategoryNotFoundException(7);
+
+        //then
+        assertThat(exception.getErrorCode().code()).isEqualTo("SERVICE_CATEGORY_NOT_FOUND");
+        assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
+        assertThat(exception.getMessage()).isEqualTo("Service category not found: 7");
+    }
+
+    @Test
+    public void test_invalid_branch_registration_publishes_the_offending_path() {
+        //when
+        InvalidBranchRegistrationException exception =
+                InvalidBranchRegistrationException.unknownReference("serviceBays[0].type", "service bay type", "Lift");
+
+        //then
+        assertThat(exception.getErrorCode().code()).isEqualTo("INVALID_BRANCH_REGISTRATION");
+        assertThat(exception.category()).isEqualTo(ErrorCategory.VALIDATION);
+        assertThat(exception.details()).containsExactly(entry("serviceBays[0].type", "Unknown service bay type: Lift"));
+    }
+
+    @Test
+    public void test_email_already_verified_maps_to_conflict_without_field_details() {
+        //given
+        EmailAlreadyVerifiedException exception = new EmailAlreadyVerifiedException("john@example.com");
+
+        //then
+        assertThat(exception.category()).isEqualTo(ErrorCategory.CONFLICT);
+        assertThat(exception.getErrorCode().code()).isEqualTo("EMAIL_ALREADY_VERIFIED");
+        assertThat(exception.getMessage()).isEqualTo("Email john@example.com is already verified");
+        assertThat(exception.details()).isEmpty();
+    }
+
+    @Test
+    public void test_verification_code_invalid_reports_the_code_field_and_attempts_left() {
+        //given
+        VerificationCodeInvalidException exception = new VerificationCodeInvalidException(3);
+
+        //then
+        assertThat(exception.category()).isEqualTo(ErrorCategory.VALIDATION);
+        assertThat(exception.getErrorCode().code()).isEqualTo("VERIFICATION_CODE_INVALID");
+        assertThat(exception.details()).containsExactly(entry("code", "Incorrect verification code. 3 attempt(s) left"));
+    }
+
+    @Test
+    public void test_verification_code_state_failures_map_to_their_categories() {
+        //then
+        assertThat(new VerificationCodeNotFoundException().category()).isEqualTo(ErrorCategory.NOT_FOUND);
+        assertThat(new VerificationCodeNotFoundException().getMessage()).isEqualTo("No active verification code. Request a new one");
+        assertThat(new VerificationCodeExpiredException().category()).isEqualTo(ErrorCategory.BUSINESS_RULE);
+        assertThat(new VerificationCodeExpiredException().getMessage()).isEqualTo("The verification code has expired. Request a new one");
+        assertThat(new VerificationCodeAttemptsExceededException().category()).isEqualTo(ErrorCategory.BUSINESS_RULE);
+        assertThat(new VerificationCodeAttemptsExceededException().getMessage()).isEqualTo("Too many incorrect attempts. Request a new code");
+        assertThat(new VerificationCodeResendTooSoonException(42).category()).isEqualTo(ErrorCategory.BUSINESS_RULE);
+        assertThat(new VerificationCodeResendTooSoonException(42).getMessage())
+                .isEqualTo("A verification code was sent recently. You can request a new one in 42 seconds");
     }
 }

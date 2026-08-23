@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.user.entity;
 
 import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.address.entity.CityEntity;
 import com.hutnyk.carfix.user.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -51,8 +53,16 @@ public class UserEntity {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     @ToString.Exclude
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private AddressEntity addressEntity;
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "preferred_city_id")
+    private CityEntity preferredCityEntity;
 }

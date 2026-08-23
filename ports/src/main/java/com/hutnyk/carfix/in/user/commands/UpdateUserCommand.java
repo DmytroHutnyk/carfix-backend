@@ -5,6 +5,7 @@ import java.time.LocalDate;
 public record UpdateUserCommand(
         String name,
         String surname,
-        LocalDate dateOfBirth
+        LocalDate dateOfBirth,
+        LocationCommand preferredLocation
 ) {
 }

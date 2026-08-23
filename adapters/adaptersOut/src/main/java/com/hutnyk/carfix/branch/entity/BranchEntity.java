@@ -61,7 +61,7 @@ public class BranchEntity {
     @JoinColumn(name = "address_id", nullable = false)
     private AddressEntity addressEntity;
 
-    // FK to owners(user_id); becomes a @ManyToOne once OwnerEntity is mapped.
+    // FK to owners(user_id); kept as a plain column — nothing reads through to the owner from a branch yet.
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 

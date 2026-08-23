@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class Equipment {
@@ -52,5 +51,10 @@ public final class Equipment {
                 .equipmentTypeId(equipmentTypeId)
                 .branchId(branchId)
                 .build();
+    }
+
+    /** A unit the owner registers: active from day one, no notes yet. */
+    public static Equipment create(String name, Integer equipmentTypeId, BranchId branchId) {
+        return of(null, name, null, EquipmentStatus.ACTIVE, equipmentTypeId, branchId);
     }
 }

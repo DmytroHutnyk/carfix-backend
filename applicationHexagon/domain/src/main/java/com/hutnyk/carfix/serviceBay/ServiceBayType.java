@@ -1,11 +1,11 @@
 package com.hutnyk.carfix.serviceBay;
 
+import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.util.Validator;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class ServiceBayType {
@@ -14,16 +14,26 @@ public final class ServiceBayType {
     private final Integer id;
     private final String name;
 
+    //Nullable — platform (seeded) types belong to no branch
+    private final BranchId branchId;
+
     @Builder
-    private ServiceBayType(Integer id, String name) {
+    private ServiceBayType(Integer id, String name, BranchId branchId) {
         this.id = id;
         this.name = Validator.notBlank(name, "name");
+        this.branchId = branchId;
     }
 
-    public static ServiceBayType of(Integer id, String name) {
+    public static ServiceBayType of(Integer id, String name, BranchId branchId) {
         return ServiceBayType.builder()
                 .id(id)
                 .name(name)
+                .branchId(branchId)
                 .build();
+    }
+
+    /** Owner-declared type: always belongs to a branch. */
+    public static ServiceBayType create(String name, BranchId branchId) {
+        return of(null, name, Validator.notNull(branchId, "branchId"));
     }
 }

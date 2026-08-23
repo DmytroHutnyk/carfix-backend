@@ -2,6 +2,7 @@ package com.hutnyk.carfix.carCatalog.repository;
 
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,4 +19,10 @@ public interface CarBrandRepository extends JpaRepository<CarBrandEntity, Intege
             ORDER BY cb.name
             """)
     List<CarBrandEntity> findAllByBranchId(@Param("branchId") UUID branchId);
+
+    @Modifying(flushAutomatically = true)
+    @Query(nativeQuery = true, value = """
+            INSERT INTO car_brands_branches (car_brand_id, branch_id) VALUES (:brandId, :branchId)
+            """)
+    void linkToBranch(@Param("brandId") Integer brandId, @Param("branchId") UUID branchId);
 }

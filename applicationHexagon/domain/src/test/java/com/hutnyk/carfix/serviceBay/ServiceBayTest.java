@@ -35,4 +35,27 @@ public class ServiceBayTest {
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.NULL_VALUE);
     }
+
+    @Test
+    public void test_create_builds_active_bay_without_notes_or_id() {
+        //when
+        ServiceBay result = ServiceBay.create("Bay 1", 4, BRANCH_ID);
+
+        //then
+        assertThat(result.getId()).isNull();
+        assertThat(result.getName()).isEqualTo("Bay 1");
+        assertThat(result.getStatus()).isEqualTo(ServiceBayStatus.ACTIVE);
+        assertThat(result.getNotes()).isNull();
+        assertThat(result.getServiceBayTypeId()).isEqualTo(4);
+        assertThat(result.getBranchId()).isEqualTo(BRANCH_ID);
+    }
+
+    @Test
+    public void test_create_requires_type() {
+        //when + then
+        assertThatThrownBy(() -> ServiceBay.create("Bay 1", null, BRANCH_ID))
+                .isInstanceOf(DomainObjectValidationException.class)
+                .extracting("errorType", "fieldName")
+                .containsExactly(ValidationErrorType.NULL_VALUE, "serviceBayTypeId");
+    }
 }

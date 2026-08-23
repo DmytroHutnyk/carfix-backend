@@ -219,4 +219,20 @@ public class ValidatorTest {
                 .isEqualTo(ValidationErrorType.INVALID_PHONE_FORMAT);
     }
 
+    @Test
+    public void test_validateInternationalPhoneNumber_accepts_plus_and_digits() {
+        //when + then
+        assertThat(Validator.validateInternationalPhoneNumber("+48221234567", "phoneNumber")).isEqualTo("+48221234567");
+    }
+
+    @Test
+    public void test_validateInternationalPhoneNumber_rejects_missing_plus_letters_and_length() {
+        //when + then
+        for (String bad : new String[]{"48221234567", "+48 22 123", "+1234", "+1234567890123456"}) {
+            assertThatThrownBy(() -> Validator.validateInternationalPhoneNumber(bad, "phoneNumber"))
+                    .isInstanceOf(DomainObjectValidationException.class)
+                    .extracting("errorType")
+                    .isEqualTo(ValidationErrorType.INVALID_PHONE_FORMAT);
+        }
+    }
 }

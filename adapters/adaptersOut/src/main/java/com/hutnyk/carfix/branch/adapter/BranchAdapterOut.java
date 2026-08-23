@@ -1,5 +1,7 @@
 package com.hutnyk.carfix.branch.adapter;
 
+import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.BranchStatus;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
@@ -8,14 +10,19 @@ import com.hutnyk.carfix.branch.repository.BranchRepository;
 import com.hutnyk.carfix.carCatalog.repository.CarBrandRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.repository.OpeningHoursRepository;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.review.BranchRating;
 import com.hutnyk.carfix.service.ServiceStatus;
 import com.hutnyk.carfix.service.repository.ServiceRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -26,6 +33,7 @@ public class BranchAdapterOut implements BranchPortOut {
     private final ServiceRepository serviceRepository;
     private final OpeningHoursRepository openingHoursRepository;
     private final CarBrandRepository carBrandRepository;
+    private final EntityManager entityManager;
 
     @Override
     public void updateRating(BranchId branchId, BranchRating rating) {
@@ -52,5 +60,35 @@ public class BranchAdapterOut implements BranchPortOut {
     @Override
     public boolean existsActiveById(BranchId branchId) {
         return branchRepository.existsByIdAndStatus(branchId.id(), BranchStatus.ACTIVE);
+    }
+
+    @Override
+    public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
+        return branchRepository.findTzByIdAndStatus(branchId.id(), BranchStatus.ACTIVE)
+                .map(ZoneId::of);
+    }
+
+    @Override
+    public Branch insert(Branch branch) {
+        AddressEntity address = entityManager.getReference(AddressEntity.class, branch.getAddressId());
+        BranchEntity entity = BranchMapper.toEntity(branch, address);
+        /* app-minted UUID id: persist, not save — save() would merge and pay an extra SELECT */
+        entityManager.persist(entity);
+        return BranchMapper.toDomain(entity);
+    }
+
+    @Override
+    public void insertOpeningHours(List<OpeningHours> openingHours) {
+        openingHoursRepository.saveAll(openingHours.stream()
+                .map(hours -> BranchMapper.toEntity(
+                        hours, entityManager.getReference(BranchEntity.class, hours.getBranchId().id())))
+                .toList());
+    }
+
+    @Override
+    public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
+        for (Integer brandId : carBrandIds) {
+            carBrandRepository.linkToBranch(brandId, branchId.id());
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.hutnyk.carfix.user.dto.response;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 public record UserCoreResponse(
@@ -9,6 +10,9 @@ public record UserCoreResponse(
         String phoneCountryCode,
         String phoneNumber,
         String email,
-        LocalDate dateOfBirth
+        LocalDate dateOfBirth,
+        AddressResponse address,
+        LocationResponse preferredLocation,
+        Instant emailVerifiedAt
 ) {
 }

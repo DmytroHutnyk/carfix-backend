@@ -5,8 +5,6 @@ import com.hutnyk.carfix.exception.ValidationErrorType;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 public class Validator {
 
@@ -69,6 +67,19 @@ public class Validator {
     }
 
     /**
+     * Validates an international phone number: a leading '+' followed by 5–15 digits
+     * (branch phones are stored as one international string, e.g. +48221234567).
+     */
+    public static String validateInternationalPhoneNumber(String phoneNumber, String fieldName) {
+        notBlank(phoneNumber, fieldName);
+
+        if (!phoneNumber.matches("^\\+[0-9]{5,15}$")) {
+            throw new DomainObjectValidationException(ValidationErrorType.INVALID_PHONE_FORMAT, fieldName, phoneNumber);
+        }
+        return phoneNumber;
+    }
+
+    /**
      * Validates that a date is today or in the future.
      *
      * @param date the date to validate
@@ -99,26 +110,6 @@ public class Validator {
 
         if (!end.isAfter(start)) {
             throw new DomainObjectValidationException(ValidationErrorType.INVALID_TIME_RANGE, fieldName);
-        }
-    }
-
-    /**
-     * Validates that a local date + time, read in the given zone, is not in the past.
-     *
-     * @param date the local (branch-zone) date
-     * @param time the local (branch-zone) time-of-day
-     * @param zone the zone the date/time are expressed in (e.g. the branch's)
-     * @param fieldName the name of the field being validated
-     * @throws DomainObjectValidationException if any argument is null or the instant is in the past
-     */
-    public static void notInPast(LocalDate date, LocalTime time, ZoneId zone, String fieldName) {
-        notNull(date, "date");
-        notNull(time, "time");
-        notNull(zone, "branchZone");
-
-        ZonedDateTime when = ZonedDateTime.of(date, time, zone);
-        if (when.isBefore(ZonedDateTime.now(zone))) {
-            throw new DomainObjectValidationException(ValidationErrorType.DATE_IN_PAST, fieldName, date);
         }
     }
 

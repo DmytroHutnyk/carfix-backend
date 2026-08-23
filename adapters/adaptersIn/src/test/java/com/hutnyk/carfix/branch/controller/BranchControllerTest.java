@@ -20,6 +20,7 @@ import com.hutnyk.carfix.in.branch.query.BranchServiceCategoryView;
 import com.hutnyk.carfix.in.branch.query.BranchServiceView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
+import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -46,7 +47,7 @@ public class BranchControllerTest {
                 new BigDecimal("52.180000"), new BigDecimal("21.020000"), null, "Europe/Warsaw",
                 List.of(new BranchBrandView(1, "BMW")),
                 List.of(new BranchOpeningHoursView(
-                        DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0))),
+                        DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0), OpeningHoursMode.OPEN)),
                 List.of(new BranchServiceCategoryView(3, "Brake Services", List.of(
                         new BranchServiceView(9, "Brake inspection", null,
                                 (short) 30, new BigDecimal("120.00"))))));
@@ -103,6 +104,7 @@ public class BranchControllerTest {
                 .andExpect(jsonPath("$.brands[0].name").value("BMW"))
                 .andExpect(jsonPath("$.openingHours[0].dayOfWeek").value("MONDAY"))
                 .andExpect(jsonPath("$.openingHours[0].startTime").value("09:00"))
+                .andExpect(jsonPath("$.openingHours[0].mode").value("OPEN"))
                 .andExpect(jsonPath("$.serviceCategories[0].name").value("Brake Services"))
                 .andExpect(jsonPath("$.serviceCategories[0].services[0].price").value(120.00));
     }

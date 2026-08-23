@@ -18,6 +18,7 @@ public enum ValidationErrorType implements ErrorCode {
     INVALID_PHONE_FORMAT("INVALID_PHONE_FORMAT", "Phone number format is not valid"),
     INVALID_COUNTRY_CODE("INVALID_COUNTRY_CODE", "Country code is not valid"),
     INVALID_ISO_CODE("INVALID_ISO_CODE", "ISO code is not valid"),
+    INVALID_TIMEZONE("INVALID_TIMEZONE", "Timezone is not a valid IANA zone id"),
     INVALID_VIN_FORMAT("INVALID_VIN_FORMAT", "VIN format is not valid"),
     INVALID_PLATES_FORMAT("INVALID_PLATES_FORMAT", "License plates format is not valid"),
     
@@ -33,6 +34,7 @@ public enum ValidationErrorType implements ErrorCode {
     INVALID_FLAT_NUMBER("INVALID_FLAT_NUMBER", "Flat number cannot be empty or blank"),
 
     INVALID_PASSWORD_FORMAT("INVALID_PASSWORD_FORMAT", "Password format is not valid"),
+    INVALID_CODE_FORMAT("INVALID_CODE_FORMAT", "Verification code must be 6 digits"),
     VALUE_OUT_OF_RANGE("VALUE_OUT_OF_RANGE", "Value is out of allowed range"),
     VALIDATION_FAILED("VALIDATION_FAILED", "Validation failed");
 
