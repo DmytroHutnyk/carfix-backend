@@ -23,6 +23,7 @@ import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.out.address.AddressPortOut;
@@ -111,6 +112,15 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
         User owner = userPortOut.loadUserByEmail(ownerEmail)
                 .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(ownerEmail));
         return ownerBranchPortOut.findSummariesByOwnerId(owner.getId(), clock.instant());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OwnerBranchDetailView getMyBranch(String ownerEmail, UUID branchId) {
+        User owner = userPortOut.loadUserByEmail(ownerEmail)
+                .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(ownerEmail));
+        return ownerBranchPortOut.findDetailByIdAndOwnerId(branchId, owner.getId())
+                .orElseThrow(() -> new BranchNotFoundException(branchId));
     }
 
     @Override

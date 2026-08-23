@@ -2,6 +2,7 @@ package com.hutnyk.carfix.branch.controller;
 
 import com.hutnyk.carfix.branch.dto.request.RegisterBranchRequest;
 import com.hutnyk.carfix.branch.dto.response.BranchRegistrationResponse;
+import com.hutnyk.carfix.branch.dto.response.OwnerBranchDetailResponse;
 import com.hutnyk.carfix.branch.dto.response.OwnerBranchSummaryResponse;
 import com.hutnyk.carfix.branch.mapper.BranchResponseMapper;
 import com.hutnyk.carfix.branch.mapper.RegisterBranchCommandMapper;
@@ -14,12 +15,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @RestController
@@ -37,6 +40,14 @@ public class OwnerBranchController {
                 .map(BranchResponseMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{branchId}")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<OwnerBranchDetailResponse> getMyBranch(@PathVariable(name = "branchId") UUID branchId,
+                                                                 @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(BranchResponseMapper.toDetailResponse(
+                ownerBranchPortIn.getMyBranch(principal.getUsername(), branchId)));
     }
 
     @PostMapping

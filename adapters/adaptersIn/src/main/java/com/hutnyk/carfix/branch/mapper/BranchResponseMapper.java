@@ -9,11 +9,16 @@ import com.hutnyk.carfix.branch.dto.response.BranchReviewResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchReviewsPageResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchServiceCategoryResponse;
 import com.hutnyk.carfix.branch.dto.response.BranchServiceResponse;
+import com.hutnyk.carfix.branch.dto.response.OwnerBranchAddressResponse;
+import com.hutnyk.carfix.branch.dto.response.OwnerBranchDetailResponse;
+import com.hutnyk.carfix.branch.dto.response.OwnerBranchOpeningHoursExceptionResponse;
 import com.hutnyk.carfix.branch.dto.response.OwnerBranchSummaryResponse;
+import com.hutnyk.carfix.in.address.query.AddressView;
 import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchServiceCategoryView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 
 public class BranchResponseMapper {
@@ -76,6 +81,37 @@ public class BranchResponseMapper {
                 view.employeesTotal(),
                 view.latestReviews().stream()
                         .map(BranchResponseMapper::toResponse)
+                        .toList());
+    }
+
+    public static OwnerBranchDetailResponse toDetailResponse(OwnerBranchDetailView view) {
+        if (view == null) {
+            return null;
+        }
+        AddressView address = view.address();
+        return new OwnerBranchDetailResponse(
+                view.branchId(),
+                view.name(),
+                view.status(),
+                view.description(),
+                view.cancellationPolicy(),
+                view.phoneNumber(),
+                view.email(),
+                view.timezone(),
+                new OwnerBranchAddressResponse(
+                        address.streetName(), address.buildingNumber(), address.flatNumber(), address.postalCode(),
+                        address.city(), address.region(), address.countryIso(), address.countryName(),
+                        address.latitude(), address.longitude(), address.googlePlaceId()),
+                view.brands().stream()
+                        .map(brand -> new BranchBrandResponse(brand.carBrandId(), brand.name()))
+                        .toList(),
+                view.openingHours().stream()
+                        .map(oh -> new BranchOpeningHoursResponse(
+                                oh.dayOfWeek(), oh.startTime(), oh.closeTime(), oh.mode()))
+                        .toList(),
+                view.openingHoursExceptions().stream()
+                        .map(e -> new OwnerBranchOpeningHoursExceptionResponse(
+                                e.id(), e.date(), e.opensAt(), e.closesAt(), e.isOpen(), e.reason()))
                         .toList());
     }
 

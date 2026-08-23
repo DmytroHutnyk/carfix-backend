@@ -26,6 +26,7 @@ import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursMode;
@@ -102,6 +103,19 @@ public class BranchServiceTest {
                 .role(UserRole.OWNER)
                 .passwordHash(PasswordHash.of("$2a$10$storedhashvalue"))
                 .build();
+    }
+
+    private static AddressView address() {
+        return new AddressView(55, "Pulawska", "45", null, "02-515", "Warsaw", "Masovian Voivodeship",
+                CountryIso.PL, "Poland", new BigDecimal("52.180000"), new BigDecimal("21.020000"), "ChIJx");
+    }
+
+    private static OwnerBranchDetailView detail() {
+        return new OwnerBranchDetailView(
+                BRANCH_ID, "AutoFix Mokotow", BranchStatus.ACTIVE,
+                "A workshop.", CancellationPolicy.MODERATE,
+                "+48221234567", "contact@autofix.pl", "Europe/Warsaw",
+                address(), List.of(), List.of(), List.of());
     }
 
     private static OwnerBranchSummaryView summary() {
@@ -221,12 +235,21 @@ public class BranchServiceTest {
     private static final class StubOwnerBranchPortOut implements OwnerBranchPortOut {
         UserId receivedOwnerId;
         Instant receivedNow;
+        UUID receivedBranchId;
+        OwnerBranchDetailView detail = detail();
 
         @Override
         public List<OwnerBranchSummaryView> findSummariesByOwnerId(UserId ownerId, Instant now) {
             this.receivedOwnerId = ownerId;
             this.receivedNow = now;
             return List.of(summary());
+        }
+
+        @Override
+        public Optional<OwnerBranchDetailView> findDetailByIdAndOwnerId(UUID branchId, UserId ownerId) {
+            this.receivedBranchId = branchId;
+            this.receivedOwnerId = ownerId;
+            return Optional.ofNullable(detail);
         }
     }
 
@@ -525,5 +548,30 @@ public class BranchServiceTest {
         assertThatThrownBy(() -> service.getMyBranchSummaries(OWNER_EMAIL))
                 .isInstanceOf(AuthenticatedUserMissingException.class);
         assertThat(ownerBranchStub.receivedOwnerId).isNull();
+    }
+
+    @Test
+    public void test_getMyBranch_returns_the_detail_view_for_the_resolved_owner() {
+        //given
+        userStub.user = ownerUser();
+
+        //when
+        OwnerBranchDetailView result = service.getMyBranch(OWNER_EMAIL, BRANCH_ID);
+
+        //then
+        assertThat(result).isSameAs(ownerBranchStub.detail);
+        assertThat(ownerBranchStub.receivedBranchId).isEqualTo(BRANCH_ID);
+        assertThat(ownerBranchStub.receivedOwnerId).isEqualTo(OWNER_ID);
+    }
+
+    @Test
+    public void test_getMyBranch_of_a_branch_owned_by_someone_else_is_not_found() {
+        //given
+        userStub.user = ownerUser();
+        ownerBranchStub.detail = null;
+
+        //when + then
+        assertThatThrownBy(() -> service.getMyBranch(OWNER_EMAIL, BRANCH_ID))
+                .isInstanceOf(BranchNotFoundException.class);
     }
 }

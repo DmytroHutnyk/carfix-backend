@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public interface OpeningHoursExceptionRepository extends JpaRepository<OpeningHoursExceptionEntity, Integer> {
 
+    List<OpeningHoursExceptionEntity> findAllByBranchEntityId(UUID branchId);
+
     List<OpeningHoursExceptionEntity> findAllByBranchEntityIdAndDateBetween(UUID branchId, LocalDate from, LocalDate to);
 
     List<OpeningHoursExceptionEntity> findAllByBranchEntityIdInAndDateIn(
