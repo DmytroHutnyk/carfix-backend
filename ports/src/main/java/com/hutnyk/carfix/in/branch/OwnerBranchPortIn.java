@@ -2,6 +2,7 @@ package com.hutnyk.carfix.in.branch;
 
 import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchCommand;
+import com.hutnyk.carfix.in.branch.commands.UpdateBranchOverviewCommand;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 
@@ -17,4 +18,7 @@ public interface OwnerBranchPortIn {
 
     /** Creates the whole workshop in one transaction for the owner identified by {@code ownerEmail}. */
     Branch registerBranch(String ownerEmail, RegisterBranchCommand command);
+
+    /** Full replacement of the branch's editable overview fields; returns the re-read detail. */
+    OwnerBranchDetailView updateBranchOverview(String ownerEmail, UUID branchId, UpdateBranchOverviewCommand command);
 }

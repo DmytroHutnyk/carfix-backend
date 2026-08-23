@@ -234,6 +234,26 @@ public class BookingServiceTest {
         public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public Branch update(Branch branch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void replaceOpeningHoursExceptions(BranchId branchId, List<OpeningHoursException> exceptions) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static final class StubServicePortOut implements ServicePortOut {

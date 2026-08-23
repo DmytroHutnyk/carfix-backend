@@ -16,4 +16,6 @@ public interface OpeningHoursExceptionRepository extends JpaRepository<OpeningHo
 
     List<OpeningHoursExceptionEntity> findAllByBranchEntityIdInAndDateIn(
             Collection<UUID> branchIds, Collection<LocalDate> dates);
+
+    void deleteAllByBranchEntityId(UUID branchId);
 }

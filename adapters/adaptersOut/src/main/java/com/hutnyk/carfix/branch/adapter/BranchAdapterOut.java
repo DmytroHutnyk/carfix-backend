@@ -11,6 +11,9 @@ import com.hutnyk.carfix.carCatalog.repository.CarBrandRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
+import com.hutnyk.carfix.openingHours.mapper.OpeningHoursMapper;
+import com.hutnyk.carfix.openingHours.repository.OpeningHoursExceptionRepository;
 import com.hutnyk.carfix.openingHours.repository.OpeningHoursRepository;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.review.BranchRating;
@@ -32,6 +35,7 @@ public class BranchAdapterOut implements BranchPortOut {
     private final BranchRepository branchRepository;
     private final ServiceRepository serviceRepository;
     private final OpeningHoursRepository openingHoursRepository;
+    private final OpeningHoursExceptionRepository openingHoursExceptionRepository;
     private final CarBrandRepository carBrandRepository;
     private final EntityManager entityManager;
 
@@ -90,5 +94,36 @@ public class BranchAdapterOut implements BranchPortOut {
         for (Integer brandId : carBrandIds) {
             carBrandRepository.linkToBranch(brandId, branchId.id());
         }
+    }
+
+    @Override
+    public Branch update(Branch branch) {
+        BranchEntity entity = branchRepository.findById(branch.getId().id())
+                .orElseThrow(IllegalStateException::new);
+        entity.setName(branch.getName());
+        entity.setDescription(branch.getDescription());
+        entity.setCancellationPolicy(branch.getCancellationPolicy());
+        return BranchMapper.toDomain(entity);
+    }
+
+    @Override
+    public void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours) {
+        openingHoursRepository.deleteAllByBranchEntityId(branchId.id());
+        insertOpeningHours(openingHours);
+    }
+
+    @Override
+    public void replaceOpeningHoursExceptions(BranchId branchId, List<OpeningHoursException> exceptions) {
+        openingHoursExceptionRepository.deleteAllByBranchEntityId(branchId.id());
+        BranchEntity branch = entityManager.getReference(BranchEntity.class, branchId.id());
+        openingHoursExceptionRepository.saveAll(exceptions.stream()
+                .map(exception -> OpeningHoursMapper.toEntity(exception, branch))
+                .toList());
+    }
+
+    @Override
+    public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
+        carBrandRepository.unlinkAllFromBranch(branchId.id());
+        linkCarBrands(branchId, carBrandIds);
     }
 }

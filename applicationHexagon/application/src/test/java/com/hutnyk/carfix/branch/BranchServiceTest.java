@@ -20,15 +20,21 @@ import com.hutnyk.carfix.equipment.Equipment;
 import com.hutnyk.carfix.equipment.EquipmentType;
 import com.hutnyk.carfix.in.address.query.AddressView;
 import com.hutnyk.carfix.in.address.query.LocationView;
+import com.hutnyk.carfix.in.branch.commands.RegisterBranchAddressCommand;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchCommand;
+import com.hutnyk.carfix.in.branch.commands.RegisterBranchOpeningHoursCommand;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceBayCommand;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceCommand;
+import com.hutnyk.carfix.in.branch.commands.UpdateBranchOpeningHoursExceptionCommand;
+import com.hutnyk.carfix.in.branch.commands.UpdateBranchOverviewCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
+import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.openingHours.OpeningHoursMode;
 import com.hutnyk.carfix.out.address.AddressPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
@@ -63,6 +69,8 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -135,6 +143,10 @@ public class BranchServiceTest {
         Branch inserted;
         List<OpeningHours> hours;
         Set<Integer> linkedBrands;
+        Branch updated;
+        List<OpeningHours> replacedHours;
+        List<OpeningHoursException> replacedExceptions;
+        Set<Integer> replacedBrands;
 
         @Override public void updateRating(BranchId branchId, BranchRating rating) { throw new UnsupportedOperationException(); }
         @Override public Optional<BranchView> findViewById(BranchId branchId) { return Optional.ofNullable(view); }
@@ -143,6 +155,10 @@ public class BranchServiceTest {
         @Override public Branch insert(Branch branch) { this.inserted = branch; return branch; }
         @Override public void insertOpeningHours(List<OpeningHours> openingHours) { this.hours = openingHours; }
         @Override public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) { this.linkedBrands = carBrandIds; }
+        @Override public Branch update(Branch branch) { this.updated = branch; return branch; }
+        @Override public void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours) { this.replacedHours = openingHours; }
+        @Override public void replaceOpeningHoursExceptions(BranchId branchId, List<OpeningHoursException> exceptions) { this.replacedExceptions = exceptions; }
+        @Override public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) { this.replacedBrands = carBrandIds; }
     }
 
     private static final class StubReviewPortOut implements ReviewPortOut {
@@ -168,11 +184,12 @@ public class BranchServiceTest {
 
     private static final class StubAddressPortOut implements AddressPortOut {
         Address inserted;
+        Address updated;
         final List<Region> regions = new ArrayList<>();
         final List<City> cities = new ArrayList<>();
 
         @Override public Optional<AddressView> loadView(Integer addressId) { throw new UnsupportedOperationException(); }
-        @Override public Address update(Address address) { throw new UnsupportedOperationException(); }
+        @Override public Address update(Address address) { this.updated = address; return address; }
         @Override public void deleteById(Integer addressId) { throw new UnsupportedOperationException(); }
 
         @Override
@@ -573,5 +590,120 @@ public class BranchServiceTest {
         //when + then
         assertThatThrownBy(() -> service.getMyBranch(OWNER_EMAIL, BRANCH_ID))
                 .isInstanceOf(BranchNotFoundException.class);
+    }
+
+    /* ---------- updateBranchOverview ---------- */
+
+    private static UpdateBranchOverviewCommand overview() {
+        return new UpdateBranchOverviewCommand(
+                "AutoFix Wola", "  Renamed workshop.  ", CancellationPolicy.STRICT,
+                new RegisterBranchAddressCommand("Wolska", "12", "3", "01-001", "Warsaw",
+                        "Masovian Voivodeship", "PL",
+                        new BigDecimal("52.230000"), new BigDecimal("20.980000"), "ChIJnew"),
+                List.of(new RegisterBranchOpeningHoursCommand(
+                                DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(16, 0), OpeningHoursMode.OPEN),
+                        new RegisterBranchOpeningHoursCommand(
+                                DayOfWeek.SATURDAY, LocalTime.of(9, 0), LocalTime.of(13, 0), OpeningHoursMode.BY_APPOINTMENT)),
+                List.of(new UpdateBranchOpeningHoursExceptionCommand(
+                        LocalDate.of(2026, 12, 24), null, null, false, "Christmas Eve")),
+                Set.of(1, 2));
+    }
+
+    @Test
+    public void test_updateBranchOverview_rebuilds_the_branch_and_replaces_its_children() {
+        //given
+        userStub.user = ownerUser();
+
+        //when
+        OwnerBranchDetailView result = service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID, overview());
+
+        //then — the re-read view comes back
+        assertThat(result).isSameAs(ownerBranchStub.detail);
+        // edited fields change, server-owned ones are preserved
+        Branch updated = branchStub.updated;
+        assertThat(updated.getId().id()).isEqualTo(BRANCH_ID);
+        assertThat(updated.getName()).isEqualTo("AutoFix Wola");
+        assertThat(updated.getDescription()).isEqualTo("Renamed workshop.");
+        assertThat(updated.getCancellationPolicy()).isEqualTo(CancellationPolicy.STRICT);
+        assertThat(updated.getPhoneNumber()).isEqualTo("+48221234567");
+        assertThat(updated.getEmail()).isEqualTo("contact@autofix.pl");
+        assertThat(updated.getStatus()).isEqualTo(BranchStatus.ACTIVE);
+        assertThat(updated.getTz()).isEqualTo(ZoneId.of("Europe/Warsaw"));
+        assertThat(updated.getAddressId()).isEqualTo(55);
+        assertThat(updated.getOwnerId()).isEqualTo(OWNER_ID);
+        // address is updated in place, on the resolved city
+        assertThat(addressStub.updated.getId()).isEqualTo(55);
+        assertThat(addressStub.updated.getStreetName()).isEqualTo("Wolska");
+        assertThat(addressStub.updated.getCityId()).isEqualTo(200);
+        assertThat(addressStub.inserted).isNull();
+        // children are replaced wholesale
+        assertThat(branchStub.replacedHours).hasSize(2);
+        assertThat(branchStub.replacedHours.get(1).getMode()).isEqualTo(OpeningHoursMode.BY_APPOINTMENT);
+        assertThat(branchStub.replacedHours).allSatisfy(h -> assertThat(h.getBranchId().id()).isEqualTo(BRANCH_ID));
+        assertThat(branchStub.replacedExceptions).singleElement().satisfies(e -> {
+            assertThat(e.getDate()).isEqualTo(LocalDate.of(2026, 12, 24));
+            assertThat(e.getIsOpen()).isFalse();
+            assertThat(e.getReason()).isEqualTo("Christmas Eve");
+            assertThat(e.getBranchId().id()).isEqualTo(BRANCH_ID);
+        });
+        assertThat(branchStub.replacedBrands).containsExactlyInAnyOrder(1, 2);
+    }
+
+    @Test
+    public void test_updateBranchOverview_blank_description_is_cleared() {
+        //given
+        userStub.user = ownerUser();
+        UpdateBranchOverviewCommand c = overview();
+
+        //when
+        service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID, new UpdateBranchOverviewCommand(c.name(), "   ",
+                c.cancellationPolicy(), c.address(), c.openingHours(), c.openingHoursExceptions(), c.carBrandIds()));
+
+        //then
+        assertThat(branchStub.updated.getDescription()).isNull();
+    }
+
+    @Test
+    public void test_updateBranchOverview_of_a_branch_owned_by_someone_else_writes_nothing() {
+        //given
+        userStub.user = ownerUser();
+        ownerBranchStub.detail = null;
+
+        //when + then
+        assertThatThrownBy(() -> service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID, overview()))
+                .isInstanceOf(BranchNotFoundException.class);
+        assertThat(branchStub.updated).isNull();
+        assertThat(addressStub.updated).isNull();
+    }
+
+    @Test
+    public void test_updateBranchOverview_unknown_car_brand_writes_nothing() {
+        //given
+        userStub.user = ownerUser();
+        UpdateBranchOverviewCommand c = overview();
+
+        //when + then
+        assertThatThrownBy(() -> service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID,
+                new UpdateBranchOverviewCommand(c.name(), c.description(), c.cancellationPolicy(), c.address(),
+                        c.openingHours(), c.openingHoursExceptions(), Set.of(1, 99))))
+                .isInstanceOf(CarBrandNotFoundException.class);
+        assertThat(branchStub.updated).isNull();
+        assertThat(addressStub.updated).isNull();
+    }
+
+    @Test
+    public void test_updateBranchOverview_duplicate_weekday_writes_nothing() {
+        //given
+        userStub.user = ownerUser();
+        UpdateBranchOverviewCommand c = overview();
+
+        //when + then
+        assertThatThrownBy(() -> service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID,
+                new UpdateBranchOverviewCommand(c.name(), c.description(), c.cancellationPolicy(), c.address(),
+                        List.of(c.openingHours().get(0), c.openingHours().get(0)),
+                        c.openingHoursExceptions(), c.carBrandIds())))
+                .isInstanceOf(InvalidBranchRegistrationException.class);
+        assertThat(branchStub.updated).isNull();
+        assertThat(addressStub.updated).isNull();
     }
 }

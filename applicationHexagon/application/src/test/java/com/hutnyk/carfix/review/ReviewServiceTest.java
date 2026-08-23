@@ -11,6 +11,7 @@ import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.review.ReviewPortOut;
 import com.hutnyk.carfix.review.exception.ReviewAlreadyExistsException;
@@ -107,6 +108,26 @@ public class ReviewServiceTest {
 
         @Override
         public void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Branch update(Branch branch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void replaceOpeningHoursExceptions(BranchId branchId, List<OpeningHoursException> exceptions) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
             throw new UnsupportedOperationException();
         }
     }

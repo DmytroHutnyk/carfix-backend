@@ -4,6 +4,7 @@ import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.review.BranchRating;
 
 import java.time.ZoneId;
@@ -44,4 +45,13 @@ public interface BranchPortOut {
 
     /** Rows in car_brands_branches; the caller has verified every id exists. */
     void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds);
+
+    /** Writes back only what the overview edit owns — name, description, cancellation policy. */
+    Branch update(Branch branch);
+
+    void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours);
+
+    void replaceOpeningHoursExceptions(BranchId branchId, List<OpeningHoursException> exceptions);
+
+    void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds);
 }
