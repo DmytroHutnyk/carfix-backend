@@ -42,6 +42,8 @@ public final class BranchMapper {
         entity.setTz(branch.getTz().getId());
         entity.setAddressEntity(address);
         entity.setOwnerId(branch.getOwnerId().id());
+        entity.setDescription(branch.getDescription());
+        entity.setCancellationPolicy(branch.getCancellationPolicy());
         return entity;
     }
 
@@ -57,7 +59,9 @@ public final class BranchMapper {
                 entity.getStatus(),
                 ZoneId.of(entity.getTz()),
                 entity.getAddressEntity().getId(),
-                UserId.of(entity.getOwnerId()));
+                UserId.of(entity.getOwnerId()),
+                entity.getDescription(),
+                entity.getCancellationPolicy());
     }
 
     public static OpeningHoursEntity toEntity(OpeningHours hours, BranchEntity branch) {
@@ -89,7 +93,7 @@ public final class BranchMapper {
                 branch.getPhoneNumber(),
                 branch.getEmail(),
                 branch.getDescription(),
-                branch.getCancellationPolicy(),
+                branch.getCancellationPolicy().name(),
                 branch.getRating(),
                 branch.getReviewCount(),
                 address.getStreetName(),
