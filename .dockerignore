@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+.lanes
+.local
+.env
+.env.*
+!.env.example
+**/target
+docs
+localDocs
+*.md
+*.log
