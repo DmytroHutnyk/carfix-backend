@@ -12,6 +12,7 @@ import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.booking.BookingPortIn;
+import com.hutnyk.carfix.in.booking.OwnerBookingPortIn;
 import com.hutnyk.carfix.in.booking.commands.CreateBookingCommand;
 import com.hutnyk.carfix.in.booking.query.BookingView;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
@@ -20,7 +21,9 @@ import com.hutnyk.carfix.out.booking.BookingPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
 import com.hutnyk.carfix.out.customer.CustomerPortOut;
+import com.hutnyk.carfix.out.owner.OwnerPortOut;
 import com.hutnyk.carfix.out.service.ServicePortOut;
+import com.hutnyk.carfix.owner.Owner;
 import com.hutnyk.carfix.scheduling.BranchResources;
 import com.hutnyk.carfix.scheduling.BranchScheduleLoader;
 import com.hutnyk.carfix.scheduling.DaySchedules;
@@ -28,6 +31,7 @@ import com.hutnyk.carfix.scheduling.SlotCalculator;
 import com.hutnyk.carfix.scheduling.TimeRange;
 import com.hutnyk.carfix.scheduling.VisitPlan;
 import com.hutnyk.carfix.service.Service;
+import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -42,13 +46,14 @@ import java.util.Set;
 import java.util.UUID;
 
 @ApplicationService
-public class BookingService implements BookingPortIn {
+public class BookingService implements BookingPortIn, OwnerBookingPortIn {
 
     private final CustomerPortOut customerPortOut;
     private final BookingPortOut bookingPortOut;
     private final BookingNotificationPortOut bookingNotificationPortOut;
     private final CarProfilePortOut carProfilePortOut;
     private final BranchPortOut branchPortOut;
+    private final OwnerPortOut ownerPortOut;
     private final BranchScheduleLoader scheduleLoader;
     private final Clock clock;
 
@@ -57,6 +62,7 @@ public class BookingService implements BookingPortIn {
                           BookingNotificationPortOut bookingNotificationPortOut,
                           CarProfilePortOut carProfilePortOut,
                           BranchPortOut branchPortOut,
+                          OwnerPortOut ownerPortOut,
                           ServicePortOut servicePortOut,
                           AvailabilityPortOut availabilityPortOut,
                           Clock clock) {
@@ -65,6 +71,7 @@ public class BookingService implements BookingPortIn {
         this.bookingNotificationPortOut = bookingNotificationPortOut;
         this.carProfilePortOut = carProfilePortOut;
         this.branchPortOut = branchPortOut;
+        this.ownerPortOut = ownerPortOut;
         this.scheduleLoader = new BranchScheduleLoader(servicePortOut, availabilityPortOut);
         this.clock = clock;
     }
@@ -87,9 +94,7 @@ public class BookingService implements BookingPortIn {
         }
 
         BranchId branchId = BranchId.of(cmd.branchId());
-        ZoneId branchZone = branchPortOut.findActiveBranchZone(branchId)
-                .orElseThrow(() -> new BranchNotFoundException(cmd.branchId()));
-        LocalDateTime now = LocalDateTime.now(clock.withZone(branchZone));
+        LocalDateTime now = branchNow(branchId);
 
         LocalDateTime start = cmd.date().atTime(cmd.startTime());
         if (start.isBefore(now)) {
@@ -128,7 +133,7 @@ public class BookingService implements BookingPortIn {
         Booking booking = bookingPortOut.findByIdAndCustomerId(bookingId, customerId)
                 .orElseThrow(() -> new BookingNotFoundException(bookingId));
 
-        bookingPortOut.update(booking.cancel());
+        bookingPortOut.update(booking.cancel(branchNow(booking.getBranchId())));
         bookingPortOut.freeOccupancy(booking.getId());
 
         BookingView cancelled = bookingPortOut.findViewByIdAndCustomerId(bookingId, customerId)
@@ -138,6 +143,23 @@ public class BookingService implements BookingPortIn {
         bookingNotificationPortOut.sendBookingCancelled(customer.getUser(), cancelled);
 
         return cancelled;
+    }
+
+    @Override
+    public void markNoShow(String ownerEmail, UUID bookingId) {
+        Owner owner = ownerPortOut.findOwnerByUsername(ownerEmail)
+                .orElseThrow(() -> AuthenticatedUserMissingException.noOwnerAggregate(ownerEmail));
+
+        Booking booking = bookingPortOut.findByIdAndOwnerId(bookingId, owner.getUser().getId().id())
+                .orElseThrow(() -> new BookingNotFoundException(bookingId));
+
+        bookingPortOut.update(booking.markNoShow(branchNow(booking.getBranchId())));
+    }
+
+    private LocalDateTime branchNow(BranchId branchId) {
+        ZoneId branchZone = branchPortOut.findActiveBranchZone(branchId)
+                .orElseThrow(() -> new BranchNotFoundException(branchId.id()));
+        return LocalDateTime.now(clock.withZone(branchZone));
     }
 
     private Optional<VisitPlan> planVisit(BranchId branchId, List<Service> services,

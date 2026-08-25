@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 import java.util.UUID;
@@ -31,6 +32,8 @@ import java.util.UUID;
 public class BookingMapperTest {
 
     private static final UUID BOOKING_ID = UUID.randomUUID();
+    /* 2030-06-12 09:59 in Europe/Warsaw: one minute before the booked slot starts. */
+    private static final Instant BEFORE_START = Instant.parse("2030-06-12T07:59:00Z");
     private static final UUID BRANCH_ID = UUID.randomUUID();
     private static final UUID CAR_PROFILE_ID = UUID.randomUUID();
 
@@ -97,7 +100,7 @@ public class BookingMapperTest {
 
     @Test
     public void toViewFlattensBranchVehicleAndServices() {
-        BookingView view = BookingMapper.toView(entity());
+        BookingView view = BookingMapper.toView(entity(), BEFORE_START);
 
         assertThat(view.id()).isEqualTo(BOOKING_ID);
         assertThat(view.status()).isEqualTo(BookingStatus.SCHEDULED);
@@ -122,9 +125,27 @@ public class BookingMapperTest {
 
     @Test
     public void toViewComputesSafeCancelUntilInBranchZone() {
-        BookingView view = BookingMapper.toView(entity());
+        BookingView view = BookingMapper.toView(entity(), BEFORE_START);
 
         assertThat(view.safeCancelUntil()).isEqualTo(Instant.parse("2030-06-11T08:00:00Z"));
+    }
+
+    @Test
+    public void toViewDerivesTheStatusFromTheBranchClock() {
+        BookingEntity entity = entity();
+
+        assertThat(BookingMapper.toView(entity, Instant.parse("2030-06-12T08:00:00Z")).status())
+                .isEqualTo(BookingStatus.IN_PROGRESS);
+        assertThat(BookingMapper.toView(entity, Instant.parse("2030-06-12T09:30:00Z")).status())
+                .isEqualTo(BookingStatus.COMPLETED);
+    }
+
+    @Test
+    public void toViewKeepsAStoredNoShowWhateverTheClockSays() {
+        BookingEntity entity = entity();
+        entity.setStatus(BookingStatus.NO_SHOW);
+
+        assertThat(BookingMapper.toView(entity, BEFORE_START).status()).isEqualTo(BookingStatus.NO_SHOW);
     }
 
     @Test
@@ -138,7 +159,7 @@ public class BookingMapperTest {
     @Test
     public void updateEntityCopiesScalarFieldsOnly() {
         BookingEntity target = entity();
-        Booking cancelled = BookingMapper.toDomain(target).cancel();
+        Booking cancelled = BookingMapper.toDomain(target).cancel(LocalDateTime.of(2030, 6, 12, 9, 59));
 
         BookingMapper.updateEntity(target, cancelled);
 

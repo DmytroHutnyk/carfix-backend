@@ -4,6 +4,6 @@ public enum BookingStatus {
     SCHEDULED,
     IN_PROGRESS,
     COMPLETED,
-    CANCELLED
-    //TODO add Client did not show up status?
+    CANCELLED,
+    NO_SHOW
 }

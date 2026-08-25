@@ -43,22 +43,30 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
     Optional<BookingEntity> findByIdAndCustomerIdWithDetails(@Param("id") UUID id,
                                                              @Param("customerId") UUID customerId);
 
+    @Query("SELECT b FROM BookingEntity b " +
+           "JOIN FETCH b.branchEntity br " +
+           "JOIN FETCH b.carProfileEntity cp " +
+           "LEFT JOIN FETCH b.segments seg " +
+           "WHERE b.id = :id AND br.ownerId = :ownerId")
+    Optional<BookingEntity> findByIdAndOwnerIdWithSegments(@Param("id") UUID id,
+                                                           @Param("ownerId") UUID ownerId);
+
     @Query("SELECT COUNT(b) > 0 FROM BookingEntity b " +
            "WHERE b.carProfileEntity.id = :carProfileId AND b.date = :date " +
-           "AND b.status IN :statuses AND b.startTime < :end AND b.endTime > :start")
+           "AND b.status NOT IN :excludedStatuses AND b.startTime < :end AND b.endTime > :start")
     boolean existsByCarProfileOverlapping(@Param("carProfileId") UUID carProfileId,
                                           @Param("date") LocalDate date,
                                           @Param("start") LocalTime start,
                                           @Param("end") LocalTime end,
-                                          @Param("statuses") Collection<BookingStatus> statuses);
+                                          @Param("excludedStatuses") Collection<BookingStatus> excludedStatuses);
 
-    /* Rows: [UUID branchId, LocalDate date, BookingStatus status, Long count]. */
+    /* Rows: [UUID branchId, LocalDate date, BookingStatus status, LocalTime startTime, LocalTime endTime, Long count]. */
     @Query("""
-            SELECT b.branchEntity.id, b.date, b.status, COUNT(b)
+            SELECT b.branchEntity.id, b.date, b.status, b.startTime, b.endTime, COUNT(b)
             FROM BookingEntity b
             WHERE b.branchEntity.id IN :branchIds AND b.date IN :dates
-            GROUP BY b.branchEntity.id, b.date, b.status
+            GROUP BY b.branchEntity.id, b.date, b.status, b.startTime, b.endTime
             """)
-    List<Object[]> countByBranchDateAndStatus(@Param("branchIds") Collection<UUID> branchIds,
-                                              @Param("dates") Collection<LocalDate> dates);
+    List<Object[]> countByBranchDateStatusAndSpan(@Param("branchIds") Collection<UUID> branchIds,
+                                                  @Param("dates") Collection<LocalDate> dates);
 }
