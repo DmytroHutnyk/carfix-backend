@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.openingHours.mapper;
 
 import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
@@ -20,6 +21,19 @@ public final class OpeningHoursMapper {
                 e.getCloseTime(),
                 e.getMode(),
                 BranchId.of(e.getBranchEntity().getId()));
+    }
+
+    public static OpeningHoursExceptionEntity toEntity(OpeningHoursException exception, BranchEntity branch) {
+        if (exception == null) return null;
+        OpeningHoursExceptionEntity entity = new OpeningHoursExceptionEntity();
+        entity.setId(exception.getId());
+        entity.setDate(exception.getDate());
+        entity.setStartTime(exception.getStartTime());
+        entity.setCloseTime(exception.getCloseTime());
+        entity.setIsOpen(exception.getIsOpen());
+        entity.setReason(exception.getReason());
+        entity.setBranchEntity(branch);
+        return entity;
     }
 
     public static OpeningHoursException toDomain(OpeningHoursExceptionEntity e) {

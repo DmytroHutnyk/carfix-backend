@@ -80,7 +80,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_a_validation_failure_is_400_with_the_field_under_errors() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/validation"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
@@ -90,15 +89,13 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.instance").value("/probe/validation"))
                 .andExpect(jsonPath("$.code").value("INVALID_VIN_FORMAT"))
                 .andExpect(jsonPath("$.errors.vin").value("vin: VIN format is not valid (received: ABC)"))
-                //detail summarises rather than repeating the sentence already in errors —
-                //the web client concatenates the two, and would otherwise print it twice
+                // Avoid repeating field detail when frontend combines summary and errors.
                 .andExpect(jsonPath("$.detail").value("Validation failed"));
     }
 
     @Test
     public void test_every_error_body_carries_the_five_fields_the_web_client_requires() throws Exception {
-        //then — isProblemDetailError() in the web client rejects a body missing any of these,
-        //and silently drops the errors map with it
+        // Frontend rejects bodies missing any required field, including their errors map.
         for (String path : new String[]{"/probe/validation", "/probe/not-found", "/probe/conflict-email",
                 "/probe/unauthenticated", "/probe/internal", "/probe/unmapped"}) {
             mockMvc.perform(get(path))
@@ -113,7 +110,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_a_missing_resource_is_404() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/not-found"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Not found"))
@@ -123,7 +119,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_a_taken_email_is_409_keyed_on_the_form_field() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/conflict-email"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_TAKEN"))
@@ -133,7 +128,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_a_taken_phone_number_is_409_keyed_on_the_form_field() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/conflict-phone"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errors.phoneCountryCodeAndPhoneNumber")
@@ -142,7 +136,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_a_dead_session_is_401() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/unauthenticated"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.title").value("Authentication failed"))
@@ -151,7 +144,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_a_server_side_failure_never_leaks_its_message() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/internal"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
@@ -160,7 +152,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_an_unmapped_exception_is_a_generic_500() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/unmapped"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
@@ -171,7 +162,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_unreadable_json_is_a_parsable_400() throws Exception {
-        //when + then — the framework builds this body; handleExceptionInternal patches in the code
         mockMvc.perform(post("/probe/body")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{bad"))
@@ -186,7 +176,6 @@ public class GlobalExceptionHandlerTest {
 
     @Test
     public void test_the_wrong_verb_is_a_parsable_405() throws Exception {
-        //when + then
         mockMvc.perform(get("/probe/body"))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.title").value("Method Not Allowed"))

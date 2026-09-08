@@ -32,7 +32,6 @@ public final class Role {
                 .build();
     }
 
-    /** Owner-declared role: always belongs to a branch. */
     public static Role create(String name, BranchId branchId) {
         return of(null, name, Validator.notNull(branchId, "branchId"));
     }

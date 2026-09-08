@@ -2,12 +2,7 @@ package com.hutnyk.carfix.scheduling.exception;
 
 import com.hutnyk.carfix.exception.ValidationException;
 
-/**
- * The slot query is not answerable as asked.
- * <p>
- * No field is named: the rules span the {@code serviceIds} / {@code from} / {@code to} triple,
- * so the reason belongs in the message rather than in a single-field {@code errors} map.
- */
+/** Cross-field slot-query failures stay in message instead of blaming one field. */
 public class InvalidSlotQueryException extends ValidationException {
 
     public InvalidSlotQueryException(String reason) {

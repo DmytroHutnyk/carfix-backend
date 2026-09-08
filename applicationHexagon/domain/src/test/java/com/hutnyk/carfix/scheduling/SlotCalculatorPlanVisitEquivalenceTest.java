@@ -23,21 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-/**
- * Randomised equivalence property between the two entry points of the slot algorithm.
- *
- * <p>The listing ({@link SlotCalculator#computeVisits}) is what the customer is offered; the
- * recompute ({@link SlotCalculator#planVisit}) is what booking runs for the one start the customer
- * picked. If they ever disagree, either a listed slot is unbookable (409 on a slot the UI just
- * showed) or an unlisted start is bookable (a slot nobody could have seen). Both are contract
- * breaks, so the property asserted here is exact set equality of feasible grid starts <em>plus</em>
- * structural equality of the produced plan (bay, segment order, segment times, and every
- * employee/equipment assignment) — the assignment is what booking writes as occupancy rows, so
- * "same start, different mechanic" would also be a defect.
- *
- * <p>Note on the generator: {@code Service} rejects an empty employee-requirement list, so services
- * carry 1-2 employee requirements (not 0-2); equipment requirements do range over 0-2.
- */
+/** Randomized proof that slot listing and booking recomputation produce identical feasible plans. */
 class SlotCalculatorPlanVisitEquivalenceTest {
 
     private static final int SEEDS = 20_000;
@@ -181,7 +167,6 @@ class SlotCalculatorPlanVisitEquivalenceTest {
                 .isEmpty();
     }
 
-    // ---------------------------------------------------------------- generator
 
     private static Instance randomInstance(Random random) {
         int serviceCount = random.nextInt(1, 4);
@@ -207,9 +192,7 @@ class SlotCalculatorPlanVisitEquivalenceTest {
                     nonEmptySubset(random, BAY_TYPES), employeeReqs, equipmentReqs));
         }
 
-        // Resource *types* are drawn with a bias towards what the chain actually demands. Uniform
-        // draws leave ~96% of instances trivially infeasible, which would make the equivalence
-        // property vacuous — it would only ever compare "empty" with "empty".
+        // Bias types toward demand; uniform draws make ~96% of cases infeasible and the property vacuous.
         List<Integer> demandedBayTypes = new ArrayList<>(commonBayTypes(services));
         List<Integer> demandedRoles = services.stream()
                 .flatMap(s -> s.getEmployeeRequirements().stream())
@@ -320,7 +303,6 @@ class SlotCalculatorPlanVisitEquivalenceTest {
         return starts;
     }
 
-    // ---------------------------------------------------------------- reporting
 
     private static String render(VisitPlan plan) {
         return "bay=" + plan.bayId() + " " + plan.segments().stream()

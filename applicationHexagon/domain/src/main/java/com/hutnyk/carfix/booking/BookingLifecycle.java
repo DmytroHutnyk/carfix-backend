@@ -2,10 +2,7 @@ package com.hutnyk.carfix.booking;
 
 import java.time.LocalDateTime;
 
-/**
- * Where a booking stands at a given instant. Only {@code CANCELLED} and {@code NO_SHOW} are ever
- * stored; every other status is time passing, so it is derived instead of written.
- */
+// Stored: SCHEDULED, CANCELLED, NO_SHOW. IN_PROGRESS and COMPLETED are derived.
 public final class BookingLifecycle {
 
     private BookingLifecycle() {

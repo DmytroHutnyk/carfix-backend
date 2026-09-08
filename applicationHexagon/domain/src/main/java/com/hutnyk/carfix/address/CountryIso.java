@@ -6,10 +6,6 @@ import com.hutnyk.carfix.util.Validator;
 
 import java.util.Locale;
 
-/**
- * ISO 3166-1 alpha-2 country codes.
- * These enum constants match the ISO codes (e.g., US, CA, GB).
- */
 public enum CountryIso {
     US,
     CA,
@@ -63,4 +59,3 @@ public enum CountryIso {
         }
     }
 }
-

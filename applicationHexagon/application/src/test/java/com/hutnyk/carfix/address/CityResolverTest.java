@@ -92,14 +92,11 @@ public class CityResolverTest {
 
     @Test
     public void test_existing_region_and_city_are_reused_without_inserts() {
-        //given
         portOut.knownRegions.add(Region.of(3, "Masovian Voivodeship", CountryIso.PL));
         portOut.knownCities.add(City.of(11, "Warsaw", 3, null, null));
 
-        //when
         Integer cityId = resolver.resolveCityId("Warsaw", "Masovian Voivodeship", CountryIso.PL);
 
-        //then
         assertThat(cityId).isEqualTo(11);
         assertThat(portOut.insertedRegions).isEmpty();
         assertThat(portOut.insertedCities).isEmpty();
@@ -107,10 +104,8 @@ public class CityResolverTest {
 
     @Test
     public void test_unknown_region_inserts_region_then_city_under_it() {
-        //when
         Integer cityId = resolver.resolveCityId("Berlin", "Berlin", CountryIso.DE);
 
-        //then
         assertThat(portOut.insertedRegions).hasSize(1);
         assertThat(portOut.insertedRegions.get(0).getName()).isEqualTo("Berlin");
         assertThat(portOut.insertedRegions.get(0).getCountryIso()).isEqualTo(CountryIso.DE);
@@ -121,13 +116,10 @@ public class CityResolverTest {
 
     @Test
     public void test_known_region_with_unknown_city_inserts_only_the_city() {
-        //given
         portOut.knownRegions.add(Region.of(3, "Masovian Voivodeship", CountryIso.PL));
 
-        //when
         Integer cityId = resolver.resolveCityId("Radom", "Masovian Voivodeship", CountryIso.PL);
 
-        //then
         assertThat(portOut.insertedRegions).isEmpty();
         assertThat(portOut.insertedCities).hasSize(1);
         assertThat(portOut.insertedCities.get(0).getName()).isEqualTo("Radom");
@@ -137,14 +129,11 @@ public class CityResolverTest {
 
     @Test
     public void test_same_city_name_in_another_country_is_a_different_row() {
-        //given
         portOut.knownRegions.add(Region.of(3, "Masovian Voivodeship", CountryIso.PL));
         portOut.knownCities.add(City.of(11, "Warsaw", 3, null, null));
 
-        //when
         Integer cityId = resolver.resolveCityId("Warsaw", "Indiana", CountryIso.US);
 
-        //then
         assertThat(cityId).isNotEqualTo(11);
         assertThat(portOut.insertedRegions).hasSize(1);
         assertThat(portOut.insertedCities).hasSize(1);
@@ -152,13 +141,10 @@ public class CityResolverTest {
 
     @Test
     public void test_preferred_pick_inserts_the_city_with_its_coordinates() {
-        //given
         portOut.knownRegions.add(Region.of(3, "Masovian Voivodeship", CountryIso.PL));
 
-        //when
         Integer cityId = resolver.resolveCityId("Warsaw", "Masovian Voivodeship", CountryIso.PL, WARSAW_LAT, WARSAW_LNG);
 
-        //then
         assertThat(portOut.insertedCities).hasSize(1);
         assertThat(portOut.insertedCities.get(0).getLatitude()).isEqualByComparingTo(WARSAW_LAT);
         assertThat(portOut.insertedCities.get(0).getLongitude()).isEqualByComparingTo(WARSAW_LNG);
@@ -168,14 +154,11 @@ public class CityResolverTest {
 
     @Test
     public void test_existing_city_without_coordinates_gets_them_filled_in() {
-        //given
         portOut.knownRegions.add(Region.of(3, "Masovian Voivodeship", CountryIso.PL));
         portOut.knownCities.add(City.of(11, "Warsaw", 3, null, null));
 
-        //when
         Integer cityId = resolver.resolveCityId("Warsaw", "Masovian Voivodeship", CountryIso.PL, WARSAW_LAT, WARSAW_LNG);
 
-        //then
         assertThat(cityId).isEqualTo(11);
         assertThat(portOut.updatedCities).hasSize(1);
         assertThat(portOut.updatedCities.get(0).getId()).isEqualTo(11);
@@ -187,29 +170,23 @@ public class CityResolverTest {
 
     @Test
     public void test_existing_city_with_coordinates_is_never_overwritten() {
-        //given
         portOut.knownRegions.add(Region.of(3, "Masovian Voivodeship", CountryIso.PL));
         portOut.knownCities.add(City.of(11, "Warsaw", 3, WARSAW_LAT, WARSAW_LNG));
 
-        //when
         Integer cityId = resolver.resolveCityId("Warsaw", "Masovian Voivodeship", CountryIso.PL,
                 new BigDecimal("1"), new BigDecimal("2"));
 
-        //then
         assertThat(cityId).isEqualTo(11);
         assertThat(portOut.updatedCities).isEmpty();
     }
 
     @Test
     public void test_address_pick_never_fills_in_coordinates() {
-        //given
         portOut.knownRegions.add(Region.of(3, "Masovian Voivodeship", CountryIso.PL));
         portOut.knownCities.add(City.of(11, "Warsaw", 3, null, null));
 
-        //when
         resolver.resolveCityId("Warsaw", "Masovian Voivodeship", CountryIso.PL);
 
-        //then
         assertThat(portOut.updatedCities).isEmpty();
     }
 }

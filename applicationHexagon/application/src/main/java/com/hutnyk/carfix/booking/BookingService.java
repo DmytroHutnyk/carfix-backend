@@ -13,8 +13,10 @@ import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.booking.BookingPortIn;
 import com.hutnyk.carfix.in.booking.OwnerBookingPortIn;
+import com.hutnyk.carfix.in.booking.OwnerBranchBookingPortIn;
 import com.hutnyk.carfix.in.booking.commands.CreateBookingCommand;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingView;
 import com.hutnyk.carfix.out.availability.AvailabilityPortOut;
 import com.hutnyk.carfix.out.booking.BookingNotificationPortOut;
 import com.hutnyk.carfix.out.booking.BookingPortOut;
@@ -46,7 +48,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @ApplicationService
-public class BookingService implements BookingPortIn, OwnerBookingPortIn {
+public class BookingService implements BookingPortIn, OwnerBookingPortIn, OwnerBranchBookingPortIn {
 
     private final CustomerPortOut customerPortOut;
     private final BookingPortOut bookingPortOut;
@@ -143,6 +145,17 @@ public class BookingService implements BookingPortIn, OwnerBookingPortIn {
         bookingNotificationPortOut.sendBookingCancelled(customer.getUser(), cancelled);
 
         return cancelled;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OwnerBranchBookingView> getBranchDayBookings(String ownerEmail, UUID branchId, LocalDate date) {
+        Owner owner = ownerPortOut.findOwnerByUsername(ownerEmail)
+                .orElseThrow(() -> AuthenticatedUserMissingException.noOwnerAggregate(ownerEmail));
+        if (!branchPortOut.existsByIdAndOwnerId(BranchId.of(branchId), owner.getUser().getId().id())) {
+            throw new BranchNotFoundException(branchId);
+        }
+        return bookingPortOut.findBranchDayBookings(branchId, date);
     }
 
     @Override

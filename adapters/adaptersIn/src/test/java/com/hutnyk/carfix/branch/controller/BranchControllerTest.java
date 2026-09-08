@@ -94,7 +94,6 @@ public class BranchControllerTest {
 
     @Test
     public void test_getBranch_returns_full_shape() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/branches/" + BRANCH_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.branchId").value(BRANCH_ID.toString()))
@@ -111,10 +110,8 @@ public class BranchControllerTest {
 
     @Test
     public void test_getBranch_maps_not_found_to_404() throws Exception {
-        //given
         stub.toThrow = new BranchNotFoundException(BRANCH_ID);
 
-        //when + then
         mockMvc.perform(get("/api/branches/" + BRANCH_ID))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("BRANCH_NOT_FOUND"))
@@ -125,7 +122,6 @@ public class BranchControllerTest {
 
     @Test
     public void test_getReviews_returns_page_and_passes_raw_params() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/reviews").param("sort", "newest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].starsNumber").value(5))
@@ -142,7 +138,6 @@ public class BranchControllerTest {
 
     @Test
     public void test_getReviews_rejects_oversized_page_before_the_port() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/reviews").param("size", "99"))
                 .andExpect(status().isBadRequest());
 
@@ -151,10 +146,8 @@ public class BranchControllerTest {
 
     @Test
     public void test_getReviews_maps_invalid_sort_to_400() throws Exception {
-        //given
         stub.toThrow = new InvalidReviewsSortException("bogus");
 
-        //when + then
         mockMvc.perform(get("/api/branches/" + BRANCH_ID + "/reviews").param("sort", "bogus"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REVIEWS_SORT"));

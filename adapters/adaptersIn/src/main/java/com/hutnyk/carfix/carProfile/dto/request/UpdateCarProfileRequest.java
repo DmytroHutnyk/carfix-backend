@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
-//TODO decide where should validation live
 public record UpdateCarProfileRequest(
         @NotBlank @Size(max = 100)
         String name,

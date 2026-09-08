@@ -29,10 +29,8 @@ public class ExceptionCategoriesTest {
 
     @Test
     public void test_validation_exception_publishes_the_failing_field() {
-        //given
         TestValidation exception = new TestValidation("vin: bad format", "vin", "ABC");
 
-        //then
         assertThat(exception.category()).isEqualTo(ErrorCategory.VALIDATION);
         assertThat(exception.getFieldName()).isEqualTo("vin");
         assertThat(exception.getRejectedValue()).isEqualTo("ABC");
@@ -41,20 +39,16 @@ public class ExceptionCategoriesTest {
 
     @Test
     public void test_validation_exception_without_a_field_publishes_no_details() {
-        //given
         TestValidation exception = new TestValidation("something failed", null, null);
 
-        //then
         assertThat(exception.details()).isEmpty();
     }
 
     @Test
     public void test_not_found_builds_its_message_from_resource_type_and_id() {
-        //given
         UUID id = UUID.fromString("00000000-0000-0000-0000-000000000007");
         TestNotFound exception = new TestNotFound("Car profile", id);
 
-        //then
         assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
         assertThat(exception.getMessage())
                 .isEqualTo("Car profile not found: 00000000-0000-0000-0000-000000000007");
@@ -65,19 +59,15 @@ public class ExceptionCategoriesTest {
 
     @Test
     public void test_not_found_omits_the_id_when_there_is_none() {
-        //given
         TestNotFound exception = new TestNotFound("Car profile", null);
 
-        //then
         assertThat(exception.getMessage()).isEqualTo("Car profile not found");
     }
 
     @Test
     public void test_conflict_publishes_the_colliding_field() {
-        //given
         TestConflict exception = new TestConflict("User with a@b.c email already exists", "email", "a@b.c");
 
-        //then
         assertThat(exception.category()).isEqualTo(ErrorCategory.CONFLICT);
         assertThat(exception.details())
                 .containsExactly(entry("email", "User with a@b.c email already exists"));
@@ -85,10 +75,8 @@ public class ExceptionCategoriesTest {
 
     @Test
     public void test_unexpected_state_is_concrete_and_internal() {
-        //given
         UnexpectedStateException exception = new UnexpectedStateException("invariant broken");
 
-        //then
         assertThat(exception.category()).isEqualTo(ErrorCategory.INTERNAL);
         assertThat(exception.getErrorCode()).isEqualTo(CoreErrorCode.INTERNAL_ERROR);
         assertThat(exception.getMessage()).isEqualTo("invariant broken");
@@ -96,11 +84,9 @@ public class ExceptionCategoriesTest {
 
     @Test
     public void test_unexpected_state_keeps_its_cause() {
-        //given
         Throwable cause = new IllegalArgumentException("root");
         UnexpectedStateException exception = new UnexpectedStateException("wrapped", cause);
 
-        //then
         assertThat(exception.getCause()).isSameAs(cause);
     }
 }

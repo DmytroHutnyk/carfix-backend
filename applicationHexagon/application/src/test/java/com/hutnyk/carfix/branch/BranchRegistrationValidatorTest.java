@@ -41,7 +41,6 @@ public class BranchRegistrationValidatorTest {
                         : List.of(new RegisterBranchEquipmentRequirementCommand("Lift", equipmentTypes)));
     }
 
-    /** A complete, self-consistent command every test mutates one field of. */
     static RegisterBranchCommand valid() {
         return new RegisterBranchCommand(
                 "AutoFix", "+48221234567", "kontakt@autofix.pl", "Europe/Warsaw", address(),
@@ -70,24 +69,20 @@ public class BranchRegistrationValidatorTest {
 
     @Test
     public void test_valid_command_passes() {
-        //when + then
         assertThatCode(() -> BranchRegistrationValidator.validate(valid())).doesNotThrowAnyException();
     }
 
     @Test
     public void test_key_trims_and_lowercases() {
-        //then
         assertThat(BranchRegistrationValidator.key("  With Lift ")).isEqualTo("with lift");
     }
 
     @Test
     public void test_duplicate_type_names_are_case_insensitive() {
-        //given
         RegisterBranchCommand c = valid();
         RegisterBranchCommand duplicated = with(c, List.of("Basic", "basic "), c.serviceBays(), c.equipmentTypes(),
                 c.equipment(), c.roles(), c.employees(), c.services(), c.openingHours());
 
-        //when + then
         assertThatThrownBy(() -> BranchRegistrationValidator.validate(duplicated))
                 .isInstanceOf(InvalidBranchRegistrationException.class)
                 .extracting("fieldName")
@@ -96,13 +91,11 @@ public class BranchRegistrationValidatorTest {
 
     @Test
     public void test_bay_referencing_undeclared_type_names_the_path() {
-        //given
         RegisterBranchCommand c = valid();
         RegisterBranchCommand bad = with(c, c.serviceBayTypes(),
                 List.of(new RegisterBranchServiceBayCommand("Bay 1", "Basic"), new RegisterBranchServiceBayCommand("Bay 9", "Pit")),
                 c.equipmentTypes(), c.equipment(), c.roles(), c.employees(), c.services(), c.openingHours());
 
-        //when + then
         assertThatThrownBy(() -> BranchRegistrationValidator.validate(bad))
                 .isInstanceOf(InvalidBranchRegistrationException.class)
                 .satisfies(e -> assertThat(((InvalidBranchRegistrationException) e).details())
@@ -111,10 +104,8 @@ public class BranchRegistrationValidatorTest {
 
     @Test
     public void test_equipment_employee_and_service_references_are_checked() {
-        //given
         RegisterBranchCommand c = valid();
 
-        //when + then
         assertThatThrownBy(() -> BranchRegistrationValidator.validate(with(c, c.serviceBayTypes(), c.serviceBays(),
                 c.equipmentTypes(), List.of(new RegisterBranchEquipmentCommand("Jack", "Trolley jack")),
                 c.roles(), c.employees(), c.services(), c.openingHours())))
@@ -140,14 +131,12 @@ public class BranchRegistrationValidatorTest {
 
     @Test
     public void test_weekday_listed_twice_is_rejected() {
-        //given
         RegisterBranchCommand c = valid();
         RegisterBranchCommand bad = with(c, c.serviceBayTypes(), c.serviceBays(), c.equipmentTypes(), c.equipment(),
                 c.roles(), c.employees(), c.services(),
                 List.of(new RegisterBranchOpeningHoursCommand(DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(12, 0), OpeningHoursMode.OPEN),
                         new RegisterBranchOpeningHoursCommand(DayOfWeek.MONDAY, LocalTime.of(13, 0), LocalTime.of(17, 0), OpeningHoursMode.OPEN)));
 
-        //when + then
         assertThatThrownBy(() -> BranchRegistrationValidator.validate(bad))
                 .isInstanceOf(InvalidBranchRegistrationException.class)
                 .extracting("fieldName").isEqualTo("openingHours[1].dayOfWeek");
@@ -155,11 +144,9 @@ public class BranchRegistrationValidatorTest {
 
     @Test
     public void test_empty_lists_are_valid() {
-        //given
         RegisterBranchCommand c = valid();
         RegisterBranchCommand empty = with(c, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
 
-        //when + then
         assertThatCode(() -> BranchRegistrationValidator.validate(empty)).doesNotThrowAnyException();
     }
 }

@@ -35,10 +35,7 @@ public final class OpeningCalendar {
         return new OpeningCalendar(byDay, byDate);
     }
 
-    /**
-     * Time the branch is open on {@code date}: merged, ascending, branch wall-clock. Empty = closed
-     * all day.
-     */
+    // Returns merged branch-local ranges in ascending order; empty means closed all day.
     public List<TimeRange> openRanges(LocalDate date) {
         List<OpeningHoursException> forDate = exceptions.getOrDefault(date, List.of());
         if (!forDate.isEmpty()) {

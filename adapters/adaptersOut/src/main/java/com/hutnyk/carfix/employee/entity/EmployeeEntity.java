@@ -33,6 +33,12 @@ public class EmployeeEntity {
     @Column(name = "last_name", length = 50, nullable = false)
     private String lastName;
 
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "email", length = 255)
+    private String email;
+
     // FK to users(user_id): the optional login account. Plain column — an optional @OneToOne cannot be lazy.
     @Column(name = "user_id")
     private UUID userId;
@@ -46,6 +52,21 @@ public class EmployeeEntity {
 
     @Column(name = "salary", precision = 10, scale = 2)
     private BigDecimal salary;
+
+    @Column(name = "street", length = 100)
+    private String street;
+
+    @Column(name = "apartment", length = 20)
+    private String apartment;
+
+    @Column(name = "region", length = 100)
+    private String region;
+
+    @Column(name = "country", length = 100)
+    private String country;
+
+    @Column(name = "postal_code", length = 20)
+    private String postalCode;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)

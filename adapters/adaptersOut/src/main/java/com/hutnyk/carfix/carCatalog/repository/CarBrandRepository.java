@@ -25,4 +25,10 @@ public interface CarBrandRepository extends JpaRepository<CarBrandEntity, Intege
             INSERT INTO car_brands_branches (car_brand_id, branch_id) VALUES (:brandId, :branchId)
             """)
     void linkToBranch(@Param("brandId") Integer brandId, @Param("branchId") UUID branchId);
+
+    @Modifying(flushAutomatically = true)
+    @Query(nativeQuery = true, value = """
+            DELETE FROM car_brands_branches WHERE branch_id = :branchId
+            """)
+    void unlinkAllFromBranch(@Param("branchId") UUID branchId);
 }

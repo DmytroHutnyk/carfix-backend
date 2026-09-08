@@ -1,10 +1,6 @@
 package com.hutnyk.carfix.exception;
 
-/**
- * A well-formed, authorized request the domain still refuses because a business rule says no, e.g.
- * booking outside opening hours, a service the branch does not offer, cancelling too late.
- * Maps to 422.
- */
+/** Well-formed, authorized request rejected by a business rule. Maps to 422. */
 public abstract class BusinessRuleViolationException extends CarFixException {
 
     protected BusinessRuleViolationException(ErrorCode errorCode, String message) {

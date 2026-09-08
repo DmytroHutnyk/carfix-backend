@@ -59,11 +59,8 @@ public class SmtpEmailSenderTest {
 
     @Test
     public void test_deliver_builds_a_multipart_message_with_from_to_and_subject() throws Exception {
-        //given
         CapturingMailSender mailSender = new CapturingMailSender();
-        //when
         senderFor(mailSender).send(MESSAGE);
-        //then
         MimeMessage sent = mailSender.sent;
         assertThat(sent).isNotNull();
         assertThat(sent.getAllRecipients()).extracting(Address::toString).containsExactly("john@example.com");
@@ -74,11 +71,8 @@ public class SmtpEmailSenderTest {
 
     @Test
     public void test_deliver_puts_the_text_body_in_the_plain_part_and_the_html_body_in_the_html_part() throws Exception {
-        //given
         CapturingMailSender mailSender = new CapturingMailSender();
-        //when
         senderFor(mailSender).send(MESSAGE);
-        //then
         Map<String, String> bodies = bodiesByMimeType((MimeMultipart) mailSender.sent.getContent());
         assertThat(bodies)
                 .containsEntry("text/plain", "plain body")

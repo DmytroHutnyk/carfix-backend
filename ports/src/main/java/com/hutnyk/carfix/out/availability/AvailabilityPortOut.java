@@ -45,15 +45,14 @@ public interface AvailabilityPortOut {
 
     List<EquipmentBooking> loadEquipmentOccupancy(Collection<Integer> equipmentIds, LocalDate from, LocalDate to);
 
-    /** The branch's weekly opening_hours rows (all weekdays it has rows for). */
     List<OpeningHours> loadOpeningHours(BranchId branchId);
 
-    /** [from, to] both inclusive */
+    // Date bounds are inclusive.
     List<OpeningHoursException> loadOpeningHoursExceptions(BranchId branchId, LocalDate from, LocalDate to);
 
     Map<BranchId, List<OpeningHours>> loadOpeningHoursByBranch(Collection<BranchId> branchIds);
 
-    /** [from, to] both inclusive */
+    // Date bounds are inclusive.
     Map<BranchId, List<OpeningHoursException>> loadOpeningHoursExceptionsByBranch(
             Collection<BranchId> branchIds, LocalDate from, LocalDate to);
 }

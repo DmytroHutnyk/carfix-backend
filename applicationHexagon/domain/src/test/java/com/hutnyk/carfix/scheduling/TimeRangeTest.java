@@ -15,17 +15,14 @@ public class TimeRangeTest {
 
     @Test
     public void test_of_builds_range() {
-        //when
         TimeRange result = TimeRange.of(NINE, SEVENTEEN);
 
-        //then
         assertThat(result.lower()).isEqualTo(NINE);
         assertThat(result.upper()).isEqualTo(SEVENTEEN);
     }
 
     @Test
     public void test_of_throws_when_upper_equals_lower() {
-        //when + then
         assertThatThrownBy(() -> TimeRange.of(NINE, NINE))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -34,7 +31,6 @@ public class TimeRangeTest {
 
     @Test
     public void test_of_throws_when_upper_before_lower() {
-        //when + then
         assertThatThrownBy(() -> TimeRange.of(SEVENTEEN, NINE))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -43,7 +39,6 @@ public class TimeRangeTest {
 
     @Test
     public void test_of_throws_when_lower_is_null() {
-        //when + then
         assertThatThrownBy(() -> TimeRange.of(null, SEVENTEEN))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -110,10 +105,8 @@ public class TimeRangeTest {
 
     @Test
     void test_contains_instant_lower_inclusive_upper_exclusive() {
-        //given
         TimeRange range = range(9, 17);
 
-        //then
         assertThat(range.contains(LocalDateTime.of(2026, 8, 13, 9, 0))).isTrue();
         assertThat(range.contains(LocalDateTime.of(2026, 8, 13, 16, 59))).isTrue();
         assertThat(range.contains(LocalDateTime.of(2026, 8, 13, 17, 0))).isFalse();

@@ -31,17 +31,14 @@ public class OwnerMapperTest {
 
     @Test
     public void test_toDomain_copies_business_fields_and_wraps_user() {
-        //given
         OwnerEntity entity = new OwnerEntity();
         entity.setBusinessName("AutoSerwis Kowalski");
         entity.setVatIn("5252445567");
         entity.setRegon("146892132");
         User user = user();
 
-        //when
         Owner owner = OwnerMapper.toDomain(entity, user);
 
-        //then
         assertThat(owner.getUser()).isSameAs(user);
         assertThat(owner.getBusinessName()).isEqualTo("AutoSerwis Kowalski");
         assertThat(owner.getVatIn()).isEqualTo("5252445567");
@@ -50,7 +47,6 @@ public class OwnerMapperTest {
 
     @Test
     public void test_toDomain_composes_the_owner_around_the_mapped_user_entity() {
-        //given
         UUID userId = UUID.randomUUID();
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userId);
@@ -68,10 +64,8 @@ public class OwnerMapperTest {
         entity.setVatIn("5252445567");
         entity.setRegon("146892132");
 
-        //when
         Owner owner = OwnerMapper.toDomain(entity, UserMapper.toDomain(entity.getUserEntity()));
 
-        //then
         assertThat(owner.getUser().getId().id()).isEqualTo(userId);
         assertThat(owner.getUser().getRole()).isEqualTo(UserRole.OWNER);
         assertThat(owner.getUser().getEmail()).isEqualTo("owner@carfix.dev");

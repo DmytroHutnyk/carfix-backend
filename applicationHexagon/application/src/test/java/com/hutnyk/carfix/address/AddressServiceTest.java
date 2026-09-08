@@ -79,26 +79,21 @@ public class AddressServiceTest {
 
     @Test
     public void test_loadAddressView_passes_the_id_through_and_returns_the_view() {
-        //when
         Optional<AddressView> result = service.loadAddressView(5);
 
-        //then
         assertThat(portOut.requestedId).isEqualTo(5);
         assertThat(result).contains(VIEW);
     }
 
     @Test
     public void test_loadAddressView_is_empty_for_an_unknown_id() {
-        //when + then
         assertThat(service.loadAddressView(6)).isEmpty();
     }
 
     @Test
     public void test_loadCityView_passes_the_id_through() {
-        //when
         Optional<LocationView> result = service.loadCityView(11);
 
-        //then
         assertThat(portOut.requestedCityId).isEqualTo(11);
         assertThat(result).contains(CITY_VIEW);
         assertThat(service.loadCityView(12)).isEmpty();

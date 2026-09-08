@@ -15,10 +15,8 @@ public class ServiceBayTypeTest {
 
     @Test
     public void test_of_allows_platform_type_without_branch() {
-        //when
         ServiceBayType result = ServiceBayType.of(2, "Two-post lift", null);
 
-        //then
         assertThat(result.getId()).isEqualTo(2);
         assertThat(result.getName()).isEqualTo("Two-post lift");
         assertThat(result.getBranchId()).isNull();
@@ -26,10 +24,8 @@ public class ServiceBayTypeTest {
 
     @Test
     public void test_create_is_branch_scoped_and_unsaved() {
-        //when
         ServiceBayType result = ServiceBayType.create("With lift", BRANCH_ID);
 
-        //then
         assertThat(result.getId()).isNull();
         assertThat(result.getName()).isEqualTo("With lift");
         assertThat(result.getBranchId()).isEqualTo(BRANCH_ID);
@@ -37,7 +33,6 @@ public class ServiceBayTypeTest {
 
     @Test
     public void test_create_requires_branch() {
-        //when + then
         assertThatThrownBy(() -> ServiceBayType.create("With lift", null))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType", "fieldName")
@@ -46,7 +41,6 @@ public class ServiceBayTypeTest {
 
     @Test
     public void test_create_rejects_blank_name() {
-        //when + then
         assertThatThrownBy(() -> ServiceBayType.create("  ", BRANCH_ID))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")

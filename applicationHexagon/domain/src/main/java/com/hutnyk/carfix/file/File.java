@@ -7,7 +7,6 @@ import lombok.Getter;
 
 import java.time.OffsetDateTime;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class File {

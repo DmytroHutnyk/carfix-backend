@@ -20,7 +20,6 @@
     <description>carfix-backend</description>
     <url/>
 
-    <!-- Internal Modules -->
     <modules>
         <module>boot</module>
         <module>common</module>
@@ -53,7 +52,6 @@
     </properties>
 
 
-    <!-- Common dependencies for all modules -->
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -62,10 +60,8 @@
     </dependencies>
 
 
-    <!-- Common plugins for all modules -->
     <build>
         <plugins>
-            <!-- Java compiler & Lombok processing -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

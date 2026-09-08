@@ -29,20 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-/**
- * M6 availability filter on GET /api/search/workshops, run against the dev database.
- *
- * <p>Run-time robust: the queried window is derived from the clock ({@code from = today + 1},
- * {@code to = from + 2} in Europe/Warsaw) and every expected number is derived from the DB at run
- * time — the SQL pre-filter is mirrored in {@link #layer1Candidates} and used as the upper bound
- * for the layer-2 result, opening hours decide the after-hours window of check 2, and the seeded
- * availability rows decide whether the Sunday check of 7 is meaningful. Only ids that are seed
- * constants (the service name and the city) are hard-coded; when the seed can no longer support a
- * check it reports SKIP with the reason instead of failing.
- *
- * <p>The window starts TOMORROW on purpose: today is legitimately clamped to "now", which makes
- * whole-day expectations and the comparison against /api/branches/{id}/slots meaningless.
- */
+/** Real-HTTP M6 checklist derives expectations from dev DB and skips unsupported seed cases. */
 @ActiveProfiles("dev")
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -85,7 +72,6 @@ class SearchAvailabilityChecklistIT {
     private final ObjectMapper mapper = new ObjectMapper();
     private final List<Chk> report = new ArrayList<>();
 
-    // -------------------------------------------------------------- run window
 
     private LocalDate today() {
         return LocalDate.now(WARSAW);
@@ -99,7 +85,6 @@ class SearchAvailabilityChecklistIT {
         return from().plusDays(2);
     }
 
-    // ---------------------------------------------------------------- harness
 
     private static final class Chk {
         final String id;
@@ -151,7 +136,6 @@ class SearchAvailabilityChecklistIT {
         return c;
     }
 
-    /** The multi-argument URI constructor quotes the spaces in the service name for us. */
     private ResponseEntity<String> raw(String path, String query) {
         try {
             return rest.getForEntity(new URI("http", null, "localhost", port, path, query, null), String.class);
@@ -227,13 +211,8 @@ class SearchAvailabilityChecklistIT {
         return time.toSecondOfDay() / 60;
     }
 
-    // --------------------------------------------------------- derived fixtures
 
-    /**
-     * Mirror of the SQL pre-filter the search adapter appends: ACTIVE branches in the city that
-     * offer the ACTIVE service and hold a bay availability row overlapping the requested window on
-     * some day of the range. Layer 2 can only drop branches from this set, never add to it.
-     */
+    // Mirrors SQL pre-filter; Java availability filtering may only remove these candidates.
     private long layer1Candidates(LocalDate from, LocalDate to, int winFromMin, int winToMin) {
         String sql = """
                 SELECT count(*) FROM %1$s.branches b
@@ -259,7 +238,6 @@ class SearchAvailabilityChecklistIT {
         return count == null ? 0 : count;
     }
 
-    /** ACTIVE branches in the city offering the ACTIVE service, ignoring availability entirely. */
     private long offeringBranches() {
         String sql = """
                 SELECT count(*) FROM %1$s.branches b
@@ -283,7 +261,6 @@ class SearchAvailabilityChecklistIT {
         return count == null ? 0 : count;
     }
 
-    /** Latest closing time of any ACTIVE branch — anything after it is an after-hours window. */
     private LocalTime latestCloseTime() {
         Time time = jdbc.queryForObject(
                 "SELECT max(oh.close_time) FROM " + schema + ".opening_hours oh"
@@ -293,7 +270,6 @@ class SearchAvailabilityChecklistIT {
         return time == null ? null : time.toLocalTime();
     }
 
-    /** Bay availability rows on one date across ACTIVE branches of the city. */
     private long availabilityRowsOn(LocalDate date) {
         String sql = """
                 SELECT count(*) FROM %1$s.service_bays_availability sba
@@ -312,9 +288,7 @@ class SearchAvailabilityChecklistIT {
                 "SELECT min(service_category_id) FROM " + schema + ".service_categories", Integer.class);
     }
 
-    // ------------------------------------------------------- shared assertions
 
-    /** tz, and the shape of nextAvailableStarts: non-empty, capped, ascending, on the grid, in window. */
     private void assertCard(Chk c, JsonNode card, LocalDate from, LocalDate to,
                             LocalTime timeFrom, LocalTime timeTo) {
         String branch = card.get("branchId").asText();
@@ -363,7 +337,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** A null {@code from} means "this request carried no availability filter, so the echo must not either". */
     private void assertEcho(Chk c, JsonNode body, LocalDate from, LocalDate to,
                             LocalTime timeFrom, LocalTime timeTo) {
         JsonNode echo = body.get("echo");
@@ -389,7 +362,6 @@ class SearchAvailabilityChecklistIT {
                 text(availability, "timeTo"));
     }
 
-    /** Every (date, startTime) the /slots endpoint reports for one branch and one service. */
     private Set<String> slotStarts(String branchId, int serviceId, LocalDate from, LocalDate to) throws Exception {
         JsonNode slots = json("/api/branches/" + branchId + "/slots", slotsQuery(serviceId, from, to));
         Set<String> out = new LinkedHashSet<>();
@@ -400,7 +372,6 @@ class SearchAvailabilityChecklistIT {
         return out;
     }
 
-    // ------------------------------------------------------------------ tests
 
     @Test
     void runManualChecklist() throws Exception {
@@ -450,7 +421,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 1. serviceName + city + from/to: cards carry tz and next starts, echo mirrors the window. */
     private void check1() {
         Chk c = check("1", "availability window (serviceName + city + from/to)");
         try {
@@ -499,7 +469,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 2. A window that starts after every branch has closed returns nothing at all. */
     private void check2() {
         Chk c = check("2", "after-hours window returns nothing");
         try {
@@ -531,7 +500,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 3. The card's starts are exactly the first starts /slots reports for the same branch and service. */
     private void check3() {
         Chk c = check("3", "starts agree with /api/branches/{id}/slots");
         try {
@@ -578,7 +546,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 4. timeFrom/timeTo confine every start to [timeFrom, timeTo) and stay a subset of /slots. */
     private void check4() {
         Chk c = check("4", "time-of-day window " + WINDOW_FROM + "-" + WINDOW_TO);
         try {
@@ -624,7 +591,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 5. The availability filter's validation rules, all 400 INVALID_SEARCH_FILTER bar the parse failure. */
     private void check5() {
         Chk c = check("5", "validation (400 INVALID_SEARCH_FILTER)");
         LocalDate from = from();
@@ -636,7 +602,6 @@ class SearchAvailabilityChecklistIT {
             c.note("no service category to build case b from: " + e);
         }
 
-        // label -> {query, expected code or null for "any 400"}
         Map<String, String[]> cases = new LinkedHashMap<>();
         cases.put("a free text + dates", new String[] {
             query("q", FREE_TEXT, "from", from.toString(), "to", to.toString()), "INVALID_SEARCH_FILTER"});
@@ -699,7 +664,6 @@ class SearchAvailabilityChecklistIT {
         c.note(exact + "/" + cases.size() + " cases exact (status + code + problem fields + instance)");
     }
 
-    /** 6. Paging happens after the filter: totals count only branches that can take the job. */
     private void check6() {
         Chk c = check("6", "paging after the availability filter");
         try {
@@ -744,7 +708,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 7. A day with no availability rows at all yields an empty page rather than an error. */
     private void check7() {
         Chk c = check("7", "closed day (next Sunday) is empty");
         try {
@@ -766,7 +729,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 8. Without date params nothing on the availability path runs — but tz is still there. */
     private void check8() {
         Chk c = check("8", "plain search carries tz but no availability payload");
         try {
@@ -797,7 +759,6 @@ class SearchAvailabilityChecklistIT {
         }
     }
 
-    /** 9. Free-text search is untouched by the shared-filter refactor. */
     private void check9() {
         Chk c = check("9", "free-text search regression guard");
         try {

@@ -44,22 +44,16 @@ public class AfterCommitEmailSenderTest {
 
     @Test
     public void test_without_a_transaction_the_message_is_delivered_right_away_on_the_executor() {
-        //given
         RecordingSender sender = new RecordingSender(Runnable::run);
-        //when
         sender.send(MESSAGE);
-        //then
         assertThat(sender.delivered).containsExactly(MESSAGE);
     }
 
     @Test
     public void test_inside_a_transaction_delivery_waits_for_after_commit() {
-        //given
         RecordingSender sender = new RecordingSender(Runnable::run);
         TransactionSynchronizationManager.initSynchronization();
-        //when
         sender.send(MESSAGE);
-        //then
         assertThat(sender.delivered).isEmpty();
         List<TransactionSynchronization> synchronizations = TransactionSynchronizationManager.getSynchronizations();
         assertThat(synchronizations).hasSize(1);
@@ -69,21 +63,17 @@ public class AfterCommitEmailSenderTest {
 
     @Test
     public void test_a_delivery_failure_never_reaches_the_caller() {
-        //given
         RecordingSender sender = new RecordingSender(Runnable::run);
         sender.failure = new IllegalStateException("smtp down");
-        //when + then
         assertThatCode(() -> sender.send(MESSAGE)).doesNotThrowAnyException();
         assertThat(sender.delivered).isEmpty();
     }
 
     @Test
     public void test_a_rejected_execution_never_reaches_the_caller() {
-        //given
         RecordingSender sender = new RecordingSender(command -> {
             throw new RejectedExecutionException("pool closed");
         });
-        //when + then
         assertThatCode(() -> sender.send(MESSAGE)).doesNotThrowAnyException();
     }
 }

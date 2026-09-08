@@ -22,24 +22,11 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Turns every exception that escapes a controller into an RFC-7807 problem body.
- * <p>
- * There is one handler for the whole {@link CarFixException} hierarchy.
- * The remaining handlers exist only for exceptions we do not own: Spring Security's and the
- * framework's own request-level failures inherited from {@link ResponseEntityExceptionHandler}
- * (unsupported method, unreadable JSON, missing parameter), which would otherwise fall through
- * to Spring's default {@code /error} body that the web client cannot parse.
- */
+/** Normalizes deliberate and framework failures into one RFC-7807 contract. */
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    /**
-     * Every failure the application throws on purpose.
-     *
-     * @return {@code ResponseEntity<ProblemDetail>} whose status comes from the exception's category
-     */
     @ExceptionHandler(CarFixException.class)
     public ResponseEntity<ProblemDetail> handleCarFix(CarFixException exception) {
         ProblemDetail problemDetail = ProblemDetailFactory.of(exception);
@@ -47,9 +34,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(problemDetail.getStatus()).body(problemDetail);
     }
 
-    /**
-     * Wrong email or password.
-     */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ProblemDetail> handleBadCredentials(BadCredentialsException exception) {
         ProblemDetail problemDetail = ProblemDetailFactory.of(
@@ -61,10 +45,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
 
-    /**
-     * Thrown by {@code @PreAuthorize} inside the dispatch. URL-rule denials never reach here,
-     * they are raised in the filter chain and answered by {@code ProblemDetailAccessDeniedHandler}.
-     */
+    // Filter-chain denials bypass advice; this handles method-level authorization only.
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException exception) {
         ProblemDetail problemDetail = ProblemDetailFactory.of(
@@ -76,9 +57,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
     }
 
-    /**
-     * Anything we failed to anticipate. The real message is logged, never returned.
-     */
+    // Log unexpected details, but never return them.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleUnexpected(Exception exception) {
         ProblemDetail problemDetail = ProblemDetailFactory.of(
@@ -90,9 +69,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problemDetail);
     }
 
-    /**
-     * Bean-validation failures on request DTOs. Reports every field at once under {@code errors}.
-     */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException exception,
                                                                   HttpHeaders headers,
@@ -116,9 +92,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
-    /**
-     * Fills in what was not explicitly, so their bodies satisfy the same contract.
-     */
+    // Spring-owned failures need missing problem fields filled to satisfy client contract.
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception exception,
                                                              Object body,

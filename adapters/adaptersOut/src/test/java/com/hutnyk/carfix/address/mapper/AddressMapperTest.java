@@ -48,10 +48,8 @@ public class AddressMapperTest {
 
     @Test
     public void test_toView_flattens_the_city_region_country_chain() {
-        //when
         AddressView view = AddressMapper.toView(addressEntity());
 
-        //then
         assertThat(view.id()).isEqualTo(5);
         assertThat(view.streetName()).isEqualTo("Marszałkowska");
         assertThat(view.buildingNumber()).isEqualTo("10");
@@ -68,10 +66,8 @@ public class AddressMapperTest {
 
     @Test
     public void test_toDomain_keeps_the_city_id_only() {
-        //when
         Address address = AddressMapper.toDomain(addressEntity());
 
-        //then
         assertThat(address.getId()).isEqualTo(5);
         assertThat(address.getCityId()).isEqualTo(11);
         assertThat(address.getFlatNumber()).isEqualTo("3A");
@@ -79,15 +75,12 @@ public class AddressMapperTest {
 
     @Test
     public void test_toEntity_copies_every_field_and_the_city_reference() {
-        //given
         Address address = Address.of(null, "Marszałkowska", "10", null, "00-001", 11,
                 new BigDecimal("52.229700"), new BigDecimal("21.012200"), "ChIJ_place");
         CityEntity city = warsaw();
 
-        //when
         AddressEntity entity = AddressMapper.toEntity(address, city);
 
-        //then
         assertThat(entity.getId()).isNull();
         assertThat(entity.getStreetName()).isEqualTo("Marszałkowska");
         assertThat(entity.getBuildingNumber()).isEqualTo("10");
@@ -101,17 +94,14 @@ public class AddressMapperTest {
 
     @Test
     public void test_updateEntity_replaces_fields_and_keeps_the_id() {
-        //given
         AddressEntity entity = addressEntity();
         CityEntity krakow = new CityEntity();
         krakow.setId(12);
         krakow.setName("Kraków");
         Address address = Address.of(5, "Floriańska", "1", null, "31-019", 12, null, null, null);
 
-        //when
         AddressMapper.updateEntity(entity, address, krakow);
 
-        //then
         assertThat(entity.getId()).isEqualTo(5);
         assertThat(entity.getStreetName()).isEqualTo("Floriańska");
         assertThat(entity.getBuildingNumber()).isEqualTo("1");
@@ -125,7 +115,6 @@ public class AddressMapperTest {
 
     @Test
     public void test_null_guards() {
-        //when + then
         assertThat(AddressMapper.toView(null)).isNull();
         assertThat(AddressMapper.toDomain(null)).isNull();
         assertThat(AddressMapper.toEntity(null, warsaw())).isNull();

@@ -4,10 +4,7 @@ import com.hutnyk.carfix.exception.NotFoundException;
 
 import java.util.UUID;
 
-/**
- * No ACTIVE branch with this id. Also thrown for existing but non-ACTIVE branches —
- * a distinct status would confirm the id is real.
- */
+/** Missing and inactive branches share one response to avoid revealing valid ids. */
 public class BranchNotFoundException extends NotFoundException {
 
     public BranchNotFoundException(UUID branchId) {

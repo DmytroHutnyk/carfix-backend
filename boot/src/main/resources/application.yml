@@ -26,9 +26,6 @@ spring:
     default-schema: ${DB_DEFAULT_SCHEMA}
     validate-on-migrate: true
     baseline-on-migrate: true
-#    baseline-version: 0
-#    locations: classpath:db/migration
-#    table: flyway_schema_history
 
   mail:
     protocol: ${MAIL_PROTOCOL:smtp}

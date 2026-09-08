@@ -48,12 +48,12 @@ public final class RegisterBranchCommandMapper {
                 r.services().stream().map(RegisterBranchCommandMapper::toCommand).toList());
     }
 
-    private static RegisterBranchAddressCommand toCommand(RegisterBranchAddressRequest a) {
+    static RegisterBranchAddressCommand toCommand(RegisterBranchAddressRequest a) {
         return new RegisterBranchAddressCommand(a.streetName(), a.buildingNumber(), a.flatNumber(), a.postalCode(),
                 a.city(), a.region(), a.countryIso(), a.latitude(), a.longitude(), a.googlePlaceId());
     }
 
-    private static RegisterBranchOpeningHoursCommand toCommand(RegisterBranchOpeningHoursRequest h) {
+    static RegisterBranchOpeningHoursCommand toCommand(RegisterBranchOpeningHoursRequest h) {
         return new RegisterBranchOpeningHoursCommand(h.dayOfWeek(), h.opensAt(), h.closesAt(), h.mode());
     }
 

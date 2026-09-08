@@ -11,13 +11,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * The resource rows a booking reserves: the bay for the whole visit (segments and gaps), and one
- * employee row and one equipment row per filled requirement slot per segment. Deleted by
- * booking id on cancellation. Employee and equipment rows are ordered by resource id, then start,
- * so two bookings that share resources insert them in the same order and wait on the exclusion
- * constraint in the same order — no lock cycle, no deadlock.
- */
+/** Resource rows stay sorted by id then start, giving concurrent inserts one lock order. */
 public record BookingOccupancy(List<ServiceBayBooking> bays,
                                List<EmployeeBooking> employees,
                                List<EquipmentBooking> equipment) {

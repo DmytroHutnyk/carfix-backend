@@ -12,23 +12,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class SecurityErrorHandlersTest {
 
-    /* Built through Jackson2ObjectMapperBuilder, not new ObjectMapper(): only the builder registers
-     * ProblemDetailJacksonMixin, whose @JsonAnyGetter flattens the properties map so `code` lands at
-     * the top level instead of nested under "properties". The ObjectMapper Spring Boot injects into
-     * SecurityConfig at runtime carries the same mixin. */
+    // Builder registers ProblemDetail mixin that flattens `code`; plain ObjectMapper does not.
     private final ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
 
     @Test
     public void test_the_entry_point_writes_a_parsable_401_body() throws Exception {
-        //given
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/users/me");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        //when
         new ProblemDetailAuthenticationEntryPoint(objectMapper).commence(
                 request, response, new InsufficientAuthenticationException("no session"));
 
-        //then
         assertThat(response.getStatus()).isEqualTo(401);
         assertThat(response.getContentType()).startsWith("application/problem+json");
 
@@ -43,15 +37,12 @@ public class SecurityErrorHandlersTest {
 
     @Test
     public void test_the_access_denied_handler_writes_a_parsable_403_body() throws Exception {
-        //given
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/owner/branches");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        //when
         new ProblemDetailAccessDeniedHandler(objectMapper).handle(
                 request, response, new AccessDeniedException("denied"));
 
-        //then
         assertThat(response.getStatus()).isEqualTo(403);
         assertThat(response.getContentType()).startsWith("application/problem+json");
 

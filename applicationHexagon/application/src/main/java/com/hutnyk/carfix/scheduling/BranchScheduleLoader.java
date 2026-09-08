@@ -28,12 +28,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Loads everything the slot math needs for one branch and one service chain, and folds
- * availability minus occupancy into per-date free schedules clipped to the branch's opening
- * hours. Shared by {@code SlotService} (week view) and {@code BookingService} (single-start
- * recompute); plain class, no Spring, constructed by each service around its ports.
- */
+/** Builds per-date free schedules from opening hours, availability, and occupancy. */
 public final class BranchScheduleLoader {
 
     private final ServicePortOut servicePortOut;

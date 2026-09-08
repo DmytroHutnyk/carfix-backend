@@ -13,11 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-/**
- * Cross-field checks a registration must pass before any row is written: type names unique per list,
- * every name reference resolves to a declared type, at most one opening-hours row per weekday.
- * Pure — no ports. Names are matched trimmed and case-insensitively ({@link #key}).
- */
+/** Validates cross-field references and uniqueness before any registration row is written. */
 public final class BranchRegistrationValidator {
 
     private BranchRegistrationValidator() {
@@ -31,7 +27,7 @@ public final class BranchRegistrationValidator {
         Set<String> bayTypes = uniqueKeys(cmd.serviceBayTypes(), "serviceBayTypes");
         Set<String> equipmentTypes = uniqueKeys(cmd.equipmentTypes(), "equipmentTypes");
         Set<String> roles = uniqueKeys(cmd.roles(), "roles");
-        uniqueWeekdays(cmd.openingHours());
+        requireUniqueWeekdays(cmd.openingHours());
 
         for (int i = 0; i < cmd.serviceBays().size(); i++) {
             requireKnown(bayTypes, cmd.serviceBays().get(i).type(), "serviceBays[" + i + "].type", "service bay type");
@@ -80,7 +76,7 @@ public final class BranchRegistrationValidator {
         }
     }
 
-    private static void uniqueWeekdays(List<RegisterBranchOpeningHoursCommand> hours) {
+    public static void requireUniqueWeekdays(List<RegisterBranchOpeningHoursCommand> hours) {
         Set<DayOfWeek> seen = EnumSet.noneOf(DayOfWeek.class);
         for (int i = 0; i < hours.size(); i++) {
             if (!seen.add(hours.get(i).dayOfWeek())) {

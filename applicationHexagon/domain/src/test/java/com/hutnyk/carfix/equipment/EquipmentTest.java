@@ -15,11 +15,9 @@ public class EquipmentTest {
 
     @Test
     public void test_type_of_allows_platform_row_and_create_is_branch_scoped() {
-        //when
         EquipmentType platform = EquipmentType.of(1, "OBD scanner", null);
         EquipmentType owned = EquipmentType.create("2-post lift", BRANCH_ID);
 
-        //then
         assertThat(platform.getBranchId()).isNull();
         assertThat(owned.getId()).isNull();
         assertThat(owned.getName()).isEqualTo("2-post lift");
@@ -28,7 +26,6 @@ public class EquipmentTest {
 
     @Test
     public void test_type_create_requires_branch() {
-        //when + then
         assertThatThrownBy(() -> EquipmentType.create("2-post lift", null))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType", "fieldName")
@@ -37,10 +34,8 @@ public class EquipmentTest {
 
     @Test
     public void test_create_builds_active_unit_without_notes_or_id() {
-        //when
         Equipment result = Equipment.create("2-post lift #1", 7, BRANCH_ID);
 
-        //then
         assertThat(result.getId()).isNull();
         assertThat(result.getName()).isEqualTo("2-post lift #1");
         assertThat(result.getStatus()).isEqualTo(EquipmentStatus.ACTIVE);
@@ -51,10 +46,26 @@ public class EquipmentTest {
 
     @Test
     public void test_create_rejects_blank_name() {
-        //when + then
         assertThatThrownBy(() -> Equipment.create(" ", 7, BRANCH_ID))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.EMPTY_STRING);
+    }
+
+    @Test
+    public void test_update_rebuilds_fields_but_preserves_id_and_status() {
+        //given
+        Equipment existing = Equipment.of(42, "old lift", "worn", EquipmentStatus.SUSPENDED, 7, BRANCH_ID);
+
+        //when
+        Equipment updated = existing.update("new lift", 9, "serviced");
+
+        //then
+        assertThat(updated.getId()).isEqualTo(42);
+        assertThat(updated.getStatus()).isEqualTo(EquipmentStatus.SUSPENDED);
+        assertThat(updated.getBranchId()).isEqualTo(BRANCH_ID);
+        assertThat(updated.getName()).isEqualTo("new lift");
+        assertThat(updated.getEquipmentTypeId()).isEqualTo(9);
+        assertThat(updated.getNotes()).isEqualTo("serviced");
     }
 }

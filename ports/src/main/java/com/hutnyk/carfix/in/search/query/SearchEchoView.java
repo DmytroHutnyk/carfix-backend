@@ -1,9 +1,6 @@
 package com.hutnyk.carfix.in.search.query;
 
-/**
- * Effective normalized filters the search actually ran with; the FE composes the page title from it.
- * All fields nullable
- */
+// Effective normalized filters used by both search and page title.
 public record SearchEchoView(
         String q,
         String serviceName,

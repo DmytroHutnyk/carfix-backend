@@ -6,11 +6,13 @@ import com.hutnyk.carfix.booking.repository.BookingRepository;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.branch.mapper.BranchMapper;
 import com.hutnyk.carfix.branch.repository.BranchRepository;
+import com.hutnyk.carfix.carCatalog.repository.CarBrandRepository;
 import com.hutnyk.carfix.components.PersistenceAdapter;
 import com.hutnyk.carfix.employee.EmployeeStatus;
 import com.hutnyk.carfix.employee.repository.EmployeeAvailabilityRepository;
 import com.hutnyk.carfix.employee.repository.EmployeeRepository;
 import com.hutnyk.carfix.in.branch.query.BranchReviewView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.OpeningCalendar;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
@@ -34,6 +36,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -47,6 +50,7 @@ public class OwnerBranchAdapterOut implements OwnerBranchPortOut {
     private static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("createdAt"));
 
     private final BranchRepository branchRepository;
+    private final CarBrandRepository carBrandRepository;
     private final BookingRepository bookingRepository;
     private final EmployeeRepository employeeRepository;
     private final EmployeeAvailabilityRepository employeeAvailabilityRepository;
@@ -97,6 +101,16 @@ public class OwnerBranchAdapterOut implements OwnerBranchPortOut {
                             latestReviews(id));
                 })
                 .toList();
+    }
+
+    @Override
+    public Optional<OwnerBranchDetailView> findDetailByIdAndOwnerId(UUID branchId, UserId ownerId) {
+        return branchRepository.findWithLocationByIdAndOwnerId(branchId, ownerId.id())
+                .map(branch -> BranchMapper.toOwnerDetailView(
+                        branch,
+                        carBrandRepository.findAllByBranchId(branchId),
+                        openingHoursRepository.findAllByBranchEntityId(branchId),
+                        openingHoursExceptionRepository.findAllByBranchEntityId(branchId)));
     }
 
     private static OpeningCalendar openingCalendar(

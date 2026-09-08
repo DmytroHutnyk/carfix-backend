@@ -21,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -172,13 +173,16 @@ public class BookingTest {
     }
 
     @Test
-    public void safeCancelUntilIsTwentyFourHoursBeforeStartInBranchZone() {
+    public void safeCancelUntilSubtractsTheGivenNoticeInBranchZone() {
         Booking booking = withStatus(BookingStatus.SCHEDULED);
 
-        Instant deadline = booking.safeCancelUntil(ZoneId.of("Europe/Warsaw"));
+        Instant deadline = booking.safeCancelUntil(ZoneId.of("Europe/Warsaw"), Duration.ofHours(24));
+        Instant strict = booking.safeCancelUntil(ZoneId.of("Europe/Warsaw"), Duration.ofHours(48));
+        Instant flexible = booking.safeCancelUntil(ZoneId.of("Europe/Warsaw"), Duration.ofHours(2));
 
         // 2030-06-11 10:00 Warsaw summer time (UTC+2) == 08:00 UTC
         assertThat(deadline).isEqualTo(Instant.parse("2030-06-11T08:00:00Z"));
+        assertThat(Duration.between(strict, flexible)).isEqualTo(Duration.ofHours(46));
     }
 
     @Test
@@ -218,20 +222,15 @@ public class BookingTest {
 
     @Test
     public void scheduleAcceptsAStartEqualToNow() {
-        //given
         LocalDate date = LocalDate.of(2030, 6, 12);
-        //when
         Booking booking = Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(), plan(date),
                 List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), date.atTime(9, 0));
-        //then
         assertThat(booking.getStartTime()).isEqualTo(LocalTime.of(9, 0));
     }
 
     @Test
     public void scheduleRejectsAStartOneMinuteBeforeNow() {
-        //given
         LocalDate date = LocalDate.of(2030, 6, 12);
-        //when //then
         assertThatThrownBy(() -> Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(), plan(date),
                 List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), date.atTime(9, 1)))
                 .isInstanceOf(DomainObjectValidationException.class);

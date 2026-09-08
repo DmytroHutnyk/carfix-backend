@@ -1,12 +1,6 @@
 package com.hutnyk.carfix.exception;
 
-/**
- * An invariant of our own code broke: a row that was just written cannot be read back, an enum
- * constant has no branch, a principal survived the record it points at. Maps to 500.
- * <p>
- * We never use it for anything the caller could have caused: that is a validation, conflict, or
- * business-rule failure.
- */
+/** Internal invariant failed for reasons outside caller control. Maps to 500. */
 public class UnexpectedStateException extends CarFixException {
 
     public UnexpectedStateException(String message) {

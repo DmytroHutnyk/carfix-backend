@@ -34,7 +34,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Core dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -42,14 +41,12 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Actuator for application health -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- Postgres & Flyway-->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -70,7 +67,6 @@
 
     <build>
         <plugins>
-            <!-- Spring Boot -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -97,7 +93,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Git commit ID-->
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
@@ -112,7 +107,6 @@
                 </executions>
             </plugin>
 
-            <!-- Flyway -->
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
@@ -129,4 +123,3 @@
         </plugins>
     </build>
 </project>
-

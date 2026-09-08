@@ -67,4 +67,9 @@ public class CarProfileAdapterOut implements CarProfilePortOut {
     public void deleteById(UUID profileId) {
         carProfileRepository.deleteById(profileId);
     }
+
+    @Override
+    public void deleteAllByCustomerId(UUID customerId) {
+        carProfileRepository.deleteAllByCustomerEntityId(customerId);
+    }
 }

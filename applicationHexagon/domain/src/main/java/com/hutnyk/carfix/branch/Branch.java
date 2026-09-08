@@ -24,6 +24,9 @@ public final class Branch {
     private final ZoneId tz;
     private final Integer addressId;
     private final UserId ownerId;
+    //Nullable
+    private final String description;
+    private final CancellationPolicy cancellationPolicy;
 
     @Builder
     private Branch(
@@ -34,7 +37,9 @@ public final class Branch {
             BranchStatus status,
             ZoneId tz,
             Integer addressId,
-            UserId ownerId) {
+            UserId ownerId,
+            String description,
+            CancellationPolicy cancellationPolicy) {
         this.id = Validator.notNull(id, "id");
         this.name = Validator.notBlank(name, "name");
         this.phoneNumber = Validator.validateInternationalPhoneNumber(phoneNumber, "phoneNumber");
@@ -43,6 +48,8 @@ public final class Branch {
         this.tz = Validator.notNull(tz, "tz");
         this.addressId = Validator.notNull(addressId, "addressId");
         this.ownerId = Validator.notNull(ownerId, "ownerId");
+        this.description = description;
+        this.cancellationPolicy = Validator.notNull(cancellationPolicy, "cancellationPolicy");
     }
 
     public static Branch of(
@@ -53,7 +60,9 @@ public final class Branch {
             BranchStatus status,
             ZoneId tz,
             Integer addressId,
-            UserId ownerId) {
+            UserId ownerId,
+            String description,
+            CancellationPolicy cancellationPolicy) {
         return Branch.builder()
                 .id(id)
                 .name(name)
@@ -63,10 +72,11 @@ public final class Branch {
                 .tz(tz)
                 .addressId(addressId)
                 .ownerId(ownerId)
+                .description(description)
+                .cancellationPolicy(cancellationPolicy)
                 .build();
     }
 
-    /** A branch the owner registers: ACTIVE right away (no verification flow exists yet). */
     public static Branch create(
             BranchId id,
             String name,
@@ -75,7 +85,8 @@ public final class Branch {
             String timezone,
             Integer addressId,
             UserId ownerId) {
-        return of(id, name, phoneNumber, email, BranchStatus.ACTIVE, parseZone(timezone), addressId, ownerId);
+        return of(id, name, phoneNumber, email, BranchStatus.ACTIVE, parseZone(timezone), addressId, ownerId,
+                null, CancellationPolicy.MODERATE);
     }
 
     private static ZoneId parseZone(String timezone) {

@@ -21,10 +21,8 @@ public class ServiceBayBookingTest {
 
     @Test
     public void test_of_builds_occupancy_row() {
-        //when
         ServiceBayBooking result = ServiceBayBooking.of(1, RANGE, DATE, 3, BOOKING_ID);
 
-        //then
         assertThat(result.getId()).isEqualTo(1);
         assertThat(result.getBookedTime()).isEqualTo(RANGE);
         assertThat(result.getDate()).isEqualTo(DATE);
@@ -34,7 +32,6 @@ public class ServiceBayBookingTest {
 
     @Test
     public void test_of_throws_when_booking_id_is_null() {
-        //when + then
         assertThatThrownBy(() -> ServiceBayBooking.of(1, RANGE, DATE, 3, null))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")

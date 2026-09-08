@@ -32,7 +32,6 @@ public final class ServiceBayType {
                 .build();
     }
 
-    /** Owner-declared type: always belongs to a branch. */
     public static ServiceBayType create(String name, BranchId branchId) {
         return of(null, name, Validator.notNull(branchId, "branchId"));
     }

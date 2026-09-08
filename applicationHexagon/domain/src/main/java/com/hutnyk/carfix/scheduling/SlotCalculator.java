@@ -25,11 +25,7 @@ public final class SlotCalculator {
     private SlotCalculator() {
     }
 
-    /**
-     * Whether a wall-clock time is a legal visit start: exactly on the 15-minute grid the planner
-     * steps by. Callers use it to reject a nonsense start up front instead of letting it fall
-     * through as "no slot".
-     */
+    // Reject off-grid starts explicitly instead of reporting them as unavailable slots.
     public static boolean isOnGrid(LocalTime time) {
         return time.getMinute() % GRID_MINUTES == 0 && time.getSecond() == 0 && time.getNano() == 0;
     }

@@ -3,11 +3,7 @@ package com.hutnyk.carfix.error;
 import com.hutnyk.carfix.exception.ErrorCategory;
 import org.springframework.http.HttpStatus;
 
-/**
- * Switches are exhaustive expressions with no {@code default} branch on purpose: add a
- * category and the compiler stops the build here instead of letting an unmapped failure reach a
- * client as a surprise 500.
- */
+/** No default branches: new categories must fail compilation until mapped. */
 public final class ErrorStatusMapper {
 
     private ErrorStatusMapper() {
@@ -26,9 +22,6 @@ public final class ErrorStatusMapper {
         };
     }
 
-    /**
-     * The {@code title} of the problem body.
-     */
     public static String titleOf(ErrorCategory category) {
         return switch (category) {
             case VALIDATION -> "Validation error";
@@ -42,9 +35,6 @@ public final class ErrorStatusMapper {
         };
     }
 
-    /**
-     * Goes into details field in ProblemDetail
-     */
     public static String summaryOf(ErrorCategory category) {
         return switch (category) {
             case VALIDATION -> "Validation failed";

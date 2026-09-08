@@ -11,6 +11,7 @@ import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.booking.entity.BookingSegmentEntity;
 import com.hutnyk.carfix.booking.entity.BookingSegmentKey;
 import com.hutnyk.carfix.branch.BranchStatus;
+import com.hutnyk.carfix.branch.CancellationPolicy;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarModelEntity;
@@ -53,6 +54,7 @@ public class BookingMapperTest {
         branch.setEmail("wola@speedcare.pl");
         branch.setStatus(BranchStatus.ACTIVE);
         branch.setTz("Europe/Warsaw");
+        branch.setCancellationPolicy(CancellationPolicy.MODERATE);
         branch.setAddressEntity(address);
 
         CarBrandEntity brand = new CarBrandEntity();
@@ -128,6 +130,16 @@ public class BookingMapperTest {
         BookingView view = BookingMapper.toView(entity(), BEFORE_START);
 
         assertThat(view.safeCancelUntil()).isEqualTo(Instant.parse("2030-06-11T08:00:00Z"));
+    }
+
+    @Test
+    public void toViewTakesTheNoticeWindowFromTheBranchPolicy() {
+        BookingEntity entity = entity();
+        entity.getBranchEntity().setCancellationPolicy(CancellationPolicy.STRICT);
+
+        BookingView view = BookingMapper.toView(entity, BEFORE_START);
+
+        assertThat(view.safeCancelUntil()).isEqualTo(Instant.parse("2030-06-10T08:00:00Z"));
     }
 
     @Test

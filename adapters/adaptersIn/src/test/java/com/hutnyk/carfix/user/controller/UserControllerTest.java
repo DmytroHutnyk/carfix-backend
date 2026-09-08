@@ -59,6 +59,7 @@ public class UserControllerTest {
         UpdateUserAddressCommand receivedAddress;
         String receivedEmail;
         String deletedFor;
+        String deletedAccountFor;
         Integer addressIdOfUser;
         Integer preferredCityIdOfUser = 11;
         int calls;
@@ -73,9 +74,7 @@ public class UserControllerTest {
             this.receivedEmail = email;
             this.received = command;
             this.calls++;
-            /* Built through the builder, not the 11-arg User.of(...), so that adding an optional
-             * domain field does not break this file. If a new *required* field lands, these tests
-             * fail with a DomainObjectValidationException naming it — add it here. */
+            // Builder tolerates new optional fields; new required fields still fail loudly.
             return User.builder()
                     .id(UserId.genId())
                     .name(command.name())
@@ -101,6 +100,12 @@ public class UserControllerTest {
         @Override
         public void deleteAddress(String email) {
             this.deletedFor = email;
+            this.calls++;
+        }
+
+        @Override
+        public void deleteAccount(String email) {
+            this.deletedAccountFor = email;
             this.calls++;
         }
 
@@ -153,11 +158,9 @@ public class UserControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    // ---- PUT /me ----------------------------------------------------------------------------
 
     @Test
     public void test_put_me_returns_200_with_the_updated_core() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORE_BODY))
@@ -176,14 +179,11 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_passes_the_principal_email_and_command_fields_verbatim() throws Exception {
-        //when
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORE_BODY))
                 .andExpect(status().isOk());
 
-        //then — asserted field-wise, not as whole-record equality, so that adding a component to
-        //UpdateUserCommand does not break this file
         assertThat(stub.receivedEmail).isEqualTo(EMAIL);
         assertThat(stub.received.name()).isEqualTo("John");
         assertThat(stub.received.surname()).isEqualTo("Doe");
@@ -193,20 +193,17 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_null_dateOfBirth_reaches_the_port_as_null() throws Exception {
-        //when
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dateOfBirth").doesNotExist());
 
-        //then
         assertThat(stub.received.dateOfBirth()).isNull();
     }
 
     @Test
     public void test_put_me_with_preferred_location_echoes_it_and_passes_it_to_the_port() throws Exception {
-        //when
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null,"
@@ -219,7 +216,6 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.preferredLocation.latitude").value(52.2297))
                 .andExpect(jsonPath("$.preferredLocation.longitude").value(21.0122));
 
-        //then
         assertThat(stub.received.preferredLocation().city()).isEqualTo("Warsaw");
         assertThat(stub.received.preferredLocation().countryIso()).isEqualTo("PL");
         assertThat(stub.received.preferredLocation().latitude()).isEqualByComparingTo("52.2297");
@@ -227,10 +223,8 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_returns_the_assembled_address_when_the_user_has_one() throws Exception {
-        //given
         stub.addressIdOfUser = 7;
 
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORE_BODY))
@@ -249,10 +243,8 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_with_a_dangling_address_id_is_a_500() throws Exception {
-        //given
         stub.addressIdOfUser = 999;
 
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORE_BODY))
@@ -261,10 +253,8 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_with_a_dangling_preferred_city_id_is_a_500() throws Exception {
-        //given
         stub.preferredCityIdOfUser = 999;
 
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null,"
@@ -275,7 +265,6 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_bad_country_code_format_returns_400_with_the_dotted_field() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null,"
@@ -290,7 +279,6 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_preferred_location_without_city_returns_400() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null,"
@@ -304,7 +292,6 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_blank_name_returns_400_and_never_reaches_the_port() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"   \",\"surname\":\"Doe\",\"dateOfBirth\":null}"))
@@ -316,7 +303,6 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_absent_surname_returns_400() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"dateOfBirth\":null}"))
@@ -328,18 +314,15 @@ public class UserControllerTest {
 
     @Test
     public void test_patch_me_is_no_longer_mapped() throws Exception {
-        //when + then
         mockMvc.perform(patch("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John\",\"surname\":\"Doe\",\"dateOfBirth\":null}"))
                 .andExpect(status().isMethodNotAllowed());
     }
 
-    // ---- PUT /me/address --------------------------------------------------------------------
 
     @Test
     public void test_put_me_address_returns_200_with_the_assembled_address() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me/address")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ADDRESS_BODY))
@@ -371,7 +354,6 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_address_null_optionals_reach_the_port_as_null() throws Exception {
-        //when
         mockMvc.perform(put("/api/users/me/address")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"streetName\":\"Marszałkowska\",\"buildingNumber\":\"10\",\"flatNumber\":null,"
@@ -379,7 +361,6 @@ public class UserControllerTest {
                                 + "\"countryIso\":\"PL\",\"latitude\":null,\"longitude\":null,\"googlePlaceId\":null}"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedAddress.flatNumber()).isNull();
         assertThat(stub.receivedAddress.latitude()).isNull();
         assertThat(stub.receivedAddress.longitude()).isNull();
@@ -388,7 +369,6 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_address_missing_required_fields_returns_400_listing_each() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me/address")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"streetName\":\" \",\"buildingNumber\":\"10\",\"postalCode\":\"\","
@@ -404,7 +384,6 @@ public class UserControllerTest {
 
     @Test
     public void test_put_me_address_out_of_range_coordinates_return_400() throws Exception {
-        //when + then
         mockMvc.perform(put("/api/users/me/address")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"streetName\":\"Marszałkowska\",\"buildingNumber\":\"10\",\"postalCode\":\"00-001\","
@@ -416,14 +395,21 @@ public class UserControllerTest {
         assertThat(stub.calls).isZero();
     }
 
-    // ---- DELETE /me/address -----------------------------------------------------------------
 
     @Test
     public void test_delete_me_address_returns_204_and_passes_the_principal() throws Exception {
-        //when + then
         mockMvc.perform(delete("/api/users/me/address"))
                 .andExpect(status().isNoContent());
 
         assertThat(stub.deletedFor).isEqualTo(EMAIL);
+    }
+
+
+    @Test
+    public void test_delete_me_returns_204_and_deletes_the_account_of_the_principal() throws Exception {
+        mockMvc.perform(delete("/api/users/me"))
+                .andExpect(status().isNoContent());
+
+        assertThat(stub.deletedAccountFor).isEqualTo(EMAIL);
     }
 }

@@ -3,18 +3,6 @@ package com.hutnyk.carfix.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-/**
- * Validation class for <code>@Password</code> annotation. Validates password <code>String</code> against following invariants:<br>
- * - not null<br>
- * - not blank<br>
- * - length ≥ 8<br>
- * - length ≤ 20<br>
- * - contains at least one uppercase letter<br>
- * - contains at least one lowercase letter<br>
- * - contains at least one digit<br>
- * - contains at least one special (non-alphanumeric) character
- */
-
 public class PasswordValidator implements ConstraintValidator<Password, String> {
 
     @Override

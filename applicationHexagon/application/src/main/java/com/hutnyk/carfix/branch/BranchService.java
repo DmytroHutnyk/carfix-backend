@@ -20,11 +20,14 @@ import com.hutnyk.carfix.in.branch.commands.RegisterBranchEmployeeCommand;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchEquipmentCommand;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceBayCommand;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchServiceCommand;
+import com.hutnyk.carfix.in.branch.commands.UpdateBranchOverviewCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
+import com.hutnyk.carfix.openingHours.OpeningHoursException;
 import com.hutnyk.carfix.out.address.AddressPortOut;
 import com.hutnyk.carfix.out.branch.BranchPortOut;
 import com.hutnyk.carfix.out.branch.OwnerBranchPortOut;
@@ -53,6 +56,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -111,6 +115,15 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
         User owner = userPortOut.loadUserByEmail(ownerEmail)
                 .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(ownerEmail));
         return ownerBranchPortOut.findSummariesByOwnerId(owner.getId(), clock.instant());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OwnerBranchDetailView getMyBranch(String ownerEmail, UUID branchId) {
+        User owner = userPortOut.loadUserByEmail(ownerEmail)
+                .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(ownerEmail));
+        return ownerBranchPortOut.findDetailByIdAndOwnerId(branchId, owner.getId())
+                .orElseThrow(() -> new BranchNotFoundException(branchId));
     }
 
     @Override
@@ -175,6 +188,47 @@ public class BranchService implements BranchPortIn, OwnerBranchPortIn {
                             .toList()));
         }
         return branch;
+    }
+
+    @Override
+    public OwnerBranchDetailView updateBranchOverview(String ownerEmail, UUID branchId, UpdateBranchOverviewCommand cmd) {
+        User owner = userPortOut.loadUserByEmail(ownerEmail)
+                .orElseThrow(() -> AuthenticatedUserMissingException.forEmail(ownerEmail));
+        OwnerBranchDetailView existing = ownerBranchPortOut.findDetailByIdAndOwnerId(branchId, owner.getId())
+                .orElseThrow(() -> new BranchNotFoundException(branchId));
+
+        BranchRegistrationValidator.requireUniqueWeekdays(cmd.openingHours());
+        requireKnownBrands(cmd.carBrandIds());
+
+        RegisterBranchAddressCommand a = cmd.address();
+        Integer cityId = new CityResolver(addressPortOut)
+                .resolveCityId(a.city(), a.region(), CountryIso.parse(a.countryIso()));
+        addressPortOut.update(Address.of(existing.address().id(), a.streetName(), a.buildingNumber(), a.flatNumber(),
+                a.postalCode(), cityId, a.latitude(), a.longitude(), a.googlePlaceId()));
+
+        BranchId id = BranchId.of(branchId);
+        branchPortOut.update(Branch.of(id, cmd.name().trim(), existing.phoneNumber(), existing.email(),
+                existing.status(), ZoneId.of(existing.timezone()), existing.address().id(), owner.getId(),
+                normalizeDescription(cmd.description()), cmd.cancellationPolicy()));
+
+        branchPortOut.replaceOpeningHours(id, cmd.openingHours().stream()
+                .map(h -> OpeningHours.create(h.dayOfWeek(), h.opensAt(), h.closesAt(), h.mode(), id))
+                .toList());
+        branchPortOut.replaceOpeningHoursExceptions(id, cmd.openingHoursExceptions().stream()
+                .map(e -> OpeningHoursException.of(null, e.date(), e.opensAt(), e.closesAt(), e.isOpen(),
+                        normalizeDescription(e.reason()), id))
+                .toList());
+        branchPortOut.replaceCarBrands(id, cmd.carBrandIds());
+
+        return ownerBranchPortOut.findDetailByIdAndOwnerId(branchId, owner.getId())
+                .orElseThrow(() -> new BranchNotFoundException(branchId));
+    }
+
+    private static String normalizeDescription(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        return text.trim();
     }
 
     private void requireKnownBrands(Set<Integer> carBrandIds) {

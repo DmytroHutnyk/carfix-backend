@@ -21,7 +21,6 @@ public final class User {
     private final UserRole role;
 
     @ToString.Exclude
-//    @Getter(AccessLevel.NONE)
     private final PasswordHash passwordHash;
 
     //Nullable

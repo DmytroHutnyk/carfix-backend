@@ -47,9 +47,7 @@ public class SearchService implements SearchPortIn {
     private final AvailabilityPortOut availabilityPortOut;
     private final Clock clock;
 
-    /**
-     * Only the workshops group is location- and brand-bound.
-     */
+    // Location and brand constrain workshop suggestions only.
     @Override
     @Transactional(readOnly = true)
     public SearchSuggestionsView getSuggestions(SearchSuggestionsQuery query, String principalEmail) {
@@ -119,9 +117,7 @@ public class SearchService implements SearchPortIn {
         return page(available, query.page(), query.size()).withEcho(echo);
     }
 
-    /**
-     * The only place the availability precondition is enforced; SearchAvailabilityFilter relies on it.
-     */
+    // SearchAvailabilityFilter assumes this normalization already ran.
     private static AvailabilityWindow validateAvailability(AvailabilityWindow window, String serviceName) {
         if (window == null) {
             return null;
@@ -151,9 +147,7 @@ public class SearchService implements SearchPortIn {
         return window;
     }
 
-    /**
-     * The availability path pages after filtering, so the totals count only branches that can take the job.
-     */
+    // Availability results paginate after filtering so totals count feasible branches only.
     private static WorkshopSearchPage page(List<WorkshopResultView> all, int page, int size) {
         int fromIndex = (int) Math.min((long) page * size, all.size());
         int toIndex = Math.min(fromIndex + size, all.size());
@@ -161,10 +155,7 @@ public class SearchService implements SearchPortIn {
         return new WorkshopSearchPage(all.subList(fromIndex, toIndex), page, size, all.size(), totalPages, null);
     }
 
-    /**
-     * The order is a fact of the request, so it is resolved once here and the adapter
-     * only reads it. Absent = distance when we have a centre to measure from, else name.
-     */
+    // Default to distance with a center, otherwise name; adapter only applies resolved order.
     private static String resolveSort(String rawSort, boolean hasCoordinates) {
         String sort = normalize(rawSort);
         if (sort == null) {

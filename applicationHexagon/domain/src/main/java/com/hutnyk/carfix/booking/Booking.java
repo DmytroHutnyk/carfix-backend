@@ -71,9 +71,7 @@ public final class Booking {
                 .toList();
     }
 
-    /**
-     * Assembles an existing booking from persistence (no creation-time checks).
-     */
+    // Rehydration skips creation-time checks.
     public static Booking of(
             BookingId id,
             LocalDate date,
@@ -95,11 +93,7 @@ public final class Booking {
                 .build();
     }
 
-    /**
-     * Creates a brand-new booking from a feasible visit plan: the span is the plan's span, every
-     * segment snapshots the service's current price, and the start must not be before {@code now},
-     * the branch's wall-clock now.
-     */
+    // Segment prices are snapshots; `now` is branch-local wall-clock time.
     public static Booking schedule(
             BookingId id,
             BranchId branchId,
@@ -171,9 +165,9 @@ public final class Booking {
         return withStatus(BookingStatus.NO_SHOW);
     }
 
-    public Instant safeCancelUntil(ZoneId branchZone) {
+    public Instant safeCancelUntil(ZoneId branchZone, Duration notice) {
         return ZonedDateTime.of(date, startTime, branchZone)
-                .minus(SAFE_CANCELLATION_NOTICE)
+                .minus(notice)
                 .toInstant();
     }
 }

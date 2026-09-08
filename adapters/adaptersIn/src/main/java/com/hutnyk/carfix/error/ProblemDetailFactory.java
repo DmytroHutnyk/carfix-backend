@@ -9,13 +9,7 @@ import org.springframework.http.ProblemDetail;
 import java.net.URI;
 import java.util.Map;
 
-/**
- * Builds every error body the API returns.
- * <p>
- * All five fields the web client's {@code isProblemDetailError} guard requires: {@code type},
- * {@code title}, {@code status}, {@code detail}, {@code instance} Spring's message converter fills from
- * the request path.
- */
+/** Keeps every API failure compatible with the frontend's ProblemDetail guard. */
 @NoArgsConstructor
 public final class ProblemDetailFactory {
 

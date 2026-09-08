@@ -31,11 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-/**
- * M5 checklist: the roadmap's "done when" loop over real HTTP against the seeded dev DB.
- * Every booking it creates is cancelled and deleted again in {@code cleanup()}, so re-runs
- * start from the same state. Window = tomorrow .. +6 days, first open day with a slot.
- */
+/** Real-HTTP M5 checklist against seeded dev DB; cleanup restores bookings created by each run. */
 @ActiveProfiles("dev")
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -51,11 +47,7 @@ class BookingEndpointChecklistIT {
     private static final String CAR_FOREIGN = "20000000-0000-4000-8000-000000000004";
     private static final int SVC_OIL = 11;
     private static final int SVC_BRAKES = 27;
-    /**
-     * Wheel alignment: the cheapest branch-A service that reserves equipment AND shares a bay type
-     * with {@link #SVC_OIL}, so check 8 can chain the two and exercise {@code equipment_bookings}.
-     * ({@code SVC_BRAKES} and {@code SVC_OIL} both require none, which made check 8 assert 0 == 0.)
-     */
+    // Shares a bay with oil service and reserves equipment, preventing a vacuous chain check.
     private static final int SVC_ALIGN = 22;
     private static final int SVC_OTHER_BRANCH = 14;
     private static final ZoneId WARSAW = ZoneId.of("Europe/Warsaw");
@@ -75,7 +67,6 @@ class BookingEndpointChecklistIT {
     private boolean snapshotTaken;
     private String cookie;
 
-    // ---------------------------------------------------------------- harness
 
     private static final class Chk {
         final String id;
@@ -221,7 +212,6 @@ class BookingEndpointChecklistIT {
                 "SELECT count(*) FROM " + schema + "." + table + " WHERE booking_id = ?::uuid", Integer.class, bookingId));
     }
 
-    /** Rows of {@code table} that belong to bookings of this car on this date. */
     private int rowsForCarOn(String carProfileId, String date, String table) {
         String sql = table.equals("bookings")
                 ? "SELECT count(*) FROM " + schema + ".bookings b WHERE b.car_profile_id = ?::uuid AND b.date = ?::date"
@@ -230,17 +220,12 @@ class BookingEndpointChecklistIT {
         return Objects.requireNonNull(jdbc.queryForObject(sql, Integer.class, carProfileId, date));
     }
 
-    /** One occupancy row is written per requirement row, per segment — so this is the expected count. */
     private int requirements(String table, int serviceId) {
         return Objects.requireNonNull(jdbc.queryForObject(
                 "SELECT count(*) FROM " + schema + "." + table + " WHERE service_id = ?", Integer.class, serviceId));
     }
 
-    /**
-     * Every occupancy row of {@code bookingId}, in all three tables, must sit on the booking's date,
-     * inside the visit span, and be half-open {@code [)} — the shape the GiST exclusion constraints
-     * and the slot recompute both assume.
-     */
+    // GiST constraints and slot recomputation both require half-open rows inside visit span.
     private void assertOccupancyRows(Chk c, String bookingId, String date, LocalTime visitStart, LocalTime visitEnd) {
         for (String table : List.of("service_bays_bookings", "employees_bookings", "equipment_bookings")) {
             List<Map<String, Object>> rows = jdbc.queryForList(
@@ -258,11 +243,7 @@ class BookingEndpointChecklistIT {
         }
     }
 
-    /**
-     * The ids the sweep is allowed to consider: this car's bookings created no earlier than the run
-     * itself. {@code bookings.created_at} defaults to the DB's own {@code now()}, so the bound is
-     * read from the DB too — no JVM/DB clock skew.
-     */
+    // Use DB time for sweep boundary to avoid JVM/DB clock skew.
     private List<String> bookingIdsOfCarSince(String carProfileId, Timestamp since) {
         return jdbc.queryForList(
                 "SELECT booking_id::text FROM " + schema
@@ -270,10 +251,7 @@ class BookingEndpointChecklistIT {
                 String.class, carProfileId, since);
     }
 
-    /**
-     * Must succeed before anything is booked: the sweep in {@code cleanup()} deletes what is NOT in
-     * this snapshot, so a missing snapshot would make it delete the seeded bookings of this car.
-     */
+    // Never sweep without a snapshot; doing so could delete seeded bookings.
     private void takeSnapshot() {
         runStart = Objects.requireNonNull(jdbc.queryForObject("SELECT localtimestamp", Timestamp.class));
         bookingsOfCarBefore = jdbc.queryForList(
@@ -286,12 +264,8 @@ class BookingEndpointChecklistIT {
         createdBookingIds.add(created.get("bookingId").asText());
     }
 
-    /**
-     * The remembered ids cover the normal path; the diff against the pre-run snapshot also catches a
-     * booking whose 201 never reached the client, which would otherwise hold its slot forever. The
-     * diff runs only when that snapshot was actually taken — without it, "not in the snapshot" would
-     * mean "every booking of this car", seeded ones included.
-     */
+    // Snapshot diff catches committed bookings whose 201 response never arrived.
+    // Without a snapshot, only explicitly remembered ids are safe to remove.
     private void cleanup() {
         Set<String> ids = new LinkedHashSet<>(createdBookingIds);
         if (snapshotTaken) {
@@ -315,7 +289,6 @@ class BookingEndpointChecklistIT {
         }
     }
 
-    // ------------------------------------------------------------------ checks
 
     @Test
     void checklist() throws Exception {
@@ -353,14 +326,12 @@ class BookingEndpointChecklistIT {
         if (passed == 0) {
             throw new AssertionError("nothing was verified — every check skipped (no bookable slot in the window? reseed the DB)");
         }
-        /* Checks 6 and 7 pass without any bookable slot, so `passed > 0` alone would let an
-           all-SKIP booking run report success. Check 1 is the one that must have booked. */
+        // Some checks pass without a slot; check 1 proves booking path actually ran.
         if (report.stream().anyMatch(c -> "1".equals(c.id) && c.skipped != null)) {
             throw new AssertionError("check 1 skipped — no booking was ever created; reseed the DB");
         }
     }
 
-    /** 1 book a listed slot → 201; 2 rows written; 3 slot listing shrinks or holds; 4 My Bookings shows it. */
     private void check1to4(LocalDate from, LocalDate to) throws Exception {
         Chk c1 = check("1", "book a listed slot → 201 with the card");
         Chk c2 = check("2", "segment + occupancy rows written with price snapshot");
@@ -454,10 +425,7 @@ class BookingEndpointChecklistIT {
         c4.eq("slot listing restored after cancel", startsBefore, startsAfter);
     }
 
-    /**
-     * 5 concurrent double-book: bays+1 parallel POSTs for one slot → ≥1 201, ≥1 409, never 5xx, and
-     * every loser rolls back whole — the row deltas must equal the number of 201s.
-     */
+    // Losing concurrent bookings must return 409 and roll back every row.
     private void check5(LocalDate from, LocalDate to) throws Exception {
         Chk c = check("5", "parallel double-book → ≥1 201, rest 409, losers leave no rows");
         JsonNode day = firstOpenDay(slots(SVC_OIL, from, to));
@@ -530,16 +498,13 @@ class BookingEndpointChecklistIT {
         c.ok("at least one 409", conflicts >= 1);
         c.ok("created ≤ active bays (" + bays + ")", created <= bays);
         c.note(n + " parallel POSTs for " + date + " " + start + " → statuses " + statuses);
-        /* Hand the slot back: checks 8 and 9 book the same car, and the same-car guard would reject
-           theirs while these are still SCHEDULED. The ids stay remembered, so cleanup() still
-           deletes the rows; only the status changes, and CANCELLED is invisible to the guard. */
+        // Free car for later overlap checks; cleanup still owns remembered rows.
         for (String won : createdIds) {
             c.eq("cancel " + won + " to free the day for checks 8-9", 200,
                     post("/api/customer/bookings/" + won + "/cancel", "").getStatusCode().value());
         }
     }
 
-    /** 6 error contract. */
     private void check6(LocalDate from) throws Exception {
         Chk c = check("6", "error cases: status + code + problem fields");
         String d = from.toString();
@@ -576,7 +541,6 @@ class BookingEndpointChecklistIT {
         c.note(okCount + "/" + cases.size() + " exact");
     }
 
-    /** 7 auth wall. */
     private void check7() {
         Chk c = check("7", "no session → 401, never 500");
         String saved = cookie;
@@ -587,11 +551,7 @@ class BookingEndpointChecklistIT {
         c.eq("status", 401, r.getStatusCode().value());
     }
 
-    /**
-     * 8 the multi-segment path: two services in one visit, so two {@code bookings_services} rows share
-     * one booking, the per-segment employee rows are written per service, and the card is assembled
-     * from a re-read that fetches a collection.
-     */
+    // Multi-segment check covers shared visit rows, per-segment resources, and collection re-read.
     private void check8(LocalDate from, LocalDate to) throws Exception {
         Chk c = check("8", "two-service visit → one booking, two segments, one bay, equipment held");
         String pair = SVC_OIL + "," + SVC_ALIGN;
@@ -633,12 +593,11 @@ class BookingEndpointChecklistIT {
                 LocalTime.parse(created.get("endTime").asText()));
         c.note("booked " + pair + " on " + date + " " + start + ", employees " + employeeReqs
                 + ", equipment " + equipmentReqs);
-        /* Same reason as check 5: check 9 books this car too. */
+        // Free car for check 9.
         c.eq("cancel to free the day for check 9", 200,
                 post("/api/customer/bookings/" + id + "/cancel", "").getStatusCode().value());
     }
 
-    /** 9 the same car cannot be booked into two overlapping visits, even when a second bay is free. */
     private void check9(LocalDate from, LocalDate to) throws Exception {
         Chk c = check("9", "same car twice at one time → 409 CAR_PROFILE_ALREADY_BOOKED");
         JsonNode day = firstOpenDay(slots(SVC_OIL, from, to));

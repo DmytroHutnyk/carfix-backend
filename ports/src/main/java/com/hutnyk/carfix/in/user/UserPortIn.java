@@ -14,6 +14,7 @@ public interface UserPortIn {
     User updateUser(String email, UpdateUserCommand command);
     AddressView updateAddress(String email, UpdateUserAddressCommand command);
     void deleteAddress(String email);
+    void deleteAccount(String email);
 
     void requestEmailVerification(String email);
 

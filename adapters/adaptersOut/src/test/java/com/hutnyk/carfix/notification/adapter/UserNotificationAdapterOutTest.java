@@ -17,7 +17,6 @@ public class UserNotificationAdapterOutTest {
 
     @Test
     public void test_sendEmailVerificationCode_hands_the_rendered_message_to_the_email_sender() {
-        //given
         List<EmailMessage> sent = new ArrayList<>();
         UserNotificationAdapterOut adapter = new UserNotificationAdapterOut(sent::add);
         User user = User.builder()
@@ -32,9 +31,7 @@ public class UserNotificationAdapterOutTest {
                 .addressId(null)
                 .emailVerifiedAt(null)
                 .build();
-        //when
         adapter.sendEmailVerificationCode(user, "654321");
-        //then
         assertThat(sent).hasSize(1);
         assertThat(sent.getFirst().to()).isEqualTo("john@example.com");
         assertThat(sent.getFirst().subject()).contains("654321");

@@ -12,6 +12,8 @@ import com.hutnyk.carfix.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
+import java.util.UUID;
+
 @RequiredArgsConstructor
 @PersistenceAdapter
 public class CustomerAdapterOut implements CustomerPortOut {
@@ -38,5 +40,10 @@ public class CustomerAdapterOut implements CustomerPortOut {
     public Customer loadCustomerByUsername(String email){
         CustomerEntity customerEntity = customerRepository.getCustomerEntityByUserEntity(userRepository.getUserByEmail(email));
         return CustomerMapper.toDomain(customerEntity, UserMapper.toDomain(customerEntity.getUserEntity()));
+    }
+
+    @Override
+    public void deleteByUserId(UUID userId) {
+        customerRepository.deleteById(userId);
     }
 }

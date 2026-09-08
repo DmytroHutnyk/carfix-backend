@@ -2,6 +2,7 @@ package com.hutnyk.carfix.branch.entity;
 
 import com.hutnyk.carfix.address.entity.AddressEntity;
 import com.hutnyk.carfix.branch.BranchStatus;
+import com.hutnyk.carfix.branch.CancellationPolicy;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursExceptionEntity;
 import jakarta.persistence.*;
@@ -53,8 +54,9 @@ public class BranchEntity {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "cancellation_policy")
-    private String cancellationPolicy;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancellation_policy", nullable = false)
+    private CancellationPolicy cancellationPolicy;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)

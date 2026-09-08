@@ -9,7 +9,6 @@ import lombok.Getter;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class OpeningHoursException {

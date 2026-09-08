@@ -22,14 +22,25 @@ import com.hutnyk.carfix.equipment.EquipmentBooking;
 import com.hutnyk.carfix.equipment.entity.EquipmentEntity;
 import com.hutnyk.carfix.equipment.mapper.EquipmentMapper;
 import com.hutnyk.carfix.equipment.repository.EquipmentBookingRepository;
+import com.hutnyk.carfix.carCatalog.entity.CarModelEntity;
+import com.hutnyk.carfix.employee.entity.EmployeeBookingEntity;
+import com.hutnyk.carfix.equipment.entity.EquipmentBookingEntity;
 import com.hutnyk.carfix.exception.UnexpectedStateException;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingCarView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingCustomerView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingEmployeeView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingServiceView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingView;
 import com.hutnyk.carfix.out.booking.BookingPortOut;
+import com.hutnyk.carfix.role.entity.RoleEntity;
 import com.hutnyk.carfix.service.entity.ServiceEntity;
 import com.hutnyk.carfix.serviceBay.ServiceBayBooking;
+import com.hutnyk.carfix.serviceBay.entity.ServiceBayBookingEntity;
 import com.hutnyk.carfix.serviceBay.entity.ServiceBayEntity;
 import com.hutnyk.carfix.serviceBay.mapper.ServiceBayMapper;
 import com.hutnyk.carfix.serviceBay.repository.ServiceBayBookingRepository;
+import com.hutnyk.carfix.user.entity.UserEntity;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +48,17 @@ import org.hibernate.exception.ConstraintViolationException;
 
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -52,9 +68,7 @@ import java.util.UUID;
 @PersistenceAdapter
 public class BookingAdapterOut implements BookingPortOut {
 
-    /* 23P01 exclusion_violation: the GiST constraint said no. 40P01 deadlock_detected / 40001
-       serialization_failure: Postgres aborted us while two writers waited on each other's rows —
-       equally "somebody else got there first", never a defect to 500 on. */
+    // Postgres 23P01, 40P01, and 40001 all mean this transaction lost a resource race.
     private static final Set<String> LOST_RACE_SQL_STATES = Set.of("23P01", "40P01", "40001");
     private static final int MAX_CAUSE_DEPTH = 20;
 
@@ -89,6 +103,109 @@ public class BookingAdapterOut implements BookingPortOut {
     public Optional<Booking> findByIdAndOwnerId(UUID bookingId, UUID ownerId) {
         return bookingRepository.findByIdAndOwnerIdWithSegments(bookingId, ownerId)
                 .map(BookingMapper::toDomain);
+    }
+
+    @Override
+    public List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
+        List<BookingEntity> bookings = bookingRepository.findBranchDayWithDetails(branchId, date);
+        if (bookings.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> ids = bookings.stream().map(BookingEntity::getId).toList();
+
+        Map<UUID, String> bayByBooking = new HashMap<>();
+        for (ServiceBayBookingEntity sb : serviceBayBookingRepository.findAllWithBayByBookingIds(ids)) {
+            bayByBooking.put(sb.getBookingEntity().getId(), sb.getServiceBayEntity().getName());
+        }
+
+        Map<UUID, List<OwnerBranchBookingEmployeeView>> employeesByBooking = new HashMap<>();
+        for (EmployeeBookingEntity eb : employeeBookingRepository.findAllWithEmployeeByBookingIds(ids)) {
+            EmployeeEntity employee = eb.getEmployeeEntity();
+            employeesByBooking.computeIfAbsent(eb.getBookingEntity().getId(), key -> new ArrayList<>())
+                    .add(new OwnerBranchBookingEmployeeView(
+                            employee.getFirstName() + " " + employee.getLastName(), roleLabel(employee)));
+        }
+
+        Map<UUID, List<String>> equipmentByBooking = new HashMap<>();
+        for (EquipmentBookingEntity qb : equipmentBookingRepository.findAllWithEquipmentByBookingIds(ids)) {
+            equipmentByBooking.computeIfAbsent(qb.getBookingEntity().getId(), key -> new ArrayList<>())
+                    .add(qb.getEquipmentEntity().getName());
+        }
+
+        Instant now = clock.instant();
+        return bookings.stream()
+                .map(entity -> toOwnerView(entity, now,
+                        bayByBooking.get(entity.getId()),
+                        sortedByName(employeesByBooking.get(entity.getId())),
+                        sortedStrings(equipmentByBooking.get(entity.getId()))))
+                .toList();
+    }
+
+    private static List<OwnerBranchBookingEmployeeView> sortedByName(List<OwnerBranchBookingEmployeeView> employees) {
+        if (employees == null) {
+            return List.of();
+        }
+        return employees.stream()
+                .sorted(Comparator.comparing(OwnerBranchBookingEmployeeView::name))
+                .toList();
+    }
+
+    private static List<String> sortedStrings(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+        return values.stream().sorted().toList();
+    }
+
+    private static String roleLabel(EmployeeEntity employee) {
+        if (employee.getRoles() == null || employee.getRoles().isEmpty()) {
+            return "";
+        }
+        return employee.getRoles().stream()
+                .map(RoleEntity::getName)
+                .sorted()
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("");
+    }
+
+    private static OwnerBranchBookingView toOwnerView(BookingEntity entity, Instant now, String bay,
+                                                      List<OwnerBranchBookingEmployeeView> employees,
+                                                      List<String> equipment) {
+        BranchEntity branch = entity.getBranchEntity();
+        ZoneId zone = ZoneId.of(branch.getTz());
+        BookingStatus status = BookingMapper.toDomain(entity).effectiveStatus(now.atZone(zone).toLocalDateTime());
+
+        CarProfileEntity carProfile = entity.getCarProfileEntity();
+        UserEntity user = carProfile.getCustomerEntity().getUserEntity();
+        CarModelEntity model = carProfile.getModelVersionEntity().getCarModelEntity();
+
+        List<OwnerBranchBookingServiceView> services = entity.getSegments().stream()
+                .map(segment -> new OwnerBranchBookingServiceView(
+                        segment.getServiceEntity().getName(),
+                        (int) Duration.between(segment.getStartTime(), segment.getEndTime()).toMinutes(),
+                        segment.getPrice()))
+                .sorted(Comparator.comparing(OwnerBranchBookingServiceView::name))
+                .toList();
+
+        int totalDurationMinutes = (int) Duration.between(entity.getStartTime(), entity.getEndTime()).toMinutes();
+
+        return new OwnerBranchBookingView(
+                BookingId.of(entity.getId()).reference(),
+                status.name(),
+                entity.getStartTime(),
+                entity.getEndTime(),
+                new OwnerBranchBookingCustomerView(
+                        user.getName() + " " + user.getSurname(),
+                        user.getPhoneCountryCode() + user.getPhoneNumber(),
+                        user.getEmail()),
+                new OwnerBranchBookingCarView(
+                        model.getCarBrandEntity().getName(), model.getName(), carProfile.getPlates()),
+                services,
+                bay,
+                employees,
+                equipment,
+                totalDurationMinutes,
+                entity.getCreatedAt());
     }
 
     @Override
@@ -152,6 +269,21 @@ public class BookingAdapterOut implements BookingPortOut {
         serviceBayBookingRepository.deleteAllByBookingEntityId(id);
         employeeBookingRepository.deleteAllByBookingEntityId(id);
         equipmentBookingRepository.deleteAllByBookingEntityId(id);
+    }
+
+    @Override
+    public void deleteAllByCustomerId(UUID customerId) {
+        List<UUID> bookingIds = bookingRepository.findIdsByCustomerId(customerId);
+        if (bookingIds.isEmpty()) {
+            return;
+        }
+        for (UUID id : bookingIds) {
+            serviceBayBookingRepository.deleteAllByBookingEntityId(id);
+            employeeBookingRepository.deleteAllByBookingEntityId(id);
+            equipmentBookingRepository.deleteAllByBookingEntityId(id);
+        }
+        bookingRepository.deleteSegmentsByBookingIds(bookingIds);
+        bookingRepository.deleteByIds(bookingIds);
     }
 
     @Override

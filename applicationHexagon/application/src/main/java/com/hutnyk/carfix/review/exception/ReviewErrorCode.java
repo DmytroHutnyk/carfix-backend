@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum ReviewErrorCode implements ErrorCode {
 
     REVIEW_ALREADY_EXISTS(ErrorCategory.CONFLICT),
-    REVIEWED_BOOKING_NOT_FOUND(ErrorCategory.NOT_FOUND);
+    REVIEWED_BOOKING_NOT_FOUND(ErrorCategory.NOT_FOUND),
+    REVIEW_NOT_ALLOWED(ErrorCategory.BUSINESS_RULE);
 
     private final ErrorCategory category;
 

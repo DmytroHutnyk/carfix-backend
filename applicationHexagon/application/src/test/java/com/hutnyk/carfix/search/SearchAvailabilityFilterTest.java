@@ -267,14 +267,11 @@ public class SearchAvailabilityFilterTest {
 
     @Test
     void test_branch_with_free_slot_kept_with_first_three_starts() {
-        //given
         seedBranchA();
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
 
-        //then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().branchId()).isEqualTo(BRANCH_A);
         assertThat(result.getFirst().tz()).isEqualTo("Europe/Warsaw");
@@ -284,52 +281,42 @@ public class SearchAvailabilityFilterTest {
 
     @Test
     void test_fully_booked_branch_dropped() {
-        //given
         seedBranchA();
         availabilityPortOut.bayOccupancy.add(ServiceBayBooking.of(
                 1, at(TOMORROW, 9, 12), TOMORROW, BAY_A, com.hutnyk.carfix.booking.BookingId.genId()));
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
 
-        //then
         assertThat(result).isEmpty();
     }
 
     @Test
     void test_time_window_bounds_the_start_lower_inclusive_upper_exclusive() {
-        //given
         seedBranchA();
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)),
                 window(TOMORROW, TOMORROW, LocalTime.of(10, 0), LocalTime.of(10, 30)));
 
-        //then
         assertThat(startsOf(result.getFirst())).containsExactly(TOMORROW + "T10:00", TOMORROW + "T10:15");
     }
 
     @Test
     void test_time_from_alone_and_time_to_alone() {
-        //given
         seedBranchA();
 
-        //when
         List<WorkshopResultView> fromOnly = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, LocalTime.of(10, 45), null));
         List<WorkshopResultView> toOnly = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, LocalTime.of(9, 30)));
 
-        //then
         assertThat(startsOf(fromOnly.getFirst())).containsExactly(TOMORROW + "T10:45", TOMORROW + "T11:00");
         assertThat(startsOf(toOnly.getFirst())).containsExactly(TOMORROW + "T09:00", TOMORROW + "T09:15");
     }
 
     @Test
     void test_starts_span_days_chronologically_and_cap_at_three() {
-        //given
         seedBranchA();
         availabilityPortOut.bayAvailability.clear();
         availabilityPortOut.employeeAvailability.clear();
@@ -338,18 +325,15 @@ public class SearchAvailabilityFilterTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 1, BAY_A));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 2, EmployeeId.of(MECHANIC_A)));
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, DAY_AFTER, null, null));
 
-        //then
         assertThat(startsOf(result.getFirst()))
                 .containsExactly(TOMORROW + "T11:00", DAY_AFTER + "T09:00", DAY_AFTER + "T09:15");
     }
 
     @Test
     void test_days_before_branch_today_skipped_and_today_clamped_to_now() {
-        //given
         seedBranchA();
         LocalDate yesterday = TODAY.minusDays(1);
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(3, at(yesterday, 9, 12), yesterday, 1, BAY_A));
@@ -357,18 +341,15 @@ public class SearchAvailabilityFilterTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(4, at(TODAY, 9, 12), TODAY, 1, BAY_A));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(4, at(TODAY, 9, 12), TODAY, 2, EmployeeId.of(MECHANIC_A)));
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(yesterday, TODAY, null, null));
 
-        //then — clock is 10:07 → first grid start 10:15
         assertThat(startsOf(result.getFirst()))
                 .containsExactly(TODAY + "T10:15", TODAY + "T10:30", TODAY + "T10:45");
     }
 
     @Test
     void test_today_and_now_come_from_each_branch_zone() {
-        //given
         seedBranchA();
         seedBranchB();
         LocalDate yesterday = TODAY.minusDays(1);
@@ -377,12 +358,10 @@ public class SearchAvailabilityFilterTest {
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(6, at(yesterday, 9, 23), yesterday, 3, BAY_B));
         availabilityPortOut.employeeAvailability.add(EmployeeAvailability.of(6, at(yesterday, 9, 23), yesterday, 4, EmployeeId.of(MECHANIC_B)));
 
-        //when — Pago Pago is UTC-11, so at the fixed instant branch B is still on 2026-08-12 at 21:07
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A), candidate(BRANCH_B, SERVICE_B, PAGO_PAGO)),
                 window(yesterday, yesterday, null, null));
 
-        //then — yesterday is already past for Warsaw, still today for Pago Pago
         assertThat(result).extracting(WorkshopResultView::branchId).containsExactly(BRANCH_B);
         assertThat(startsOf(result.getFirst()))
                 .containsExactly(yesterday + "T21:15", yesterday + "T21:30", yesterday + "T21:45");
@@ -390,16 +369,13 @@ public class SearchAvailabilityFilterTest {
 
     @Test
     void test_resources_and_calendars_loaded_once_for_all_branches() {
-        //given
         seedBranchA();
         seedBranchB();
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A), candidate(BRANCH_B, SERVICE_B)),
                 window(TOMORROW, DAY_AFTER, null, null));
 
-        //then
         assertThat(result).extracting(WorkshopResultView::branchId).containsExactly(BRANCH_A, BRANCH_B);
         assertThat(servicePortOut.calls).isEqualTo(1);
         assertThat(servicePortOut.receivedIds).containsExactlyInAnyOrder(SERVICE_A, SERVICE_B);
@@ -419,56 +395,46 @@ public class SearchAvailabilityFilterTest {
 
     @Test
     void test_branch_without_qualifying_employee_dropped() {
-        //given
         seedBranchA();
         availabilityPortOut.employeesA.clear();
         availabilityPortOut.employeesA.add(new EmployeeCandidateView(EmployeeId.of(MECHANIC_A), Set.of(MECHANIC + 99)));
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
 
-        //then
         assertThat(result).isEmpty();
     }
 
     @Test
     void test_equipment_requirement_needs_free_unit() {
-        //given
         seedBranchA();
         servicePortOut.toReturn = List.of(service(SERVICE_A, BRANCH_A,
                 List.of(EquipmentRequirement.of(1, "Jack", Set.of(JACK_TYPE)))));
         availabilityPortOut.equipment.add(Equipment.of(JACK_A, "Trolley jack", null, EquipmentStatus.ACTIVE, JACK_TYPE, BranchId.of(BRANCH_A)));
 
-        //when — no jack availability rows at all
         List<WorkshopResultView> withoutJackTime = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
         availabilityPortOut.equipmentAvailability.add(EquipmentAvailability.of(1, at(TOMORROW, 9, 12), TOMORROW, null, JACK_A));
         List<WorkshopResultView> withJackTime = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
 
-        //then
         assertThat(withoutJackTime).isEmpty();
         assertThat(withJackTime).hasSize(1);
     }
 
     @Test
     void test_unknown_or_inactive_matched_service_dropped() {
-        //given
         seedBranchA();
         servicePortOut.toReturn = List.of();
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
 
-        //then
         assertThat(result).isEmpty();
     }
 
     @Test
     void test_starts_outside_opening_hours_are_dropped() {
-        //given
         seedBranchA();
         availabilityPortOut.bayAvailability.clear();
         availabilityPortOut.employeeAvailability.clear();
@@ -477,18 +443,15 @@ public class SearchAvailabilityFilterTest {
                 EmployeeAvailability.of(1, at(TOMORROW, 8, 18), TOMORROW, 2, EmployeeId.of(MECHANIC_A)));
         availabilityPortOut.openingHours.put(BranchId.of(BRANCH_A), allWeek(BRANCH_A, 10, 12));
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
 
-        //then — the 60 minute service must fit inside 10:00-12:00
         assertThat(startsOf(result.getFirst()))
                 .containsExactly(TOMORROW + "T10:00", TOMORROW + "T10:15", TOMORROW + "T10:30");
     }
 
     @Test
     void test_closed_exception_day_is_skipped() {
-        //given
         seedBranchA();
         availabilityPortOut.bayAvailability.add(ServiceBayAvailability.of(2, at(DAY_AFTER, 9, 12), DAY_AFTER, 1, BAY_A));
         availabilityPortOut.employeeAvailability.add(
@@ -496,35 +459,28 @@ public class SearchAvailabilityFilterTest {
         availabilityPortOut.openingHoursExceptions.put(
                 BranchId.of(BRANCH_A), List.of(closedOn(BRANCH_A, TOMORROW)));
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, DAY_AFTER, null, null));
 
-        //then
         assertThat(startsOf(result.getFirst()))
                 .containsExactly(DAY_AFTER + "T09:00", DAY_AFTER + "T09:15", DAY_AFTER + "T09:30");
     }
 
     @Test
     void test_branch_without_opening_rows_dropped() {
-        //given
         seedBranchA();
         availabilityPortOut.openingHours.remove(BranchId.of(BRANCH_A));
 
-        //when
         List<WorkshopResultView> result = filter.filter(
                 List.of(candidate(BRANCH_A, SERVICE_A)), window(TOMORROW, TOMORROW, null, null));
 
-        //then
         assertThat(result).isEmpty();
     }
 
     @Test
     void test_no_candidates_no_port_calls() {
-        //when
         List<WorkshopResultView> result = filter.filter(List.of(), window(TOMORROW, TOMORROW, null, null));
 
-        //then
         assertThat(result).isEmpty();
         assertThat(servicePortOut.calls).isZero();
         assertThat(availabilityPortOut.bayBranchCalls).isZero();

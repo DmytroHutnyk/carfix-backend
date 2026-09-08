@@ -13,36 +13,28 @@ public class ValidatorTest {
 
     @Test
     public void test_notNull_value_and_fieldName_not_null(){
-        //given
         Object value = new Object();
 
-        //when
         Object result = Validator.notNull(value, "fieldName");
 
-        //then
         assertThat(result).isSameAs(value);
     }
 
     @Test
     public void test_notNull_value_not_null_and_fieldName_is_null(){
-        //given
         Object value = new Object();
 
-        //when
         Object result = Validator.notNull(value, null);
 
-        //then
         assertThat(result).isSameAs(value);
     }
 
     @Test
     public void test_notNull_throws_when_value_is_null(){
-        //given
         Object object = null;
         String s = "a";
 
 
-        // when + then
         assertThatThrownBy(() -> Validator.notNull(object, "fieldName"))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -51,37 +43,29 @@ public class ValidatorTest {
 
     @Test
     public void test_notBlank_value_and_fieldName_not_null(){
-        //given
         String value = "some not blank string";
         String fieldName = "some field name";
 
-        //when
         String result = Validator.notBlank(value, fieldName);
 
-        //then
         assertThat(result).isEqualTo(value);
     }
 
     @Test
     public void test_notBlank_value_not_null_and_fieldName_is_null(){
-        //given
         String value = "some not blank string";
         String fieldName = null;
 
-        //when
         String result = Validator.notBlank(value, fieldName);
 
-        //then
         assertThat(result).isEqualTo(value);
     }
 
     @Test
     public void test_notBlank_throws_when_value_is_blank(){
-        //given
         String value = "   ";
         String fieldName = "some field name";
 
-        //when + then
        assertThatThrownBy(() -> Validator.notBlank(value, fieldName))
                .isInstanceOf(DomainObjectValidationException.class)
                .extracting("errorType")
@@ -90,11 +74,9 @@ public class ValidatorTest {
 
     @Test
     public void test_notBlank_throws_when_value_is_empty(){
-        //given
         String value = "";
         String fieldName = "some field name";
 
-        //when + then
         assertThatThrownBy(() -> Validator.notBlank(value, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -103,14 +85,11 @@ public class ValidatorTest {
 
     @Test
     public void test_validateEmail_valid_email_and_fieldName_not_null(){
-        //given
         String email = "user123+@example.com";
         String fieldName = "email";
 
-        //when
         String result = Validator.validateEmail(email, fieldName);
 
-        //then
         assertThat(result).isEqualTo(email);
     }
 
@@ -119,7 +98,6 @@ public class ValidatorTest {
         String email = null;
         String fieldName = "email";
 
-        //when + then
         assertThatThrownBy(() -> Validator.validateEmail(email, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -134,7 +112,6 @@ public class ValidatorTest {
     public void test_validateEmail_throws_when_email_empty_or_blank(String email){
         String fieldName = "email";
 
-        //when + then
         assertThatThrownBy(() -> Validator.validateEmail(email, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -151,7 +128,6 @@ public class ValidatorTest {
     public void test_validateEmail_throws_when_email_wrong_format(String email){
         String fieldName = "email";
 
-        //when + then
         assertThatThrownBy(() -> Validator.validateEmail(email, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -167,21 +143,17 @@ public class ValidatorTest {
     public void test_validatePhoneNumber_valid_phoneNumber_and_fieldName_not_null(String phoneNumber){
         String fieldName = "phoneNumber";
 
-        //when
         String result = Validator.validatePhoneNumber(phoneNumber, fieldName);
 
-        //then
         assertThat(result).isEqualTo(phoneNumber);
     }
 
 
     @Test
     public void test_validatePhoneNumber_throws_when_phoneNumber_is_null(){
-        //given
         String phoneNumber = null;
         String fieldName = "phoneNumber";
 
-        //when + then
         assertThatThrownBy(() -> Validator.validatePhoneNumber(phoneNumber, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -196,7 +168,6 @@ public class ValidatorTest {
     void test_validatePhoneNumber_throws_when_phoneNumber_blank_or_empty(String phoneNumber) {
         String fieldName = "phoneNumber";
 
-        // when + then
         assertThatThrownBy(() -> Validator.validatePhoneNumber(phoneNumber, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -221,13 +192,11 @@ public class ValidatorTest {
 
     @Test
     public void test_validateInternationalPhoneNumber_accepts_plus_and_digits() {
-        //when + then
         assertThat(Validator.validateInternationalPhoneNumber("+48221234567", "phoneNumber")).isEqualTo("+48221234567");
     }
 
     @Test
     public void test_validateInternationalPhoneNumber_rejects_missing_plus_letters_and_length() {
-        //when + then
         for (String bad : new String[]{"48221234567", "+48 22 123", "+1234", "+1234567890123456"}) {
             assertThatThrownBy(() -> Validator.validateInternationalPhoneNumber(bad, "phoneNumber"))
                     .isInstanceOf(DomainObjectValidationException.class)

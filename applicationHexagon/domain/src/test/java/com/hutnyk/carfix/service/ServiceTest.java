@@ -40,13 +40,10 @@ public class ServiceTest {
 
     @Test
     public void test_of_builds_service_with_requirements() {
-        //given
         EquipmentRequirement hoist = EquipmentRequirement.of(20, "Hoist", Set.of(3));
 
-        //when
         Service result = service(Set.of(1, 4), List.of(mechanicSlot()), List.of(hoist));
 
-        //then
         assertThat(result.getId()).isEqualTo(5);
         assertThat(result.getBranchId()).isEqualTo(BRANCH_ID);
         assertThat(result.getServiceCategoryId()).isEqualTo(7);
@@ -59,16 +56,13 @@ public class ServiceTest {
 
     @Test
     public void test_of_allows_empty_equipment_requirements() {
-        //when
         Service result = service(Set.of(1), List.of(mechanicSlot()), List.of());
 
-        //then
         assertThat(result.getEquipmentRequirements()).isEmpty();
     }
 
     @Test
     public void test_of_throws_when_no_bay_type() {
-        //when + then
         assertThatThrownBy(() -> service(Set.of(), List.of(mechanicSlot()), List.of()))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -77,7 +71,6 @@ public class ServiceTest {
 
     @Test
     public void test_of_throws_when_no_employee_requirement() {
-        //when + then
         assertThatThrownBy(() -> service(Set.of(1), List.of(), List.of()))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -86,7 +79,6 @@ public class ServiceTest {
 
     @Test
     public void test_employee_requirement_throws_when_no_role_alternative() {
-        //when + then
         assertThatThrownBy(() -> EmployeeRequirement.of(10, "Engine specialist", Set.of()))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -95,7 +87,6 @@ public class ServiceTest {
 
     @Test
     public void test_equipment_requirement_throws_when_name_is_blank() {
-        //when + then
         assertThatThrownBy(() -> EquipmentRequirement.of(20, "  ", Set.of(3)))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")

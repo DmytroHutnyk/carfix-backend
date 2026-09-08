@@ -21,13 +21,10 @@ public class ServiceCategoryServiceTest {
 
     @Test
     public void test_getAllCategories_passes_the_port_result_through() {
-        //given
         StubServiceCategoryPortOut port = new StubServiceCategoryPortOut();
 
-        //when
         List<ServiceCategory> result = new ServiceCategoryService(port).getAllCategories();
 
-        //then
         assertThat(result).extracting(ServiceCategory::getName).containsExactly("Brakes", "Engine");
         assertThat(port.calls).isEqualTo(1);
     }
