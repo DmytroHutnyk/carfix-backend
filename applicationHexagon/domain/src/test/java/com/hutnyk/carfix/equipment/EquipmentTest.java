@@ -51,4 +51,21 @@ public class EquipmentTest {
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.EMPTY_STRING);
     }
+
+    @Test
+    public void test_update_rebuilds_fields_but_preserves_id_and_status() {
+        //given
+        Equipment existing = Equipment.of(42, "old lift", "worn", EquipmentStatus.SUSPENDED, 7, BRANCH_ID);
+
+        //when
+        Equipment updated = existing.update("new lift", 9, "serviced");
+
+        //then
+        assertThat(updated.getId()).isEqualTo(42);
+        assertThat(updated.getStatus()).isEqualTo(EquipmentStatus.SUSPENDED);
+        assertThat(updated.getBranchId()).isEqualTo(BRANCH_ID);
+        assertThat(updated.getName()).isEqualTo("new lift");
+        assertThat(updated.getEquipmentTypeId()).isEqualTo(9);
+        assertThat(updated.getNotes()).isEqualTo("serviced");
+    }
 }
