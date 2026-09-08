@@ -1,5 +1,6 @@
 SET search_path TO carfix;
 
+-- ---------------------------------------------------------------------------
 -- V57 put hand-typed rating/review_count numbers on branches as a placeholder
 -- for a reviews feature that had no mapping yet. From here on those columns are
 -- a cache over the `reviews` table: this migration does the one-time backfill,
@@ -20,6 +21,7 @@ SET search_path TO carfix;
 -- records that exist to hold a review, and V56 already establishes that a
 -- booking with no service segments is legal (booking …0007). They sit 70+ days
 -- in the past, so they never feed slot math.
+-- ---------------------------------------------------------------------------
 
 INSERT INTO bookings (booking_id, date, status, start_time, end_time, branch_id, car_profile_id)
 SELECT v.booking_id,

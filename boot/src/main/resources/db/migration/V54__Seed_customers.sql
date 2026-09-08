@@ -1,9 +1,11 @@
 SET search_path TO carfix;
 
+-- ---------------------------------------------------------------------------
 -- Seed part 3 of 6 — customers and their cars.
 --
 -- Two customers, because "not my booking" and "not my car" paths need a second
 -- account that owns none of the first one's rows.
+-- ---------------------------------------------------------------------------
 
 INSERT INTO users (user_id, name, surname, phone_number, ph_country_code, email, password, role, date_of_birth, address_id) VALUES
     ('00000000-0000-4000-8000-000000000002', 'Test', 'User', '600123456', '+48', 'test@gmail.com',

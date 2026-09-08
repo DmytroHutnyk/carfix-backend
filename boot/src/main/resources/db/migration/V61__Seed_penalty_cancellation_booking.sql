@@ -1,5 +1,6 @@
 SET search_path TO carfix;
 
+-- ---------------------------------------------------------------------------
 -- One extra booking for test@gmail.com whose free-cancellation deadline has
 -- already passed, so cancelling it from My Bookings shows the penalty dialog.
 --
@@ -14,6 +15,7 @@ SET search_path TO carfix;
 -- now" is the whole point of the row. A Saturday run therefore lands it on a
 -- closed Sunday, and a run before 08:00 leaves the deadline in the future. It
 -- never feeds slot math, so neither hurts anything but the fixture's realism.
+-- ---------------------------------------------------------------------------
 
 INSERT INTO bookings (booking_id, date, status, start_time, end_time, branch_id, car_profile_id)
 VALUES ('30000000-0000-4000-8000-000000000015'::uuid, CURRENT_DATE + 1, 'SCHEDULED',

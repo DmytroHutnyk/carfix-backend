@@ -1,5 +1,6 @@
 SET search_path TO carfix;
 
+-- ---------------------------------------------------------------------------
 -- Seed part 4 of 6 — availability for every bookable resource, for the next
 -- eight weeks.
 --
@@ -16,6 +17,7 @@ SET search_path TO carfix;
 --
 -- Rows follow branch opening hours, so nothing is available on Sunday and the
 -- two tyre shops (07:00-20:00) run longer days than the rest.
+-- ---------------------------------------------------------------------------
 
 -- Bays: available whenever the branch is open.
 WITH horizon AS (
