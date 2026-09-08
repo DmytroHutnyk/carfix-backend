@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 import java.util.UUID;
@@ -54,4 +55,7 @@ public class BookingEntity {
     @ToString.Exclude
     @OneToMany(mappedBy = "bookingEntity", fetch = FetchType.LAZY)
     private Set<BookingSegmentEntity> segments;
+
+    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

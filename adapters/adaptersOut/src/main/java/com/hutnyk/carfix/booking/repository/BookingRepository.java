@@ -71,6 +71,22 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
     List<Object[]> countByBranchDateStatusAndSpan(@Param("branchIds") Collection<UUID> branchIds,
                                                   @Param("dates") Collection<LocalDate> dates);
 
+    @Query("""
+            SELECT DISTINCT b FROM BookingEntity b
+            JOIN FETCH b.branchEntity br
+            JOIN FETCH b.carProfileEntity cp
+            JOIN FETCH cp.customerEntity c
+            JOIN FETCH c.userEntity u
+            JOIN FETCH cp.modelVersionEntity mv
+            JOIN FETCH mv.carModelEntity cm
+            JOIN FETCH cm.carBrandEntity
+            LEFT JOIN FETCH b.segments seg
+            LEFT JOIN FETCH seg.serviceEntity
+            WHERE br.id = :branchId AND b.date = :date
+            ORDER BY b.startTime
+            """)
+    List<BookingEntity> findBranchDayWithDetails(@Param("branchId") UUID branchId, @Param("date") LocalDate date);
+
     @Query("SELECT b.id FROM BookingEntity b WHERE b.carProfileEntity.customerEntity.id = :customerId")
     List<UUID> findIdsByCustomerId(@Param("customerId") UUID customerId);
 

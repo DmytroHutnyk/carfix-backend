@@ -27,6 +27,7 @@ import com.hutnyk.carfix.equipment.EquipmentBooking;
 import com.hutnyk.carfix.in.booking.commands.CreateBookingCommand;
 import com.hutnyk.carfix.in.booking.query.BookingServiceView;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
 import com.hutnyk.carfix.in.scheduling.query.EmployeeCandidateView;
@@ -207,6 +208,8 @@ public class BookingServiceTest {
 
     private static final class StubBranchPortOut implements BranchPortOut {
         boolean exists = true;
+        boolean ownsBranch = true;
+        UUID ownerIdChecked;
         BranchId lastZoneBranchId;
 
         @Override
@@ -218,6 +221,12 @@ public class BookingServiceTest {
         @Override
         public boolean existsActiveById(BranchId branchId) {
             return exists;
+        }
+
+        @Override
+        public boolean existsByIdAndOwnerId(BranchId branchId, UUID ownerId) {
+            this.ownerIdChecked = ownerId;
+            return ownsBranch;
         }
 
         @Override
@@ -465,6 +474,9 @@ public class BookingServiceTest {
         LocalDate overlapDate;
         LocalTime overlapStart;
         LocalTime overlapEnd;
+        UUID dayBranchId;
+        LocalDate dayDate;
+        List<OwnerBranchBookingView> dayBookings = List.of();
 
         @Override
         public List<BookingView> findAllViewsByCustomerId(UUID customerId) {
@@ -485,6 +497,13 @@ public class BookingServiceTest {
         public Optional<Booking> findByIdAndCustomerId(UUID bookingId, UUID customerId) {
             this.requestedCustomerId = customerId;
             return Optional.ofNullable(stored);
+        }
+
+        @Override
+        public List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
+            this.dayBranchId = branchId;
+            this.dayDate = date;
+            return dayBookings;
         }
 
         @Override
@@ -571,7 +590,6 @@ public class BookingServiceTest {
         seedBookableOn(TOMORROW);
     }
 
-    /** One lift bay and one mechanic, both free 09:00-12:00 on {@code date}. */
     private void seedBookableOn(LocalDate date) {
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT), "150.00"));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
@@ -925,5 +943,27 @@ public class BookingServiceTest {
         assertThatThrownBy(() -> service.cancelBooking(EMAIL, BOOKING_ID))
                 .isInstanceOf(BookingCancellationNotAllowedException.class);
         assertThat(notifier.cancelled).isNull();
+    }
+
+    @Test
+    public void getBranchDayBookingsForAnOwnedBranchDelegatesToThePort() {
+        UUID branchId = UUID.randomUUID();
+        LocalDate date = LocalDate.of(2026, 9, 8);
+
+        List<OwnerBranchBookingView> result = service.getBranchDayBookings(OWNER_EMAIL, branchId, date);
+
+        assertThat(result).isEmpty();
+        assertThat(branchPortOut.ownerIdChecked).isEqualTo(OWNER_ID.id());
+        assertThat(bookingPortOut.dayBranchId).isEqualTo(branchId);
+        assertThat(bookingPortOut.dayDate).isEqualTo(date);
+    }
+
+    @Test
+    public void getBranchDayBookingsForAForeignBranchThrowsNotFound() {
+        branchPortOut.ownsBranch = false;
+
+        assertThatThrownBy(() -> service.getBranchDayBookings(OWNER_EMAIL, UUID.randomUUID(), LocalDate.of(2026, 9, 8)))
+                .isInstanceOf(BranchNotFoundException.class);
+        assertThat(bookingPortOut.dayBranchId).isNull();
     }
 }

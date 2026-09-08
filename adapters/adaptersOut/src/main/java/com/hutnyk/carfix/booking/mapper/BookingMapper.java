@@ -96,7 +96,8 @@ public class BookingMapper {
                 b.getEndTime(),
                 branch,
                 carProfile,
-                new HashSet<>()
+                new HashSet<>(),
+                null
         );
     }
 

@@ -14,39 +14,25 @@ import java.util.Set;
 
 public interface BranchPortOut {
 
-    /**
-     * Writes the cached rating aggregate onto the branch.
-     *
-     * A targeted projection write rather than update(Branch): these two columns are a cache
-     * over `reviews`, not state the Branch aggregate owns — the domain Branch has no rating
-     * field. {@link BranchRating#NONE} clears both columns.
-     */
+    // Rating is a review cache, not Branch state. NONE clears both cached columns.
     void updateRating(BranchId branchId, BranchRating rating);
 
-    /**
-     * The public branch page: branch + address, active services grouped by category,
-     * opening hours, serviced brands. Empty when the branch does not exist or is not ACTIVE.
-     */
     Optional<BranchView> findViewById(BranchId branchId);
 
     boolean existsActiveById(BranchId branchId);
 
-    /**
-     * The branch's local time zone, which is the authority for every "now"/"today" decision
-     * about that branch. Empty when the branch does not exist or is not ACTIVE, so one call
-     * answers existence and zone together.
-     */
+    boolean existsByIdAndOwnerId(BranchId branchId, java.util.UUID ownerId);
+
+    // Branch-local time governs every "now" and "today" decision.
+    // Empty also means the branch is missing or inactive.
     Optional<ZoneId> findActiveBranchZone(BranchId branchId);
 
-    /** Persists a freshly created branch (app-minted id); the address row must already exist. */
     Branch insert(Branch branch);
 
     void insertOpeningHours(List<OpeningHours> openingHours);
 
-    /** Rows in car_brands_branches; the caller has verified every id exists. */
     void linkCarBrands(BranchId branchId, Set<Integer> carBrandIds);
 
-    /** Writes back only what the overview edit owns — name, description, cancellation policy. */
     Branch update(Branch branch);
 
     void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours);

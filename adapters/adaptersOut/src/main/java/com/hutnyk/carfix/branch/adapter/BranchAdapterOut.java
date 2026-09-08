@@ -67,6 +67,11 @@ public class BranchAdapterOut implements BranchPortOut {
     }
 
     @Override
+    public boolean existsByIdAndOwnerId(BranchId branchId, UUID ownerId) {
+        return branchRepository.existsByIdAndOwnerId(branchId.id(), ownerId);
+    }
+
+    @Override
     public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
         return branchRepository.findTzByIdAndStatus(branchId.id(), BranchStatus.ACTIVE)
                 .map(ZoneId::of);
