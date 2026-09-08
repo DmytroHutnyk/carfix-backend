@@ -177,11 +177,6 @@ public class ReviewServiceTest {
         public boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end) {
             throw new UnsupportedOperationException();
         }
-
-        @Override
-        public List<com.hutnyk.carfix.in.booking.query.OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
-            throw new UnsupportedOperationException();
-        }
     }
 
     private static final class StubCustomerPortOut implements CustomerPortOut {
@@ -263,11 +258,6 @@ public class ReviewServiceTest {
 
         @Override
         public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean existsByIdAndOwnerId(BranchId branchId, java.util.UUID ownerId) {
             throw new UnsupportedOperationException();
         }
     }

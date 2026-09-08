@@ -32,6 +32,7 @@ import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
+import com.hutnyk.carfix.in.employee.query.OwnerEmployeeView;
 import com.hutnyk.carfix.in.equipment.query.OwnerEquipmentView;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
@@ -160,7 +161,6 @@ public class BranchServiceTest {
         @Override public void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours) { this.replacedHours = openingHours; }
         @Override public void replaceOpeningHoursExceptions(BranchId branchId, List<OpeningHoursException> exceptions) { this.replacedExceptions = exceptions; }
         @Override public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) { this.replacedBrands = carBrandIds; }
-        @Override public boolean existsByIdAndOwnerId(BranchId branchId, java.util.UUID ownerId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubReviewPortOut implements ReviewPortOut {
@@ -245,11 +245,15 @@ public class BranchServiceTest {
     private static final class StubRolePortOut implements RolePortOut {
         final List<Role> roles = new ArrayList<>();
         @Override public Role insert(Role role) { Role r = Role.of(600 + roles.size(), role.getName(), role.getBranchId()); roles.add(r); return r; }
+        @Override public List<Role> findAllForBranch(UUID branchId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubEmployeePortOut implements EmployeePortOut {
         final List<Employee> employees = new ArrayList<>();
         @Override public Employee insert(Employee employee) { employees.add(employee); return employee; }
+        @Override public List<OwnerEmployeeView> findViewsByBranchId(UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<Employee> findByIdAndBranchId(UUID employeeId, UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Employee update(Employee employee) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubServicePortOut implements ServicePortOut {
