@@ -71,4 +71,46 @@ public class ServiceBayMapperTest {
         assertThat(ServiceBayMapper.toTypeEntity(null, null)).isNull();
         assertThat(ServiceBayMapper.toEntity((ServiceBay) null, null, null)).isNull();
     }
+
+    @Test
+    public void test_toOwnerView_flattens_type_name() {
+        ServiceBayTypeEntity type = new ServiceBayTypeEntity();
+        type.setId(5);
+        type.setName("Basic");
+        ServiceBayEntity entity = new ServiceBayEntity();
+        entity.setId(10);
+        entity.setName("Bay 1");
+        entity.setStatus(ServiceBayStatus.ACTIVE);
+        entity.setNotes("note");
+        entity.setServiceBayTypeEntity(type);
+        entity.setBranchEntity(branch());
+
+        com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView view = ServiceBayMapper.toOwnerView(entity);
+
+        assertThat(view.id()).isEqualTo(10);
+        assertThat(view.typeId()).isEqualTo(5);
+        assertThat(view.typeName()).isEqualTo("Basic");
+        assertThat(view.notes()).isEqualTo("note");
+        assertThat(view.status()).isEqualTo(ServiceBayStatus.ACTIVE);
+    }
+
+    @Test
+    public void test_updateEntity_overwrites_editable_fields_and_type_reference() {
+        ServiceBayEntity entity = new ServiceBayEntity();
+        entity.setId(10);
+        entity.setName("Old");
+        entity.setStatus(ServiceBayStatus.SUSPENDED);
+        entity.setNotes("old");
+        ServiceBayTypeEntity newType = new ServiceBayTypeEntity();
+        newType.setId(7);
+        ServiceBay updated = ServiceBay.of(10, "Old", ServiceBayStatus.SUSPENDED, "old", 2, BranchId.of(BRANCH_UUID))
+                .update("New", 7, "new");
+
+        ServiceBayMapper.updateEntity(entity, updated, newType);
+
+        assertThat(entity.getName()).isEqualTo("New");
+        assertThat(entity.getStatus()).isEqualTo(ServiceBayStatus.SUSPENDED);
+        assertThat(entity.getNotes()).isEqualTo("new");
+        assertThat(entity.getServiceBayTypeEntity()).isSameAs(newType);
+    }
 }
