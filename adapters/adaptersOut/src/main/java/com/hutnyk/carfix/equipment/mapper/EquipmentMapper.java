@@ -12,6 +12,7 @@ import com.hutnyk.carfix.equipment.entity.EquipmentAvailabilityEntity;
 import com.hutnyk.carfix.equipment.entity.EquipmentBookingEntity;
 import com.hutnyk.carfix.equipment.entity.EquipmentEntity;
 import com.hutnyk.carfix.equipment.entity.EquipmentTypeEntity;
+import com.hutnyk.carfix.in.equipment.query.OwnerEquipmentView;
 import com.hutnyk.carfix.scheduling.mapper.TimeRangeMapper;
 
 public class EquipmentMapper {
@@ -54,6 +55,23 @@ public class EquipmentMapper {
         entity.setEquipmentTypeEntity(type);
         entity.setBranchEntity(branch);
         return entity;
+    }
+
+    public static void updateEntity(EquipmentEntity entity, Equipment equipment, EquipmentTypeEntity type) {
+        entity.setName(equipment.getName());
+        entity.setNotes(equipment.getNotes());
+        entity.setStatus(equipment.getStatus());
+        entity.setEquipmentTypeEntity(type);
+    }
+
+    public static OwnerEquipmentView toOwnerView(EquipmentEntity e) {
+        if (e == null) return null;
+        return new OwnerEquipmentView(
+                e.getId(),
+                e.getName(),
+                e.getEquipmentTypeEntity().getName(),
+                e.getNotes(),
+                e.getStatus());
     }
 
     public static EquipmentAvailability toDomain(EquipmentAvailabilityEntity e) {

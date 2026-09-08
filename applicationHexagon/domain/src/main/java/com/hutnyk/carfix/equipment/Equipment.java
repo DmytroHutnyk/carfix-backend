@@ -57,4 +57,12 @@ public final class Equipment {
     public static Equipment create(String name, Integer equipmentTypeId, BranchId branchId) {
         return of(null, name, null, EquipmentStatus.ACTIVE, equipmentTypeId, branchId);
     }
+
+    public static Equipment create(String name, Integer equipmentTypeId, BranchId branchId, String notes) {
+        return of(null, name, notes, EquipmentStatus.ACTIVE, equipmentTypeId, branchId);
+    }
+
+    public Equipment update(String name, Integer equipmentTypeId, String notes) {
+        return of(this.id, name, notes, this.status, equipmentTypeId, this.branchId);
+    }
 }

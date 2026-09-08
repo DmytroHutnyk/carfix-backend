@@ -32,6 +32,7 @@ import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.branch.query.BranchView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
+import com.hutnyk.carfix.in.equipment.query.OwnerEquipmentView;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.OpeningHoursException;
@@ -229,6 +230,10 @@ public class BranchServiceTest {
         final List<Equipment> units = new ArrayList<>();
         @Override public EquipmentType insertType(EquipmentType type) { EquipmentType t = EquipmentType.of(500 + types.size(), type.getName(), type.getBranchId()); types.add(t); return t; }
         @Override public Equipment insert(Equipment equipment) { units.add(equipment); return equipment; }
+        @Override public Equipment update(Equipment equipment) { throw new UnsupportedOperationException(); }
+        @Override public List<OwnerEquipmentView> findViewsByBranchId(UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<Equipment> findByIdAndBranchId(Integer equipmentId, UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<EquipmentType> findTypeByNameForBranch(String name, UUID branchId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubRolePortOut implements RolePortOut {
