@@ -59,6 +59,7 @@ public class UserControllerTest {
         UpdateUserAddressCommand receivedAddress;
         String receivedEmail;
         String deletedFor;
+        String deletedAccountFor;
         Integer addressIdOfUser;
         Integer preferredCityIdOfUser = 11;
         int calls;
@@ -101,6 +102,12 @@ public class UserControllerTest {
         @Override
         public void deleteAddress(String email) {
             this.deletedFor = email;
+            this.calls++;
+        }
+
+        @Override
+        public void deleteAccount(String email) {
+            this.deletedAccountFor = email;
             this.calls++;
         }
 
@@ -425,5 +432,16 @@ public class UserControllerTest {
                 .andExpect(status().isNoContent());
 
         assertThat(stub.deletedFor).isEqualTo(EMAIL);
+    }
+
+    // ---- DELETE /me -------------------------------------------------------------------------
+
+    @Test
+    public void test_delete_me_returns_204_and_deletes_the_account_of_the_principal() throws Exception {
+        //when + then
+        mockMvc.perform(delete("/api/users/me"))
+                .andExpect(status().isNoContent());
+
+        assertThat(stub.deletedAccountFor).isEqualTo(EMAIL);
     }
 }

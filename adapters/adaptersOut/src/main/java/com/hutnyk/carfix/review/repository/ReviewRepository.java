@@ -4,6 +4,7 @@ import com.hutnyk.carfix.review.entity.ReviewEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -16,6 +17,15 @@ public interface ReviewRepository extends JpaRepository<ReviewEntity, UUID> {
     Optional<ReviewEntity> findByBookingEntityId(UUID bookingId);
 
     boolean existsByBookingEntityId(UUID bookingId);
+
+    @Modifying
+    @Query("""
+            DELETE FROM ReviewEntity r
+            WHERE r.bookingEntity.id IN (
+                SELECT b.id FROM BookingEntity b
+                WHERE b.carProfileEntity.customerEntity.id = :customerId)
+            """)
+    void deleteByCustomerId(@Param("customerId") UUID customerId);
 
     /**
      * Raw stars, not an average: the mean is a business rule and lives in the domain({@code BranchRating}).

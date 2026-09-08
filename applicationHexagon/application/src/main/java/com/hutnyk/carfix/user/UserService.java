@@ -11,9 +11,14 @@ import com.hutnyk.carfix.in.user.commands.LocationCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserAddressCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
 import com.hutnyk.carfix.out.address.AddressPortOut;
+import com.hutnyk.carfix.out.booking.BookingPortOut;
+import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
+import com.hutnyk.carfix.out.customer.CustomerPortOut;
+import com.hutnyk.carfix.out.review.ReviewPortOut;
 import com.hutnyk.carfix.out.user.EmailVerificationCodePortOut;
 import com.hutnyk.carfix.out.user.UserNotificationPortOut;
 import com.hutnyk.carfix.out.user.UserPortOut;
+import com.hutnyk.carfix.user.exception.AccountDeletionNotAllowedException;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import com.hutnyk.carfix.user.exception.EmailAlreadyVerifiedException;
 import com.hutnyk.carfix.user.exception.VerificationCodeAttemptsExceededException;
@@ -26,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationService
 public class UserService implements UserPortIn {
@@ -35,18 +41,30 @@ public class UserService implements UserPortIn {
     private final CityResolver cityResolver;
     private final EmailVerificationCodePortOut verificationCodePortOut;
     private final UserNotificationPortOut userNotificationPortOut;
+    private final ReviewPortOut reviewPortOut;
+    private final BookingPortOut bookingPortOut;
+    private final CarProfilePortOut carProfilePortOut;
+    private final CustomerPortOut customerPortOut;
     private final Clock clock;
 
     public UserService(UserPortOut userPortOut,
                        AddressPortOut addressPortOut,
                        EmailVerificationCodePortOut verificationCodePortOut,
                        UserNotificationPortOut userNotificationPortOut,
+                       ReviewPortOut reviewPortOut,
+                       BookingPortOut bookingPortOut,
+                       CarProfilePortOut carProfilePortOut,
+                       CustomerPortOut customerPortOut,
                        Clock clock) {
         this.userPortOut = userPortOut;
         this.addressPortOut = addressPortOut;
         this.cityResolver = new CityResolver(addressPortOut);
         this.verificationCodePortOut = verificationCodePortOut;
         this.userNotificationPortOut = userNotificationPortOut;
+        this.reviewPortOut = reviewPortOut;
+        this.bookingPortOut = bookingPortOut;
+        this.carProfilePortOut = carProfilePortOut;
+        this.customerPortOut = customerPortOut;
         this.clock = clock;
     }
 
@@ -109,6 +127,24 @@ public class UserService implements UserPortIn {
         }
         userPortOut.update(existing.unlinkAddress());
         addressPortOut.deleteById(existing.getAddressId());
+    }
+
+    @Override
+    public void deleteAccount(String email) {
+        User user = loadOrThrow(email);
+        if (user.getRole() != UserRole.CUSTOMER) {
+            throw new AccountDeletionNotAllowedException(user.getRole());
+        }
+        UUID userId = user.getId().id();
+
+        reviewPortOut.deleteByCustomerId(userId);
+        bookingPortOut.deleteAllByCustomerId(userId);
+        carProfilePortOut.deleteAllByCustomerId(userId);
+        verificationCodePortOut.deleteByUserId(user.getId());
+        customerPortOut.deleteByUserId(userId);
+        if (user.getAddressId() != null) {
+            addressPortOut.deleteById(user.getAddressId());
+        }
     }
 
     @Override

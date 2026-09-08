@@ -165,6 +165,7 @@ public class BranchServiceTest {
         BranchReviewsQuery receivedQuery;
 
         @Override public boolean existsByBookingId(BookingId bookingId) { throw new UnsupportedOperationException(); }
+        @Override public void deleteByCustomerId(UUID customerId) { throw new UnsupportedOperationException(); }
         @Override public Optional<Review> findByBookingId(BookingId bookingId) { throw new UnsupportedOperationException(); }
         @Override public Review insert(Review review) { throw new UnsupportedOperationException(); }
         @Override public Optional<BranchId> findBranchIdByBookingId(BookingId bookingId) { throw new UnsupportedOperationException(); }

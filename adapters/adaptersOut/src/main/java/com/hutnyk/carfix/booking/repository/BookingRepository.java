@@ -3,6 +3,7 @@ package com.hutnyk.carfix.booking.repository;
 import com.hutnyk.carfix.booking.BookingStatus;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -69,4 +70,15 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
             """)
     List<Object[]> countByBranchDateStatusAndSpan(@Param("branchIds") Collection<UUID> branchIds,
                                                   @Param("dates") Collection<LocalDate> dates);
+
+    @Query("SELECT b.id FROM BookingEntity b WHERE b.carProfileEntity.customerEntity.id = :customerId")
+    List<UUID> findIdsByCustomerId(@Param("customerId") UUID customerId);
+
+    @Modifying
+    @Query("DELETE FROM BookingSegmentEntity s WHERE s.bookingEntity.id IN :bookingIds")
+    void deleteSegmentsByBookingIds(@Param("bookingIds") Collection<UUID> bookingIds);
+
+    @Modifying
+    @Query("DELETE FROM BookingEntity b WHERE b.id IN :bookingIds")
+    void deleteByIds(@Param("bookingIds") Collection<UUID> bookingIds);
 }

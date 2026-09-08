@@ -7,16 +7,33 @@ import com.hutnyk.carfix.address.Address;
 import com.hutnyk.carfix.address.City;
 import com.hutnyk.carfix.address.CountryIso;
 import com.hutnyk.carfix.address.Region;
+import com.hutnyk.carfix.booking.Booking;
+import com.hutnyk.carfix.booking.BookingId;
+import com.hutnyk.carfix.booking.BookingOccupancy;
+import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.carProfile.CarProfile;
+import com.hutnyk.carfix.carProfile.CarProfileId;
+import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.in.address.query.AddressView;
 import com.hutnyk.carfix.in.address.query.LocationView;
+import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
+import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
+import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
 import com.hutnyk.carfix.in.user.commands.LocationCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserAddressCommand;
 import com.hutnyk.carfix.in.user.commands.UpdateUserCommand;
 import com.hutnyk.carfix.out.address.AddressPortOut;
+import com.hutnyk.carfix.out.booking.BookingPortOut;
+import com.hutnyk.carfix.out.carProfile.CarProfilePortOut;
+import com.hutnyk.carfix.out.customer.CustomerPortOut;
+import com.hutnyk.carfix.out.review.ReviewPortOut;
 import com.hutnyk.carfix.out.user.EmailVerificationCodePortOut;
 import com.hutnyk.carfix.out.user.UserNotificationPortOut;
 import com.hutnyk.carfix.out.user.UserPortOut;
+import com.hutnyk.carfix.review.Review;
+import com.hutnyk.carfix.user.exception.AccountDeletionNotAllowedException;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import com.hutnyk.carfix.user.exception.EmailAlreadyVerifiedException;
 import com.hutnyk.carfix.user.exception.VerificationCodeAttemptsExceededException;
@@ -30,10 +47,12 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public class UserServiceTest {
 
@@ -231,16 +250,195 @@ public class UserServiceTest {
         }
     }
 
+    private static final class StubReviewPortOut implements ReviewPortOut {
+        UUID deletedFor;
+        final List<String> calls;
+
+        StubReviewPortOut(List<String> calls) {
+            this.calls = calls;
+        }
+
+        @Override
+        public boolean existsByBookingId(BookingId bookingId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteByCustomerId(UUID customerId) {
+            this.deletedFor = customerId;
+            calls.add("review.delete");
+        }
+
+        @Override
+        public Optional<Review> findByBookingId(BookingId bookingId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Review insert(Review review) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<BranchId> findBranchIdByBookingId(BookingId bookingId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Integer> findStarsByBranchId(BranchId branchId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public BranchReviewsPage findReviewsPage(BranchReviewsQuery query) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static final class StubBookingPortOut implements BookingPortOut {
+        UUID deletedFor;
+        final List<String> calls;
+
+        StubBookingPortOut(List<String> calls) {
+            this.calls = calls;
+        }
+
+        @Override
+        public List<BookingView> findAllViewsByCustomerId(UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<BookingView> findViewByIdAndCustomerId(UUID bookingId, UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Booking> findByIdAndCustomerId(UUID bookingId, UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Booking> findByIdAndOwnerId(UUID bookingId, UUID ownerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void insert(Booking booking, BookingOccupancy occupancy) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Booking update(Booking booking) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void freeOccupancy(BookingId bookingId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteAllByCustomerId(UUID customerId) {
+            this.deletedFor = customerId;
+            calls.add("booking.delete");
+        }
+
+        @Override
+        public boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static final class StubCarProfilePortOut implements CarProfilePortOut {
+        UUID deletedFor;
+        final List<String> calls;
+
+        StubCarProfilePortOut(List<String> calls) {
+            this.calls = calls;
+        }
+
+        @Override
+        public List<CarProfileView> findAllByCustomerId(UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<CarProfileView> findByIdAndCustomerId(UUID profileId, UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean existsByIdAndCustomerId(UUID profileId, UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CarProfile insert(CarProfile profile) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CarProfile update(CarProfile profile) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteById(UUID profileId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteAllByCustomerId(UUID customerId) {
+            this.deletedFor = customerId;
+            calls.add("carProfile.delete");
+        }
+    }
+
+    private static final class StubCustomerPortOut implements CustomerPortOut {
+        UUID deletedFor;
+        final List<String> calls;
+
+        StubCustomerPortOut(List<String> calls) {
+            this.calls = calls;
+        }
+
+        @Override
+        public Customer insertCustomer(Customer customer) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Customer loadCustomerByUsername(String email) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteByUserId(UUID userId) {
+            this.deletedFor = userId;
+            calls.add("customer.delete");
+        }
+    }
+
     private final List<String> calls = new ArrayList<>();
     private final StubUserPortOut userPortOut = new StubUserPortOut(existingUser(7), calls);
     private final StubAddressPortOut addressPortOut = new StubAddressPortOut(calls);
     private final StubCodePortOut codePortOut = new StubCodePortOut();
     private final RecordingNotifier notifier = new RecordingNotifier();
+    private final StubReviewPortOut reviewPortOut = new StubReviewPortOut(calls);
+    private final StubBookingPortOut bookingPortOut = new StubBookingPortOut(calls);
+    private final StubCarProfilePortOut carProfilePortOut = new StubCarProfilePortOut(calls);
+    private final StubCustomerPortOut customerPortOut = new StubCustomerPortOut(calls);
     private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    private final UserService service = new UserService(userPortOut, addressPortOut, codePortOut, notifier, clock);
+    private final UserService service = newService(userPortOut);
+
+    private UserService newService(StubUserPortOut users) {
+        return new UserService(users, addressPortOut, codePortOut, notifier,
+                reviewPortOut, bookingPortOut, carProfilePortOut, customerPortOut, clock);
+    }
 
     private UserService serviceWithNoUser() {
-        return new UserService(new StubUserPortOut(null, calls), addressPortOut, codePortOut, notifier, clock);
+        return newService(new StubUserPortOut(null, calls));
     }
 
     // ---- updateUser -------------------------------------------------------------------------
@@ -358,7 +556,7 @@ public class UserServiceTest {
     public void test_updateAddress_for_a_user_without_address_inserts_it_links_the_user_and_returns_the_view() {
         //given
         StubUserPortOut freshUsers = new StubUserPortOut(existingUser(null), calls);
-        UserService fresh = new UserService(freshUsers, addressPortOut, codePortOut, notifier, clock);
+        UserService fresh = newService(freshUsers);
 
         //when
         AddressView view = fresh.updateAddress("john@example.com", ADDRESS_COMMAND);
@@ -445,7 +643,7 @@ public class UserServiceTest {
     public void test_deleteAddress_without_address_is_a_no_op() {
         //given
         StubUserPortOut noAddress = new StubUserPortOut(existingUser(null), calls);
-        UserService fresh = new UserService(noAddress, addressPortOut, codePortOut, notifier, clock);
+        UserService fresh = newService(noAddress);
 
         //when
         fresh.deleteAddress("john@example.com");
@@ -453,6 +651,66 @@ public class UserServiceTest {
         //then
         assertThat(noAddress.updated).isNull();
         assertThat(addressPortOut.deleted).isEmpty();
+    }
+
+    // ---- deleteAccount ----------------------------------------------------------------------
+
+    @Test
+    public void test_deleteAccount_removes_dependents_in_dependency_order_then_customer_and_address() {
+        //when
+        service.deleteAccount("john@example.com");
+
+        //then
+        assertThat(reviewPortOut.deletedFor).isEqualTo(EXISTING_ID.id());
+        assertThat(bookingPortOut.deletedFor).isEqualTo(EXISTING_ID.id());
+        assertThat(carProfilePortOut.deletedFor).isEqualTo(EXISTING_ID.id());
+        assertThat(codePortOut.deletedFor).isEqualTo(EXISTING_ID);
+        assertThat(customerPortOut.deletedFor).isEqualTo(EXISTING_ID.id());
+        assertThat(addressPortOut.deleted).containsExactly(7);
+        assertThat(calls).containsExactly(
+                "review.delete", "booking.delete", "carProfile.delete", "customer.delete", "address.deleteById");
+    }
+
+    @Test
+    public void test_deleteAccount_without_an_address_skips_the_address_delete() {
+        //given
+        UserService fresh = newService(new StubUserPortOut(existingUser(null), calls));
+
+        //when
+        fresh.deleteAccount("john@example.com");
+
+        //then
+        assertThat(customerPortOut.deletedFor).isEqualTo(EXISTING_ID.id());
+        assertThat(addressPortOut.deleted).isEmpty();
+        assertThat(calls).containsExactly("review.delete", "booking.delete", "carProfile.delete", "customer.delete");
+    }
+
+    @Test
+    public void test_deleteAccount_for_a_non_customer_is_forbidden_and_deletes_nothing() {
+        //given
+        User owner = User.builder()
+                .id(EXISTING_ID).name("Olivia").surname("Owner").phoneNumber(EXISTING_PHONE)
+                .email("owner@example.com").role(UserRole.OWNER).passwordHash(EXISTING_HASH)
+                .dateOfBirth(LocalDate.of(1985, 3, 3)).addressId(7).preferredCityId(11).emailVerifiedAt(null)
+                .build();
+        UserService fresh = newService(new StubUserPortOut(owner, calls));
+
+        //when + then
+        assertThatThrownBy(() -> fresh.deleteAccount("owner@example.com"))
+                .isInstanceOf(AccountDeletionNotAllowedException.class);
+        assertThat(reviewPortOut.deletedFor).isNull();
+        assertThat(bookingPortOut.deletedFor).isNull();
+        assertThat(carProfilePortOut.deletedFor).isNull();
+        assertThat(customerPortOut.deletedFor).isNull();
+        assertThat(addressPortOut.deleted).isEmpty();
+    }
+
+    @Test
+    public void test_deleteAccount_for_a_vanished_user_fails_as_authentication() {
+        //when + then
+        assertThatThrownBy(() -> serviceWithNoUser().deleteAccount("gone@example.com"))
+                .isInstanceOf(AuthenticatedUserMissingException.class);
+        assertThat(customerPortOut.deletedFor).isNull();
     }
 
     // ---- requestEmailVerification -----------------------------------------------------------

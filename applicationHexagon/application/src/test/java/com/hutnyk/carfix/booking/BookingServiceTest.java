@@ -157,11 +157,21 @@ public class BookingServiceTest {
         public Customer loadCustomerByUsername(String email) {
             return customer();
         }
+
+        @Override
+        public void deleteByUserId(UUID userId) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static final class StubCarProfilePortOut implements CarProfilePortOut {
         boolean owned = true;
         UUID requestedCustomerId;
+
+        @Override
+        public void deleteAllByCustomerId(UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
 
         @Override
         public boolean existsByIdAndCustomerId(UUID profileId, UUID customerId) {
@@ -498,6 +508,11 @@ public class BookingServiceTest {
         @Override
         public void freeOccupancy(BookingId bookingId) {
             this.freedOccupancyFor = bookingId;
+        }
+
+        @Override
+        public void deleteAllByCustomerId(UUID customerId) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

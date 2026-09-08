@@ -14,4 +14,5 @@ public interface CarProfilePortOut {
     CarProfile insert(CarProfile profile);
     CarProfile update(CarProfile profile);
     void deleteById(UUID profileId);
+    void deleteAllByCustomerId(UUID customerId);
 }

@@ -8,10 +8,13 @@ import com.hutnyk.carfix.review.Review;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ReviewPortOut {
 
     boolean existsByBookingId(BookingId bookingId);
+
+    void deleteByCustomerId(UUID customerId);
 
     Optional<Review> findByBookingId(BookingId bookingId);
 

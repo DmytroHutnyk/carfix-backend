@@ -42,6 +42,11 @@ public class ReviewServiceTest {
         }
 
         @Override
+        public void deleteByCustomerId(java.util.UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Optional<Review> findByBookingId(BookingId bookingId) {
             return Optional.empty();
         }

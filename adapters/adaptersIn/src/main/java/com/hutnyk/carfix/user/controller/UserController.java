@@ -13,11 +13,14 @@ import com.hutnyk.carfix.user.dto.response.UserCoreResponse;
 import com.hutnyk.carfix.user.mapper.UpdateUserAddressCommandMapper;
 import com.hutnyk.carfix.user.mapper.UpdateUserCommandMapper;
 import com.hutnyk.carfix.user.mapper.UserToResponseMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -54,6 +57,20 @@ public class UserController {
     @DeleteMapping("/me/address")
     public ResponseEntity<Void> deleteCurrentUserAddress(@AuthenticationPrincipal UserDetails userDetails) {
         userPortIn.deleteAddress(userDetails.getUsername());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteCurrentUser(@AuthenticationPrincipal UserDetails userDetails,
+                                                  HttpServletRequest request) {
+        userPortIn.deleteAccount(userDetails.getUsername());
+
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
 
         return ResponseEntity.noContent().build();
     }

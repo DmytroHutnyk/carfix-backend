@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @PersistenceAdapter
@@ -31,6 +32,11 @@ public class ReviewAdapterOut implements ReviewPortOut {
     @Override
     public boolean existsByBookingId(BookingId bookingId) {
         return reviewRepository.existsByBookingEntityId(bookingId.id());
+    }
+
+    @Override
+    public void deleteByCustomerId(UUID customerId) {
+        reviewRepository.deleteByCustomerId(customerId);
     }
 
     @Override

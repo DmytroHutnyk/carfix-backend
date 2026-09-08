@@ -29,6 +29,7 @@ public interface BookingPortOut {
 
     Booking update(Booking booking);
     void freeOccupancy(BookingId bookingId);
+    void deleteAllByCustomerId(UUID customerId);
 
     /** True when the car profile already holds a booking on that date overlapping [start, end) that was neither cancelled nor a no-show. */
     boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end);

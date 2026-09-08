@@ -177,12 +177,22 @@ public class SearchServiceTest {
         public Customer loadCustomerByUsername(String email) {
             return customer();
         }
+
+        @Override
+        public void deleteByUserId(UUID userId) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static final class StubCarProfilePortOut implements CarProfilePortOut {
         Optional<CarProfileView> found = Optional.of(carProfileView());
         UUID receivedProfileId;
         UUID receivedCustomerId;
+
+        @Override
+        public void deleteAllByCustomerId(UUID customerId) {
+            throw new UnsupportedOperationException();
+        }
 
         @Override
         public List<CarProfileView> findAllByCustomerId(UUID customerId) {

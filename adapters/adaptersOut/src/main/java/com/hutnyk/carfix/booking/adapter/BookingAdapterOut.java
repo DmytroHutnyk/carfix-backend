@@ -155,6 +155,21 @@ public class BookingAdapterOut implements BookingPortOut {
     }
 
     @Override
+    public void deleteAllByCustomerId(UUID customerId) {
+        List<UUID> bookingIds = bookingRepository.findIdsByCustomerId(customerId);
+        if (bookingIds.isEmpty()) {
+            return;
+        }
+        for (UUID id : bookingIds) {
+            serviceBayBookingRepository.deleteAllByBookingEntityId(id);
+            employeeBookingRepository.deleteAllByBookingEntityId(id);
+            equipmentBookingRepository.deleteAllByBookingEntityId(id);
+        }
+        bookingRepository.deleteSegmentsByBookingIds(bookingIds);
+        bookingRepository.deleteByIds(bookingIds);
+    }
+
+    @Override
     public boolean existsActiveOverlapping(CarProfileId carProfileId, LocalDate date, LocalTime start, LocalTime end) {
         return bookingRepository.existsByCarProfileOverlapping(
                 carProfileId.id(), date, start, end, EnumSet.of(BookingStatus.CANCELLED, BookingStatus.NO_SHOW));

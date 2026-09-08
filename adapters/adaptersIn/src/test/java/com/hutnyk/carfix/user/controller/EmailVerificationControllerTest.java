@@ -72,6 +72,11 @@ public class EmailVerificationControllerTest {
         }
 
         @Override
+        public void deleteAccount(String email) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void requestEmailVerification(String email) {
             if (requestFailure != null) {
                 throw requestFailure;

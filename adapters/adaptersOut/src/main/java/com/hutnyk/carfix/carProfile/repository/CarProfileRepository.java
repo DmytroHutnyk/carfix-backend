@@ -28,4 +28,6 @@ public interface CarProfileRepository extends JpaRepository<CarProfileEntity, UU
     Optional<CarProfileEntity> findByIdAndCustomerIdWithDetails(@Param("id") UUID id, @Param("customerId") UUID customerId);
 
     boolean existsByIdAndCustomerEntityId(UUID id, UUID customerId);
+
+    void deleteAllByCustomerEntityId(UUID customerId);
 }
