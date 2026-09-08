@@ -35,4 +35,15 @@ public interface BranchRepository extends JpaRepository<BranchEntity, UUID> {
             ORDER BY b.name
             """)
     List<BranchEntity> findAllWithAddressByOwnerId(@Param("ownerId") UUID ownerId);
+
+    @Query("""
+            SELECT b FROM BranchEntity b
+            JOIN FETCH b.addressEntity a
+            JOIN FETCH a.cityEntity c
+            JOIN FETCH c.regionEntity r
+            JOIN FETCH r.countryEntity
+            WHERE b.id = :branchId AND b.ownerId = :ownerId
+            """)
+    Optional<BranchEntity> findWithLocationByIdAndOwnerId(
+            @Param("branchId") UUID branchId, @Param("ownerId") UUID ownerId);
 }

@@ -12,4 +12,6 @@ public interface OpeningHoursRepository extends JpaRepository<OpeningHoursEntity
     List<OpeningHoursEntity> findAllByBranchEntityId(UUID branchId);
 
     List<OpeningHoursEntity> findAllByBranchEntityIdIn(Collection<UUID> branchIds);
+
+    void deleteAllByBranchEntityId(UUID branchId);
 }

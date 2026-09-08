@@ -171,9 +171,9 @@ public final class Booking {
         return withStatus(BookingStatus.NO_SHOW);
     }
 
-    public Instant safeCancelUntil(ZoneId branchZone) {
+    public Instant safeCancelUntil(ZoneId branchZone, Duration notice) {
         return ZonedDateTime.of(date, startTime, branchZone)
-                .minus(SAFE_CANCELLATION_NOTICE)
+                .minus(notice)
                 .toInstant();
     }
 }

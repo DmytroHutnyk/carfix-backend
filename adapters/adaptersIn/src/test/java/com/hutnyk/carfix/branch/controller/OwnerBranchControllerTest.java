@@ -3,18 +3,28 @@ package com.hutnyk.carfix.branch.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.hutnyk.carfix.address.CountryIso;
 import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.BranchStatus;
+import com.hutnyk.carfix.branch.CancellationPolicy;
+import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
+import com.hutnyk.carfix.in.address.query.AddressView;
 import com.hutnyk.carfix.in.branch.OwnerBranchPortIn;
 import com.hutnyk.carfix.in.branch.commands.RegisterBranchCommand;
+import com.hutnyk.carfix.in.branch.commands.UpdateBranchOverviewCommand;
+import com.hutnyk.carfix.in.branch.query.BranchBrandView;
+import com.hutnyk.carfix.in.branch.query.BranchOpeningHoursView;
 import com.hutnyk.carfix.in.branch.query.BranchReviewView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchOpeningHoursExceptionView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 import com.hutnyk.carfix.openingHours.OpeningHoursMode;
@@ -37,6 +47,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
@@ -58,17 +69,53 @@ public class OwnerBranchControllerTest {
                         REVIEW_ID, 5, "Great", Instant.parse("2026-08-10T10:00:00Z"), "Anna", "Nowak")));
     }
 
+    private static OwnerBranchDetailView detail() {
+        return new OwnerBranchDetailView(
+                BRANCH_ID, "AutoSerwis Kowalski Mokotow", BranchStatus.ACTIVE,
+                "A workshop.", CancellationPolicy.MODERATE,
+                "+48221234567", "kontakt@autofix.pl", "Europe/Warsaw",
+                new AddressView(55, "Pulawska", "145", null, "02-515", "Warsaw", "Masovian Voivodeship",
+                        CountryIso.PL, "Poland",
+                        new BigDecimal("52.180000"), new BigDecimal("21.020000"), "ChIJx"),
+                List.of(new BranchBrandView(7, "BMW")),
+                List.of(new BranchOpeningHoursView(
+                        DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0), OpeningHoursMode.OPEN)),
+                List.of(new OwnerBranchOpeningHoursExceptionView(
+                        3, LocalDate.of(2026, 12, 24), null, null, false, "Christmas Eve")));
+    }
+
     private static final class StubOwnerBranchPortIn implements OwnerBranchPortIn {
         String receivedEmail;
         RegisterBranchCommand received;
         List<OwnerBranchSummaryView> toReturn = List.of(summary());
         RuntimeException toThrow;
+        UUID receivedBranchId;
+        UpdateBranchOverviewCommand receivedOverview;
+        OwnerBranchDetailView detail = detail();
 
         @Override
         public List<OwnerBranchSummaryView> getMyBranchSummaries(String ownerEmail) {
             this.receivedEmail = ownerEmail;
             if (toThrow != null) throw toThrow;
             return toReturn;
+        }
+
+        @Override
+        public OwnerBranchDetailView getMyBranch(String ownerEmail, UUID branchId) {
+            this.receivedEmail = ownerEmail;
+            this.receivedBranchId = branchId;
+            if (toThrow != null) throw toThrow;
+            return detail;
+        }
+
+        @Override
+        public OwnerBranchDetailView updateBranchOverview(
+                String ownerEmail, UUID branchId, UpdateBranchOverviewCommand command) {
+            this.receivedEmail = ownerEmail;
+            this.receivedBranchId = branchId;
+            this.receivedOverview = command;
+            if (toThrow != null) throw toThrow;
+            return detail;
         }
 
         @Override
@@ -264,5 +311,110 @@ public class OwnerBranchControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTHENTICATED_USER_MISSING"))
                 .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    public void getMyBranchReturnsTheOverviewShape() throws Exception {
+        mockMvc.perform(get("/api/owner/branches/" + BRANCH_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.branchId").value(BRANCH_ID.toString()))
+                .andExpect(jsonPath("$.name").value("AutoSerwis Kowalski Mokotow"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.description").value("A workshop."))
+                .andExpect(jsonPath("$.cancellationPolicy").value("MODERATE"))
+                .andExpect(jsonPath("$.phoneNumber").value("+48221234567"))
+                .andExpect(jsonPath("$.timezone").value("Europe/Warsaw"))
+                .andExpect(jsonPath("$.address.streetName").value("Pulawska"))
+                .andExpect(jsonPath("$.address.countryIso").value("PL"))
+                .andExpect(jsonPath("$.address.countryName").value("Poland"))
+                .andExpect(jsonPath("$.brands[0].carBrandId").value(7))
+                .andExpect(jsonPath("$.openingHours[0].dayOfWeek").value("MONDAY"))
+                .andExpect(jsonPath("$.openingHours[0].startTime").value("09:00"))
+                .andExpect(jsonPath("$.openingHoursExceptions[0].id").value(3))
+                .andExpect(jsonPath("$.openingHoursExceptions[0].date").value("2026-12-24"))
+                .andExpect(jsonPath("$.openingHoursExceptions[0].isOpen").value(false))
+                .andExpect(jsonPath("$.openingHoursExceptions[0].reason").value("Christmas Eve"));
+
+        assertThat(stub.receivedEmail).isEqualTo(EMAIL);
+        assertThat(stub.receivedBranchId).isEqualTo(BRANCH_ID);
+    }
+
+    @Test
+    public void getMyBranchOfAnotherOwnerIs404WithCode() throws Exception {
+        stub.toThrow = new BranchNotFoundException(BRANCH_ID);
+
+        mockMvc.perform(get("/api/owner/branches/" + BRANCH_ID))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("BRANCH_NOT_FOUND"))
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    private static final String OVERVIEW_BODY = """
+            {
+              "name": "AutoFix Wola",
+              "description": "Renamed workshop.",
+              "cancellationPolicy": "STRICT",
+              "address": {"streetName": "Wolska", "buildingNumber": "12", "flatNumber": "3", "postalCode": "01-001",
+                          "city": "Warsaw", "region": "Masovian Voivodeship", "countryIso": "PL",
+                          "latitude": 52.23, "longitude": 20.98, "googlePlaceId": "ChIJnew"},
+              "openingHours": [{"dayOfWeek": "MONDAY", "opensAt": "08:00", "closesAt": "16:00", "mode": "OPEN"}],
+              "openingHoursExceptions": [{"date": "2026-12-24", "opensAt": null, "closesAt": null,
+                                          "isOpen": false, "reason": "Christmas Eve"}],
+              "carBrandIds": [1, 2]
+            }
+            """;
+
+    @Test
+    public void putReplacesTheOverviewAndReturnsTheRereadDetail() throws Exception {
+        mockMvc.perform(put("/api/owner/branches/" + BRANCH_ID)
+                        .contentType(MediaType.APPLICATION_JSON).content(OVERVIEW_BODY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.branchId").value(BRANCH_ID.toString()))
+                .andExpect(jsonPath("$.cancellationPolicy").value("MODERATE"));
+
+        assertThat(stub.receivedEmail).isEqualTo(EMAIL);
+        assertThat(stub.receivedBranchId).isEqualTo(BRANCH_ID);
+        UpdateBranchOverviewCommand c = stub.receivedOverview;
+        assertThat(c.name()).isEqualTo("AutoFix Wola");
+        assertThat(c.description()).isEqualTo("Renamed workshop.");
+        assertThat(c.cancellationPolicy()).isEqualTo(CancellationPolicy.STRICT);
+        assertThat(c.address().city()).isEqualTo("Warsaw");
+        assertThat(c.address().latitude()).isEqualByComparingTo("52.23");
+        assertThat(c.openingHours()).singleElement().satisfies(h -> {
+            assertThat(h.dayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+            assertThat(h.opensAt()).isEqualTo(LocalTime.of(8, 0));
+            assertThat(h.mode()).isEqualTo(OpeningHoursMode.OPEN);
+        });
+        assertThat(c.openingHoursExceptions()).singleElement().satisfies(e -> {
+            assertThat(e.date()).isEqualTo(LocalDate.of(2026, 12, 24));
+            assertThat(e.isOpen()).isFalse();
+            assertThat(e.opensAt()).isNull();
+            assertThat(e.reason()).isEqualTo("Christmas Eve");
+        });
+        assertThat(c.carBrandIds()).containsExactlyInAnyOrder(1, 2);
+    }
+
+    @Test
+    public void putWithBlankNameAndMissingListsIs400WithFieldErrors() throws Exception {
+        mockMvc.perform(put("/api/owner/branches/" + BRANCH_ID).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"  \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors.name").exists())
+                .andExpect(jsonPath("$.errors.cancellationPolicy").exists())
+                .andExpect(jsonPath("$.errors.address").exists())
+                .andExpect(jsonPath("$.errors.openingHours").exists())
+                .andExpect(jsonPath("$.errors.carBrandIds").exists());
+        assertThat(stub.receivedOverview).isNull();
+    }
+
+    @Test
+    public void putOfAnotherOwnersBranchIs404WithCode() throws Exception {
+        stub.toThrow = new BranchNotFoundException(BRANCH_ID);
+
+        mockMvc.perform(put("/api/owner/branches/" + BRANCH_ID)
+                        .contentType(MediaType.APPLICATION_JSON).content(OVERVIEW_BODY))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("BRANCH_NOT_FOUND"));
     }
 }

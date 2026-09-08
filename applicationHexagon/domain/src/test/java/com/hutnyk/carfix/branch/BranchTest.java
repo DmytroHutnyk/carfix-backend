@@ -49,10 +49,32 @@ public class BranchTest {
     public void test_of_rehydrates_seed_shaped_row() {
         //when
         Branch branch = Branch.of(ID, "Serwis Ursus", "+48224443311", "warsztat@serwis-ursus.pl",
-                BranchStatus.SUSPENDED, ZoneId.of("Europe/Warsaw"), 7, OWNER);
+                BranchStatus.SUSPENDED, ZoneId.of("Europe/Warsaw"), 7, OWNER, "desc", CancellationPolicy.STRICT);
 
         //then
         assertThat(branch.getStatus()).isEqualTo(BranchStatus.SUSPENDED);
         assertThat(branch.getPhoneNumber()).isEqualTo("+48224443311");
+        assertThat(branch.getDescription()).isEqualTo("desc");
+        assertThat(branch.getCancellationPolicy()).isEqualTo(CancellationPolicy.STRICT);
+    }
+
+    @Test
+    public void test_create_defaults_description_and_policy() {
+        //when
+        Branch branch = Branch.create(ID, "AutoFix", "+48221234567", "kontakt@autofix.pl", "Europe/Warsaw", 5, OWNER);
+
+        //then
+        assertThat(branch.getDescription()).isNull();
+        assertThat(branch.getCancellationPolicy()).isEqualTo(CancellationPolicy.MODERATE);
+    }
+
+    @Test
+    public void test_rejects_null_cancellation_policy() {
+        //when + then
+        assertThatThrownBy(() -> Branch.of(ID, "AutoFix", "+48221234567", "kontakt@autofix.pl",
+                BranchStatus.ACTIVE, ZoneId.of("Europe/Warsaw"), 5, OWNER, null, null))
+                .isInstanceOf(DomainObjectValidationException.class)
+                .extracting("fieldName")
+                .isEqualTo("cancellationPolicy");
     }
 }

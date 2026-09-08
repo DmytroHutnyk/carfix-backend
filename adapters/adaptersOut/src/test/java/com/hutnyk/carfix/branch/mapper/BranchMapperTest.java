@@ -6,6 +6,7 @@ import com.hutnyk.carfix.address.entity.AddressEntity;
 import com.hutnyk.carfix.address.entity.CityEntity;
 import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
+import com.hutnyk.carfix.branch.CancellationPolicy;
 import com.hutnyk.carfix.branch.BranchStatus;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.carCatalog.entity.CarBrandEntity;
@@ -52,7 +53,7 @@ public class BranchMapperTest {
         branch.setRating(new BigDecimal("4.7"));
         branch.setReviewCount(236);
         branch.setDescription("A workshop.");
-        branch.setCancellationPolicy("Free cancellation up to 24 hours.");
+        branch.setCancellationPolicy(CancellationPolicy.MODERATE);
         branch.setAddressEntity(address);
         return branch;
     }
@@ -130,7 +131,7 @@ public class BranchMapperTest {
         assertThat(view.branchId()).isEqualTo(BRANCH_ID);
         assertThat(view.city()).isEqualTo("Warsaw");
         assertThat(view.description()).isEqualTo("A workshop.");
-        assertThat(view.cancellationPolicy()).isEqualTo("Free cancellation up to 24 hours.");
+        assertThat(view.cancellationPolicy()).isEqualTo("MODERATE");
         assertThat(view.tz()).isEqualTo("Europe/Warsaw");
         assertThat(view.brands()).hasSize(1);
         assertThat(view.brands().get(0).carBrandId()).isEqualTo(7);
@@ -156,9 +157,32 @@ public class BranchMapperTest {
         assertThat(entity.getOwnerId()).isEqualTo(owner.id());
         assertThat(entity.getAddressEntity()).isSameAs(address);
         assertThat(entity.getRating()).isNull();
+        assertThat(entity.getDescription()).isNull();
+        assertThat(entity.getCancellationPolicy()).isEqualTo(CancellationPolicy.MODERATE);
         assertThat(back.getTz()).isEqualTo(ZoneId.of("Europe/Warsaw"));
         assertThat(back.getAddressId()).isEqualTo(5);
         assertThat(back.getOwnerId()).isEqualTo(owner);
+        assertThat(back.getCancellationPolicy()).isEqualTo(CancellationPolicy.MODERATE);
+    }
+
+    @Test
+    public void test_toEntity_and_toDomain_carry_description_and_policy() {
+        //given
+        UserId owner = UserId.genId();
+        Branch stored = Branch.of(BranchId.of(BRANCH_ID), "AutoFix", "+48221234567", "kontakt@autofix.pl",
+                BranchStatus.ACTIVE, ZoneId.of("Europe/Warsaw"), 5, owner, "A workshop.", CancellationPolicy.STRICT);
+        AddressEntity address = new AddressEntity();
+        address.setId(5);
+
+        //when
+        BranchEntity entity = BranchMapper.toEntity(stored, address);
+        Branch back = BranchMapper.toDomain(entity);
+
+        //then
+        assertThat(entity.getDescription()).isEqualTo("A workshop.");
+        assertThat(entity.getCancellationPolicy()).isEqualTo(CancellationPolicy.STRICT);
+        assertThat(back.getDescription()).isEqualTo("A workshop.");
+        assertThat(back.getCancellationPolicy()).isEqualTo(CancellationPolicy.STRICT);
     }
 
     @Test

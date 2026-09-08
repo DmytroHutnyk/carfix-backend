@@ -1,6 +1,7 @@
 package com.hutnyk.carfix.branch.mapper;
 
 import com.hutnyk.carfix.address.entity.AddressEntity;
+import com.hutnyk.carfix.address.mapper.AddressMapper;
 import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
@@ -11,9 +12,12 @@ import com.hutnyk.carfix.in.branch.query.BranchReviewView;
 import com.hutnyk.carfix.in.branch.query.BranchServiceCategoryView;
 import com.hutnyk.carfix.in.branch.query.BranchServiceView;
 import com.hutnyk.carfix.in.branch.query.BranchView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
+import com.hutnyk.carfix.in.branch.query.OwnerBranchOpeningHoursExceptionView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.openingHours.OpeningHours;
 import com.hutnyk.carfix.openingHours.entity.OpeningHoursEntity;
+import com.hutnyk.carfix.openingHours.entity.OpeningHoursExceptionEntity;
 import com.hutnyk.carfix.service.entity.ServiceCategoryEntity;
 import com.hutnyk.carfix.service.entity.ServiceEntity;
 import com.hutnyk.carfix.user.UserId;
@@ -42,6 +46,8 @@ public final class BranchMapper {
         entity.setTz(branch.getTz().getId());
         entity.setAddressEntity(address);
         entity.setOwnerId(branch.getOwnerId().id());
+        entity.setDescription(branch.getDescription());
+        entity.setCancellationPolicy(branch.getCancellationPolicy());
         return entity;
     }
 
@@ -57,7 +63,9 @@ public final class BranchMapper {
                 entity.getStatus(),
                 ZoneId.of(entity.getTz()),
                 entity.getAddressEntity().getId(),
-                UserId.of(entity.getOwnerId()));
+                UserId.of(entity.getOwnerId()),
+                entity.getDescription(),
+                entity.getCancellationPolicy());
     }
 
     public static OpeningHoursEntity toEntity(OpeningHours hours, BranchEntity branch) {
@@ -89,7 +97,7 @@ public final class BranchMapper {
                 branch.getPhoneNumber(),
                 branch.getEmail(),
                 branch.getDescription(),
-                branch.getCancellationPolicy(),
+                branch.getCancellationPolicy().name(),
                 branch.getRating(),
                 branch.getReviewCount(),
                 address.getStreetName(),
@@ -140,6 +148,42 @@ public final class BranchMapper {
                 employeesOnDutyToday,
                 employeesTotal,
                 latestReviews);
+    }
+
+    public static OwnerBranchDetailView toOwnerDetailView(
+            BranchEntity branch,
+            List<CarBrandEntity> brands,
+            List<OpeningHoursEntity> openingHours,
+            List<OpeningHoursExceptionEntity> exceptions) {
+        if (branch == null) {
+            return null;
+        }
+        return new OwnerBranchDetailView(
+                branch.getId(),
+                branch.getName(),
+                branch.getStatus(),
+                branch.getDescription(),
+                branch.getCancellationPolicy(),
+                branch.getPhoneNumber(),
+                branch.getEmail(),
+                branch.getTz(),
+                AddressMapper.toView(branch.getAddressEntity()),
+                brands.stream()
+                        .map(brand -> new BranchBrandView(brand.getId(), brand.getName()))
+                        .toList(),
+                openingHours.stream()
+                        .sorted(Comparator
+                                .comparingInt((OpeningHoursEntity oh) -> oh.getDayOfWeek().ordinal())
+                                .thenComparing(OpeningHoursEntity::getStartTime))
+                        .map(oh -> new BranchOpeningHoursView(
+                                oh.getDayOfWeek(), oh.getStartTime(), oh.getCloseTime(), oh.getMode()))
+                        .toList(),
+                exceptions.stream()
+                        .sorted(Comparator.comparing(OpeningHoursExceptionEntity::getDate))
+                        .map(e -> new OwnerBranchOpeningHoursExceptionView(
+                                e.getId(), e.getDate(), e.getStartTime(), e.getCloseTime(),
+                                Boolean.TRUE.equals(e.getIsOpen()), e.getReason()))
+                        .toList());
     }
 
     private static List<BranchServiceCategoryView> groupByCategory(List<ServiceEntity> services) {
