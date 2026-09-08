@@ -21,7 +21,12 @@ public final class Employee {
     private final String firstName;
     private final String lastName;
 
-    //Nullable — the login account this staff member holds, if any
+    //Nullable
+    private final String phone;
+    //Nullable
+    private final String email;
+
+    //Nullable
     private final UserId userId;
     private final EmployeeStatus status;
 
@@ -29,6 +34,9 @@ public final class Employee {
     private final String notes;
     //Nullable
     private final BigDecimal salary;
+
+    //Nullable
+    private final EmployeeAddress address;
     private final BranchId branchId;
     private final Set<Integer> roleIds;
 
@@ -37,19 +45,25 @@ public final class Employee {
             EmployeeId id,
             String firstName,
             String lastName,
+            String phone,
+            String email,
             UserId userId,
             EmployeeStatus status,
             String notes,
             BigDecimal salary,
+            EmployeeAddress address,
             BranchId branchId,
             Set<Integer> roleIds) {
         this.id = Validator.notNull(id, "id");
         this.firstName = Validator.notBlank(firstName, "firstName");
         this.lastName = Validator.notBlank(lastName, "lastName");
+        this.phone = phone;
+        this.email = email;
         this.userId = userId;
         this.status = Validator.notNull(status, "status");
         this.notes = notes;
         this.salary = validateSalary(salary);
+        this.address = address;
         this.branchId = Validator.notNull(branchId, "branchId");
         this.roleIds = Set.copyOf(Validator.notNull(roleIds, "roleIds"));
     }
@@ -58,28 +72,44 @@ public final class Employee {
             EmployeeId id,
             String firstName,
             String lastName,
+            String phone,
+            String email,
             UserId userId,
             EmployeeStatus status,
             String notes,
             BigDecimal salary,
+            EmployeeAddress address,
             BranchId branchId,
             Set<Integer> roleIds) {
         return Employee.builder()
                 .id(id)
                 .firstName(firstName)
                 .lastName(lastName)
+                .phone(phone)
+                .email(email)
                 .userId(userId)
                 .status(status)
                 .notes(notes)
                 .salary(salary)
+                .address(address)
                 .branchId(branchId)
                 .roleIds(roleIds)
                 .build();
     }
 
-    /** A staff member the owner registers: active, no account, no salary yet. */
     public static Employee create(EmployeeId id, String firstName, String lastName, BranchId branchId, Set<Integer> roleIds) {
-        return of(id, firstName, lastName, null, EmployeeStatus.ACTIVE, null, null, branchId, roleIds);
+        return of(id, firstName, lastName, null, null, null, EmployeeStatus.ACTIVE, null, null, null, branchId, roleIds);
+    }
+
+    public static Employee create(EmployeeId id, String firstName, String lastName, String phone, String email,
+                                  BigDecimal salary, EmployeeAddress address, BranchId branchId, Set<Integer> roleIds) {
+        return of(id, firstName, lastName, phone, email, null, EmployeeStatus.ACTIVE, null, salary, address, branchId, roleIds);
+    }
+
+    public static Employee update(Employee existing, String firstName, String lastName, String phone, String email,
+                                  BigDecimal salary, EmployeeAddress address, Set<Integer> roleIds) {
+        return of(existing.id, firstName, lastName, phone, email, existing.userId, existing.status, existing.notes,
+                salary, address, existing.branchId, roleIds);
     }
 
     private static BigDecimal validateSalary(BigDecimal salary) {

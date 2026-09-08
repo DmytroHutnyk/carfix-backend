@@ -9,6 +9,9 @@ import com.hutnyk.carfix.role.repository.RoleRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+import java.util.UUID;
+
 @RequiredArgsConstructor
 @PersistenceAdapter
 public class RoleAdapterOut implements RolePortOut {
@@ -22,5 +25,10 @@ public class RoleAdapterOut implements RolePortOut {
                 ? null
                 : entityManager.getReference(BranchEntity.class, role.getBranchId().id());
         return RoleMapper.toDomain(roleRepository.save(RoleMapper.toEntity(role, branch)));
+    }
+
+    @Override
+    public List<Role> findAllForBranch(UUID branchId) {
+        return roleRepository.findAllForBranch(branchId).stream().map(RoleMapper::toDomain).toList();
     }
 }
