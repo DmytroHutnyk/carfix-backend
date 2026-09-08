@@ -151,6 +151,7 @@ public class BranchServiceTest {
         @Override public void updateRating(BranchId branchId, BranchRating rating) { throw new UnsupportedOperationException(); }
         @Override public Optional<BranchView> findViewById(BranchId branchId) { return Optional.ofNullable(view); }
         @Override public boolean existsActiveById(BranchId branchId) { return branchExists; }
+        @Override public boolean existsByIdAndOwnerId(BranchId branchId, UUID ownerId) { throw new UnsupportedOperationException(); }
         @Override public Optional<ZoneId> findActiveBranchZone(BranchId branchId) { throw new UnsupportedOperationException(); }
         @Override public Branch insert(Branch branch) { this.inserted = branch; return branch; }
         @Override public void insertOpeningHours(List<OpeningHours> openingHours) { this.hours = openingHours; }

@@ -158,6 +158,11 @@ public class SlotServiceTest {
         public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public boolean existsByIdAndOwnerId(BranchId branchId, java.util.UUID ownerId) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static class StubServicePortOut implements ServicePortOut {
