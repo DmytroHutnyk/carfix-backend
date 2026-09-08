@@ -20,10 +20,8 @@ public class EmployeeAvailabilityTest {
 
     @Test
     public void test_of_builds_availability_with_series() {
-        //when
         EmployeeAvailability result = EmployeeAvailability.of(1, RANGE, DATE, 42, EMPLOYEE_ID);
 
-        //then
         assertThat(result.getId()).isEqualTo(1);
         assertThat(result.getAvailableTime()).isEqualTo(RANGE);
         assertThat(result.getDate()).isEqualTo(DATE);
@@ -33,16 +31,13 @@ public class EmployeeAvailabilityTest {
 
     @Test
     public void test_of_allows_null_series_for_one_off_entry() {
-        //when
         EmployeeAvailability result = EmployeeAvailability.of(1, RANGE, DATE, null, EMPLOYEE_ID);
 
-        //then
         assertThat(result.getSeriesId()).isNull();
     }
 
     @Test
     public void test_of_throws_when_available_time_is_null() {
-        //when + then
         assertThatThrownBy(() -> EmployeeAvailability.of(1, null, DATE, 42, EMPLOYEE_ID))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")

@@ -17,10 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 
-/**
- * One-time code a user must echo back to prove they own the email address. Only the SHA-256 hash of the code
- * is kept; the plain code exists in the email alone.
- */
+/** Only SHA-256 hash is stored; plaintext exists only in email. */
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class EmailVerificationCode {
@@ -50,9 +47,6 @@ public final class EmailVerificationCode {
         this.attempts = validateAttempts(attempts);
     }
 
-    /**
-     * A freshly generated code for a user, valid for {@link #TTL} from {@code now}.
-     */
     public static EmailVerificationCode issue(UserId userId, String plainCode, Instant now) {
         Validator.notNull(now, "now");
         return EmailVerificationCode.builder()
@@ -64,9 +58,7 @@ public final class EmailVerificationCode {
                 .build();
     }
 
-    /**
-     * Rehydration from persistence — trusts the stored hash and timestamps.
-     */
+    // Rehydration trusts stored hash and timestamps.
     public static EmailVerificationCode of(UserId userId, String codeHash, Instant issuedAt, Instant expiresAt, int attempts) {
         return EmailVerificationCode.builder()
                 .userId(userId)

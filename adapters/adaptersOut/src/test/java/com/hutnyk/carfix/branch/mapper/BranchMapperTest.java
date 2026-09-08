@@ -82,16 +82,13 @@ public class BranchMapperTest {
 
     @Test
     public void test_toView_groups_services_by_category_preserving_order() {
-        //given — pre-sorted by category name then service name, as the adapter queries them
         List<ServiceEntity> services = List.of(
                 service(1, "Brake inspection", "Brake Services", 3),
                 service(2, "Brake pad replacement", "Brake Services", 3),
                 service(3, "Engine diagnostics", "Engine Services", 5));
 
-        //when
         BranchView view = BranchMapper.toView(branch(), services, List.of(), List.of());
 
-        //then
         assertThat(view.serviceCategories()).hasSize(2);
         assertThat(view.serviceCategories().get(0).name()).isEqualTo("Brake Services");
         assertThat(view.serviceCategories().get(0).services()).hasSize(2);
@@ -102,16 +99,13 @@ public class BranchMapperTest {
 
     @Test
     public void test_toView_sorts_opening_hours_monday_first() {
-        //given — deliberately unsorted
         List<OpeningHoursEntity> hours = List.of(
                 hours(DayOfWeek.FRIDAY, 9),
                 hours(DayOfWeek.MONDAY, 8),
                 hours(DayOfWeek.WEDNESDAY, 10));
 
-        //when
         BranchView view = BranchMapper.toView(branch(), List.of(), hours, List.of());
 
-        //then
         assertThat(view.openingHours())
                 .extracting(oh -> oh.dayOfWeek())
                 .containsExactly(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY);
@@ -119,15 +113,12 @@ public class BranchMapperTest {
 
     @Test
     public void test_toView_maps_branch_address_and_brands() {
-        //given
         CarBrandEntity brand = new CarBrandEntity();
         brand.setId(7);
         brand.setName("BMW");
 
-        //when
         BranchView view = BranchMapper.toView(branch(), List.of(), List.of(), List.of(brand));
 
-        //then
         assertThat(view.branchId()).isEqualTo(BRANCH_ID);
         assertThat(view.city()).isEqualTo("Warsaw");
         assertThat(view.description()).isEqualTo("A workshop.");
@@ -139,18 +130,15 @@ public class BranchMapperTest {
 
     @Test
     public void test_toEntity_and_toDomain_round_trip_a_created_branch() {
-        //given
         UserId owner = UserId.genId();
         Branch created = Branch.create(BranchId.of(BRANCH_ID), "AutoFix", "+48221234567", "kontakt@autofix.pl",
                 "Europe/Warsaw", 5, owner);
         AddressEntity address = new AddressEntity();
         address.setId(5);
 
-        //when
         BranchEntity entity = BranchMapper.toEntity(created, address);
         Branch back = BranchMapper.toDomain(entity);
 
-        //then
         assertThat(entity.getId()).isEqualTo(BRANCH_ID);
         assertThat(entity.getStatus()).isEqualTo(BranchStatus.ACTIVE);
         assertThat(entity.getTz()).isEqualTo("Europe/Warsaw");
@@ -167,18 +155,15 @@ public class BranchMapperTest {
 
     @Test
     public void test_toEntity_and_toDomain_carry_description_and_policy() {
-        //given
         UserId owner = UserId.genId();
         Branch stored = Branch.of(BranchId.of(BRANCH_ID), "AutoFix", "+48221234567", "kontakt@autofix.pl",
                 BranchStatus.ACTIVE, ZoneId.of("Europe/Warsaw"), 5, owner, "A workshop.", CancellationPolicy.STRICT);
         AddressEntity address = new AddressEntity();
         address.setId(5);
 
-        //when
         BranchEntity entity = BranchMapper.toEntity(stored, address);
         Branch back = BranchMapper.toDomain(entity);
 
-        //then
         assertThat(entity.getDescription()).isEqualTo("A workshop.");
         assertThat(entity.getCancellationPolicy()).isEqualTo(CancellationPolicy.STRICT);
         assertThat(back.getDescription()).isEqualTo("A workshop.");
@@ -187,14 +172,11 @@ public class BranchMapperTest {
 
     @Test
     public void test_toEntity_maps_opening_hours_with_mode() {
-        //given
         OpeningHours hours = OpeningHours.create(DayOfWeek.SATURDAY, LocalTime.of(9, 0), LocalTime.of(14, 0),
                 OpeningHoursMode.BY_APPOINTMENT, BranchId.of(BRANCH_ID));
 
-        //when
         OpeningHoursEntity entity = BranchMapper.toEntity(hours, branch());
 
-        //then
         assertThat(entity.getId()).isNull();
         assertThat(entity.getDayOfWeek()).isEqualTo(DayOfWeek.SATURDAY);
         assertThat(entity.getStartTime()).isEqualTo(LocalTime.of(9, 0));
@@ -205,16 +187,13 @@ public class BranchMapperTest {
 
     @Test
     public void test_toOwnerSummaryView_copies_branch_fields_and_precomputed_counts() {
-        //given
         BranchEntity entity = branch();
         entity.setStatus(BranchStatus.ACTIVE);
         List<BranchReviewView> reviews = List.of(new BranchReviewView(
                 UUID.randomUUID(), 5, "Great", Instant.parse("2026-08-10T10:00:00Z"), "Anna", "Nowak"));
 
-        //when
         OwnerBranchSummaryView view = BranchMapper.toOwnerSummaryView(entity, true, 12, 7, 3, 5, reviews);
 
-        //then
         assertThat(view.branchId()).isEqualTo(BRANCH_ID);
         assertThat(view.name()).isEqualTo("AutoFix Mokotow");
         assertThat(view.status()).isEqualTo(BranchStatus.ACTIVE);

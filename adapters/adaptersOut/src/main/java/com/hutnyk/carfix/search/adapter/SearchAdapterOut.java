@@ -71,10 +71,7 @@ public class SearchAdapterOut implements SearchPortOut {
             LIMIT :limit
             """;
 
-    /**
-     * The administrative chain is what both endpoints filter on, so the two sets stay consistent:
-     * a workshop suggested for a city is the same workshop the results page returns for that city.
-     */
+    // Suggestions and results share one administrative-location chain.
     private static final String LOCATION_JOINS = """
             JOIN addresses a ON a.address_id = b.address_id
             JOIN cities c ON c.city_id = a.city_id
@@ -240,9 +237,7 @@ public class SearchAdapterOut implements SearchPortOut {
 
         String filter = filter(query, brandId);
 
-        /* :pinnedBranchId appears in the filter only when there was a match clause to escape,
-           but it always appears in ORDER BY when pinning — bind exactly where it is used,
-           because binding a parameter absent from the SQL throws. */
+        // :pinnedBranchId may appear only in ORDER BY; binding an absent SQL parameter throws.
         boolean filterHasPinned = pinned && !matchFilter(query).isEmpty();
 
         Query countQuery = em.createNativeQuery("SELECT COUNT(*) " + filter);
@@ -379,11 +374,7 @@ public class SearchAdapterOut implements SearchPortOut {
         return "TRUE";
     }
 
-    /**
-     * The whole match clause, or "" when nothing narrows the result set (browse mode).
-     * serviceName and categoryId match services only; free text matches services OR the
-     * branch name.
-     */
+    // Free text matches service or branch; structured filters match services only.
     private static String matchFilter(WorkshopSearchQuery query) {
         if (!hasTextFilter(query)) {
             return "";

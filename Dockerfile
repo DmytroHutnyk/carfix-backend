@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# ---------- build ----------
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /build
 
@@ -19,18 +18,15 @@ COPY ports/pom.xml ports/
 COPY adapters/adaptersIn/pom.xml adapters/adaptersIn/
 COPY adapters/adaptersOut/pom.xml adapters/adaptersOut/
 
-# Best-effort warm cache
 RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw -B -q dependency:go-offline -DskipTests -Dmaven.gitcommitid.skip=true || true
 
 COPY . .
 
-# gitcommitid is skipped
 RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw -B clean package -DskipTests -Dmaven.gitcommitid.skip=true \
  && cp boot/target/boot-*.jar /build/app.jar
 
-# ---------- run ----------
 FROM eclipse-temurin:25-jre AS run
 WORKDIR /app
 

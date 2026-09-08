@@ -1,6 +1,5 @@
 SET search_path TO carfix;
 
--- ---------------------------------------------------------------------------
 -- Seed part 2 of 6 — owners, branches and everything a branch owns:
 -- bays, equipment units, employees, services and the requirement slots that
 -- say what each service needs (spec 2.2/2.3/2.4).
@@ -21,7 +20,6 @@ SET search_path TO carfix;
 --
 -- Every account shares one bcrypt hash so any seeded user can be logged in
 -- with the same dev password.
--- ---------------------------------------------------------------------------
 
 INSERT INTO users (user_id, name, surname, phone_number, ph_country_code, email, password, role, date_of_birth, address_id) VALUES
     ('00000000-0000-4000-8000-000000000001', 'Marek', 'Kowalski', '600100200', '+48', 'owner@carfix.dev',
@@ -33,12 +31,10 @@ INSERT INTO owners (user_id, business_name, vat_in, regon) VALUES
     ('00000000-0000-4000-8000-000000000001', 'AutoSerwis Kowalski', '5252445567', '146892132'),
     ('00000000-0000-4000-8000-000000000003', 'Opony Express',       '6772389012', '351234567');
 
--- ---------------------------------------------------------------------------
 -- Branch addresses. Coordinates are real district-level positions, so distance
 -- sorting and an optional radius cut behave sensibly. City/region names are the
 -- English strings Google Places returns, which is what search matches on.
 -- google_place_id stays NULL: nothing here came from the Places API.
--- ---------------------------------------------------------------------------
 
 INSERT INTO addresses (street_name, building_number, flat_number, postal_code, latitude, longitude, google_place_id, city_id) VALUES
     ('Pulawska',           '145', NULL, '02-715', 52.179300, 21.024600, NULL, (SELECT city_id FROM cities WHERE name = 'Warsaw')),
@@ -125,12 +121,10 @@ FROM (VALUES
 JOIN branch_key bk ON bk.key = v.branch_key
 JOIN car_brands cb ON cb.name = v.brand_name;
 
--- ---------------------------------------------------------------------------
 -- Service bays. Bay names repeat across branches, so every later lookup joins
 -- on branch_id as well as name.
 -- Podgorze's four-post lift is SUSPENDED: slot computation must skip it while
 -- the branch stays bookable through its two-post lifts.
--- ---------------------------------------------------------------------------
 
 WITH branch_key(key, branch_id) AS (VALUES
     ('MOK', '10000000-0000-4000-8000-000000000001'::uuid),
@@ -174,13 +168,11 @@ FROM (VALUES
 JOIN branch_key bk ON bk.key = v.branch_key
 JOIN service_bay_types sbt ON sbt.name = v.type_name;
 
--- ---------------------------------------------------------------------------
 -- Equipment units. Unit names are unique per branch only.
 -- Two trolley jacks per full workshop on purpose: clutch replacement declares
 -- two slots that both accept 'Trolley jack', which is only satisfiable with
 -- two distinct units (spec 2.4).
 -- Wola's second scanner is SUSPENDED — the branch keeps working on the first.
--- ---------------------------------------------------------------------------
 
 WITH branch_key(key, branch_id) AS (VALUES
     ('MOK', '10000000-0000-4000-8000-000000000001'::uuid),
@@ -237,13 +229,11 @@ FROM (VALUES
 JOIN branch_key bk ON bk.key = v.branch_key
 JOIN equipment_types et ON et.name = v.type_name;
 
--- ---------------------------------------------------------------------------
 -- Employees. An employee is a user (role EMPLOYEE) plus an employees row.
 -- Emails are derived from the name, so they stay unique and short enough for
 -- users.email varchar(30).
 -- Zofia Ostrowska is SUSPENDED but does get availability rows in V54: the only
 -- thing that must keep her out of a booking is the status filter.
--- ---------------------------------------------------------------------------
 
 WITH staff(user_id, first_name, surname, phone, branch_key, role_name, status) AS (VALUES
     ('40000000-0000-4000-8000-000000000001'::uuid, 'Adam',      'Nowak',       '500000001', 'MOK', 'Senior engine mechanic', 'ACTIVE'),
@@ -391,11 +381,9 @@ SELECT s.user_id, r.role_id
 FROM staff s
 JOIN roles r ON r.name = s.role_name;
 
--- ---------------------------------------------------------------------------
 -- Services. Duration and price are per branch copy; every branch that offers a
 -- service gets its own row (services belong to a branch, decision 2.2).
 -- Nowa Huta's wheel alignment is SUSPENDED so search has something to exclude.
--- ---------------------------------------------------------------------------
 
 WITH branch_key(key, branch_id) AS (VALUES
     ('MOK', '10000000-0000-4000-8000-000000000001'::uuid),
@@ -499,7 +487,6 @@ FROM (VALUES
 JOIN services s ON s.name = v.service_name
 JOIN service_bay_types sbt ON sbt.name = v.type_name;
 
--- ---------------------------------------------------------------------------
 -- Employee requirement slots — AND across slots, OR inside a slot (spec 2.4).
 --
 -- 'Engine replacement' is the greedy trap, present at every full workshop and
@@ -508,7 +495,6 @@ JOIN service_bay_types sbt ON sbt.name = v.type_name;
 -- OR an engine mechanic. A greedy matcher that fills the assisting slot first
 -- takes the senior and then declares the service unfillable; Kuhn's matching
 -- finds (specialist = senior, assistant = engine mechanic) every time.
--- ---------------------------------------------------------------------------
 
 INSERT INTO service_employee_requirements (name, service_id)
 SELECT v.requirement_name, s.service_id
@@ -564,12 +550,10 @@ JOIN service_employee_requirements req
      ON req.service_id = s.service_id AND req.name = v.requirement_name
 JOIN roles r ON r.name = v.role_name;
 
--- ---------------------------------------------------------------------------
 -- Equipment requirement slots. Oil change, brake pads and paint repair declare
 -- none — an empty equipment requirement set is legal (spec 2.4).
 -- Clutch replacement declares two slots that both accept 'Trolley jack':
 -- distinctness is what forces two units.
--- ---------------------------------------------------------------------------
 
 INSERT INTO service_equipment_requirements (name, service_id)
 SELECT v.requirement_name, s.service_id

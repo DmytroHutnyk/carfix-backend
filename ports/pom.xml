@@ -17,7 +17,6 @@
     <url/>
 
     <dependencies>
-        <!-- Module dependencies -->
         <dependency>
             <groupId>com.hutnyk.carfix</groupId>
             <artifactId>domain</artifactId>
@@ -29,6 +28,5 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Dependencies -->
     </dependencies>
 </project>

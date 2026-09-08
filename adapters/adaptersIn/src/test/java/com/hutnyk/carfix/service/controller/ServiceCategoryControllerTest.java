@@ -29,7 +29,6 @@ public class ServiceCategoryControllerTest {
 
     @Test
     public void test_get_lists_categories_in_port_order() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/service-categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))

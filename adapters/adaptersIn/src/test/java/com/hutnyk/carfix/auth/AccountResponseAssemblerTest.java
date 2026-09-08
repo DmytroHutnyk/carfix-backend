@@ -99,13 +99,10 @@ public class AccountResponseAssemblerTest {
 
     @Test
     public void test_assemble_owner_returns_owner_account_with_business_tail() {
-        //given
         ownerStub.owner = owner();
 
-        //when
         AccountResponse response = assembler.assemble(EMAIL, UserRole.OWNER);
 
-        //then
         assertThat(response).isInstanceOf(OwnerAccountResponse.class);
         OwnerAccountResponse ownerAccount = (OwnerAccountResponse) response;
         assertThat(ownerAccount.role()).isEqualTo(UserRole.OWNER);
@@ -117,13 +114,10 @@ public class AccountResponseAssemblerTest {
 
     @Test
     public void test_assemble_customer_returns_customer_account_with_status() {
-        //given
         customerStub.customer = customer();
 
-        //when
         AccountResponse response = assembler.assemble(CUSTOMER_EMAIL, UserRole.CUSTOMER);
 
-        //then
         assertThat(response).isInstanceOf(CustomerAccountResponse.class);
         CustomerAccountResponse customerAccount = (CustomerAccountResponse) response;
         assertThat(customerAccount.role()).isEqualTo(UserRole.CUSTOMER);
@@ -135,20 +129,16 @@ public class AccountResponseAssemblerTest {
 
     @Test
     public void test_assemble_customer_without_aggregate_fails_authentication() {
-        //given
         customerStub.customer = null;
 
-        //when + then
         assertThatThrownBy(() -> assembler.assemble(CUSTOMER_EMAIL, UserRole.CUSTOMER))
                 .isInstanceOf(AuthenticatedUserMissingException.class);
     }
 
     @Test
     public void test_assemble_owner_without_aggregate_fails_authentication() {
-        //given
         ownerStub.owner = null;
 
-        //when + then
         assertThatThrownBy(() -> assembler.assemble(EMAIL, UserRole.OWNER))
                 .isInstanceOf(AuthenticatedUserMissingException.class);
     }

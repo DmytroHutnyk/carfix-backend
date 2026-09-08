@@ -2,48 +2,23 @@ package com.hutnyk.carfix.exception;
 
 import lombok.Getter;
 
-/**
- * The domain rejected a value.
- *
- * Carries its {@link ValidationErrorType} both as the human-readable default message and as the
- * published {@link ErrorCode}.
- */
+/** Domain validation failure whose rule is also its published error code. */
 @Getter
 public class DomainObjectValidationException extends ValidationException {
 
     private final ValidationErrorType errorType;
 
-    /**
-     * Validation exception with errorType, fieldName and rejectedValue.
-     *
-     * @param errorType the rule that was broken
-     * @param fieldName the field that broke it
-     * @param rejectedValue the offending value — never pass a secret, it lands in the message
-     */
+    // Never pass a secret as rejectedValue; it is included in the message.
     public DomainObjectValidationException(ValidationErrorType errorType, String fieldName, Object rejectedValue) {
         super(errorType, buildMessage(errorType, fieldName, rejectedValue), fieldName, rejectedValue);
         this.errorType = errorType;
     }
 
-    /**
-     * Validation exception with errorType and fieldName, without rejectedValue.
-     *
-     * @param errorType the rule that was broken
-     * @param fieldName the field that broke it
-     */
     public DomainObjectValidationException(ValidationErrorType errorType, String fieldName) {
         super(errorType, buildMessage(errorType, fieldName, null), fieldName, null);
         this.errorType = errorType;
     }
 
-    /**
-     * Validation exception with errorType, fieldName, rejectedValue and a custom message.
-     *
-     * @param errorType the rule that was broken
-     * @param fieldName the field that broke it
-     * @param rejectedValue the offending value
-     * @param customMessage replaces the message built from the error type
-     */
     public DomainObjectValidationException(ValidationErrorType errorType,
                                            String fieldName,
                                            Object rejectedValue,
@@ -52,11 +27,6 @@ public class DomainObjectValidationException extends ValidationException {
         this.errorType = errorType;
     }
 
-    /**
-     * Builds a message from parameters passed as arguments, matching class fields.
-     *
-     * @return {@code String}
-     */
     private static String buildMessage(ValidationErrorType errorType, String fieldName, Object rejectedValue) {
         StringBuilder message = new StringBuilder();
 

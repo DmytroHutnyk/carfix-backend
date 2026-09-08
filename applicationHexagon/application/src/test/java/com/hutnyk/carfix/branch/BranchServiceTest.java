@@ -135,7 +135,6 @@ public class BranchServiceTest {
                 List.of());
     }
 
-    /* ---------- stubs: every port records what it received and hands back ids ---------- */
 
     private static final class StubBranchPortOut implements BranchPortOut {
         BranchView view;
@@ -151,6 +150,7 @@ public class BranchServiceTest {
         @Override public void updateRating(BranchId branchId, BranchRating rating) { throw new UnsupportedOperationException(); }
         @Override public Optional<BranchView> findViewById(BranchId branchId) { return Optional.ofNullable(view); }
         @Override public boolean existsActiveById(BranchId branchId) { return branchExists; }
+        @Override public boolean existsByIdAndOwnerId(BranchId branchId, UUID ownerId) { throw new UnsupportedOperationException(); }
         @Override public Optional<ZoneId> findActiveBranchZone(BranchId branchId) { throw new UnsupportedOperationException(); }
         @Override public Branch insert(Branch branch) { this.inserted = branch; return branch; }
         @Override public void insertOpeningHours(List<OpeningHours> openingHours) { this.hours = openingHours; }
@@ -313,51 +313,40 @@ public class BranchServiceTest {
             userStub, addressStub, carCatalogStub, serviceBayStub, equipmentStub, roleStub, employeeStub, serviceStub,
             serviceCategoryStub, FIXED_CLOCK);
 
-    /* ---------- reads (unchanged behaviour) ---------- */
 
     @Test
     public void test_getBranch_returns_view() {
-        //given
         branchStub.view = view();
 
-        //when
         BranchView result = service.getBranch(BRANCH_ID);
 
-        //then
         assertThat(result.name()).isEqualTo("AutoFix Mokotow");
     }
 
     @Test
     public void test_getBranch_unknown_id_throws_not_found() {
-        //given
         branchStub.view = null;
 
-        //when + then
         assertThatThrownBy(() -> service.getBranch(BRANCH_ID))
                 .isInstanceOf(BranchNotFoundException.class);
     }
 
     @Test
     public void test_getReviews_defaults_null_sort_to_newest() {
-        //when
         service.getReviews(new BranchReviewsQuery(BRANCH_ID, null, 0, 10));
 
-        //then
         assertThat(reviewStub.receivedQuery.sort()).isEqualTo(BranchReviewsQuery.SORT_NEWEST);
     }
 
     @Test
     public void test_getReviews_normalizes_sort_case() {
-        //when
         service.getReviews(new BranchReviewsQuery(BRANCH_ID, "HIGHEST", 0, 10));
 
-        //then
         assertThat(reviewStub.receivedQuery.sort()).isEqualTo(BranchReviewsQuery.SORT_HIGHEST);
     }
 
     @Test
     public void test_getReviews_unknown_sort_throws_before_the_port() {
-        //when + then
         assertThatThrownBy(() -> service.getReviews(new BranchReviewsQuery(BRANCH_ID, "bogus", 0, 10)))
                 .isInstanceOf(InvalidReviewsSortException.class);
         assertThat(reviewStub.receivedQuery).isNull();
@@ -365,10 +354,8 @@ public class BranchServiceTest {
 
     @Test
     public void test_getReviews_unknown_branch_throws_not_found() {
-        //given
         branchStub.branchExists = false;
 
-        //when + then
         assertThatThrownBy(() -> service.getReviews(new BranchReviewsQuery(BRANCH_ID, null, 0, 10)))
                 .isInstanceOf(BranchNotFoundException.class);
         assertThat(reviewStub.receivedQuery).isNull();
@@ -376,24 +363,18 @@ public class BranchServiceTest {
 
     @Test
     public void test_getReviews_caps_size_at_50() {
-        //when
         service.getReviews(new BranchReviewsQuery(BRANCH_ID, null, 0, 99));
 
-        //then
         assertThat(reviewStub.receivedQuery.size()).isEqualTo(50);
     }
 
-    /* ---------- registerBranch ---------- */
 
     @Test
     public void test_registerBranch_persists_the_whole_workshop_and_resolves_names_to_ids() {
-        //given
         RegisterBranchCommand cmd = BranchRegistrationValidatorTest.valid();
 
-        //when
         Branch result = service.registerBranch(OWNER_EMAIL, cmd);
 
-        //then — branch + address
         assertThat(result).isSameAs(branchStub.inserted);
         assertThat(result.getStatus()).isEqualTo(BranchStatus.ACTIVE);
         assertThat(result.getOwnerId()).isEqualTo(OWNER_ID);
@@ -401,12 +382,10 @@ public class BranchServiceTest {
         assertThat(result.getTz().getId()).isEqualTo("Europe/Warsaw");
         assertThat(addressStub.inserted.getCityId()).isEqualTo(200);
         assertThat(addressStub.regions).extracting(Region::getCountryIso).containsExactly(CountryIso.PL);
-        // hours + brands
         assertThat(branchStub.hours).hasSize(2);
         assertThat(branchStub.hours.get(1).getMode()).isEqualTo(OpeningHoursMode.BY_APPOINTMENT);
         assertThat(branchStub.hours).allSatisfy(h -> assertThat(h.getBranchId()).isEqualTo(result.getId()));
         assertThat(branchStub.linkedBrands).containsExactlyInAnyOrder(1, 2);
-        // types are branch-scoped, references resolved case-insensitively
         assertThat(serviceBayStub.types).extracting(ServiceBayType::getName).containsExactly("Basic", "With lift");
         assertThat(serviceBayStub.types).allSatisfy(t -> assertThat(t.getBranchId()).isEqualTo(result.getId()));
         Integer basicId = serviceBayStub.types.get(0).getId();
@@ -424,7 +403,6 @@ public class BranchServiceTest {
             assertThat(e.getRoleIds()).containsExactly(evId);
             assertThat(e.getBranchId()).isEqualTo(result.getId());
         });
-        // service graph
         assertThat(serviceStub.services).singleElement().satisfies(s -> {
             assertThat(s.getBranchId()).isEqualTo(result.getId());
             assertThat(s.getServiceCategoryId()).isEqualTo(2);
@@ -438,15 +416,12 @@ public class BranchServiceTest {
 
     @Test
     public void test_registerBranch_with_empty_lists_creates_just_the_branch() {
-        //given
         RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
         RegisterBranchCommand minimal = new RegisterBranchCommand(c.name(), c.phoneNumber(), c.email(), c.timezone(),
                 c.address(), List.of(), Set.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
 
-        //when
         Branch result = service.registerBranch(OWNER_EMAIL, minimal);
 
-        //then
         assertThat(result).isNotNull();
         assertThat(branchStub.hours).isEmpty();
         assertThat(branchStub.linkedBrands).isNull();
@@ -457,13 +432,11 @@ public class BranchServiceTest {
 
     @Test
     public void test_registerBranch_rejects_inconsistent_payload_before_writing_anything() {
-        //given
         RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
         RegisterBranchCommand bad = BranchRegistrationValidatorTest.with(c, c.serviceBayTypes(),
                 List.of(new RegisterBranchServiceBayCommand("Bay 1", "Pit")), c.equipmentTypes(), c.equipment(),
                 c.roles(), c.employees(), c.services(), c.openingHours());
 
-        //when + then
         assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
                 .isInstanceOf(InvalidBranchRegistrationException.class);
         assertThat(addressStub.inserted).isNull();
@@ -472,13 +445,11 @@ public class BranchServiceTest {
 
     @Test
     public void test_registerBranch_unknown_car_brand_is_not_found_and_writes_nothing() {
-        //given
         RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
         RegisterBranchCommand bad = new RegisterBranchCommand(c.name(), c.phoneNumber(), c.email(), c.timezone(),
                 c.address(), c.openingHours(), Set.of(1, 99), c.serviceBayTypes(), c.serviceBays(), c.equipmentTypes(),
                 c.equipment(), c.roles(), c.employees(), c.services());
 
-        //when + then
         assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
                 .isInstanceOf(CarBrandNotFoundException.class)
                 .hasMessage("Car brand not found: 99");
@@ -487,7 +458,6 @@ public class BranchServiceTest {
 
     @Test
     public void test_registerBranch_unknown_service_category_is_not_found_and_writes_nothing() {
-        //given
         RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
         RegisterBranchServiceCommand s = c.services().get(0);
         RegisterBranchCommand bad = BranchRegistrationValidatorTest.with(c, c.serviceBayTypes(), c.serviceBays(),
@@ -496,7 +466,6 @@ public class BranchServiceTest {
                         s.status(), s.bayTypes(), s.employeeRequirements(), s.equipmentRequirements())),
                 c.openingHours());
 
-        //when + then
         assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
                 .isInstanceOf(ServiceCategoryNotFoundException.class);
         assertThat(branchStub.inserted).isNull();
@@ -504,10 +473,8 @@ public class BranchServiceTest {
 
     @Test
     public void test_registerBranch_without_owner_row_is_an_authentication_failure() {
-        //given
         ownerStub.owner = null;
 
-        //when + then
         assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, BranchRegistrationValidatorTest.valid()))
                 .isInstanceOf(AuthenticatedUserMissingException.class);
         assertThat(branchStub.inserted).isNull();
@@ -515,13 +482,11 @@ public class BranchServiceTest {
 
     @Test
     public void test_registerBranch_bad_timezone_surfaces_as_domain_validation() {
-        //given
         RegisterBranchCommand c = BranchRegistrationValidatorTest.valid();
         RegisterBranchCommand bad = new RegisterBranchCommand(c.name(), c.phoneNumber(), c.email(), "Mars/Olympus",
                 c.address(), c.openingHours(), c.carBrandIds(), c.serviceBayTypes(), c.serviceBays(), c.equipmentTypes(),
                 c.equipment(), c.roles(), c.employees(), c.services());
 
-        //when + then
         assertThatThrownBy(() -> service.registerBranch(OWNER_EMAIL, bad))
                 .isInstanceOf(com.hutnyk.carfix.exception.DomainObjectValidationException.class)
                 .extracting("fieldName").isEqualTo("timezone");
@@ -529,14 +494,11 @@ public class BranchServiceTest {
 
     @Test
     public void test_registerBranch_reuses_existing_region_and_city() {
-        //given
         addressStub.regions.add(Region.of(5, "Masovian Voivodeship", CountryIso.PL));
         addressStub.cities.add(City.of(9, "Warsaw", 5, null, null));
 
-        //when
         service.registerBranch(OWNER_EMAIL, BranchRegistrationValidatorTest.valid());
 
-        //then
         assertThat(addressStub.inserted.getCityId()).isEqualTo(9);
         assertThat(addressStub.regions).hasSize(1);
         assertThat(addressStub.cities).hasSize(1);
@@ -544,13 +506,10 @@ public class BranchServiceTest {
 
     @Test
     public void test_getMyBranchSummaries_resolves_owner_and_passes_clock_instant() {
-        //given
         userStub.user = ownerUser();
 
-        //when
         List<OwnerBranchSummaryView> result = service.getMyBranchSummaries(OWNER_EMAIL);
 
-        //then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).name()).isEqualTo("AutoFix Mokotow");
         assertThat(ownerBranchStub.receivedOwnerId).isEqualTo(OWNER_ID);
@@ -559,10 +518,8 @@ public class BranchServiceTest {
 
     @Test
     public void test_getMyBranchSummaries_unknown_principal_throws_before_the_port() {
-        //given
         userStub.user = null;
 
-        //when + then
         assertThatThrownBy(() -> service.getMyBranchSummaries(OWNER_EMAIL))
                 .isInstanceOf(AuthenticatedUserMissingException.class);
         assertThat(ownerBranchStub.receivedOwnerId).isNull();
@@ -570,13 +527,10 @@ public class BranchServiceTest {
 
     @Test
     public void test_getMyBranch_returns_the_detail_view_for_the_resolved_owner() {
-        //given
         userStub.user = ownerUser();
 
-        //when
         OwnerBranchDetailView result = service.getMyBranch(OWNER_EMAIL, BRANCH_ID);
 
-        //then
         assertThat(result).isSameAs(ownerBranchStub.detail);
         assertThat(ownerBranchStub.receivedBranchId).isEqualTo(BRANCH_ID);
         assertThat(ownerBranchStub.receivedOwnerId).isEqualTo(OWNER_ID);
@@ -584,16 +538,13 @@ public class BranchServiceTest {
 
     @Test
     public void test_getMyBranch_of_a_branch_owned_by_someone_else_is_not_found() {
-        //given
         userStub.user = ownerUser();
         ownerBranchStub.detail = null;
 
-        //when + then
         assertThatThrownBy(() -> service.getMyBranch(OWNER_EMAIL, BRANCH_ID))
                 .isInstanceOf(BranchNotFoundException.class);
     }
 
-    /* ---------- updateBranchOverview ---------- */
 
     private static UpdateBranchOverviewCommand overview() {
         return new UpdateBranchOverviewCommand(
@@ -612,15 +563,11 @@ public class BranchServiceTest {
 
     @Test
     public void test_updateBranchOverview_rebuilds_the_branch_and_replaces_its_children() {
-        //given
         userStub.user = ownerUser();
 
-        //when
         OwnerBranchDetailView result = service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID, overview());
 
-        //then — the re-read view comes back
         assertThat(result).isSameAs(ownerBranchStub.detail);
-        // edited fields change, server-owned ones are preserved
         Branch updated = branchStub.updated;
         assertThat(updated.getId().id()).isEqualTo(BRANCH_ID);
         assertThat(updated.getName()).isEqualTo("AutoFix Wola");
@@ -632,12 +579,10 @@ public class BranchServiceTest {
         assertThat(updated.getTz()).isEqualTo(ZoneId.of("Europe/Warsaw"));
         assertThat(updated.getAddressId()).isEqualTo(55);
         assertThat(updated.getOwnerId()).isEqualTo(OWNER_ID);
-        // address is updated in place, on the resolved city
         assertThat(addressStub.updated.getId()).isEqualTo(55);
         assertThat(addressStub.updated.getStreetName()).isEqualTo("Wolska");
         assertThat(addressStub.updated.getCityId()).isEqualTo(200);
         assertThat(addressStub.inserted).isNull();
-        // children are replaced wholesale
         assertThat(branchStub.replacedHours).hasSize(2);
         assertThat(branchStub.replacedHours.get(1).getMode()).isEqualTo(OpeningHoursMode.BY_APPOINTMENT);
         assertThat(branchStub.replacedHours).allSatisfy(h -> assertThat(h.getBranchId().id()).isEqualTo(BRANCH_ID));
@@ -652,25 +597,20 @@ public class BranchServiceTest {
 
     @Test
     public void test_updateBranchOverview_blank_description_is_cleared() {
-        //given
         userStub.user = ownerUser();
         UpdateBranchOverviewCommand c = overview();
 
-        //when
         service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID, new UpdateBranchOverviewCommand(c.name(), "   ",
                 c.cancellationPolicy(), c.address(), c.openingHours(), c.openingHoursExceptions(), c.carBrandIds()));
 
-        //then
         assertThat(branchStub.updated.getDescription()).isNull();
     }
 
     @Test
     public void test_updateBranchOverview_of_a_branch_owned_by_someone_else_writes_nothing() {
-        //given
         userStub.user = ownerUser();
         ownerBranchStub.detail = null;
 
-        //when + then
         assertThatThrownBy(() -> service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID, overview()))
                 .isInstanceOf(BranchNotFoundException.class);
         assertThat(branchStub.updated).isNull();
@@ -679,11 +619,9 @@ public class BranchServiceTest {
 
     @Test
     public void test_updateBranchOverview_unknown_car_brand_writes_nothing() {
-        //given
         userStub.user = ownerUser();
         UpdateBranchOverviewCommand c = overview();
 
-        //when + then
         assertThatThrownBy(() -> service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID,
                 new UpdateBranchOverviewCommand(c.name(), c.description(), c.cancellationPolicy(), c.address(),
                         c.openingHours(), c.openingHoursExceptions(), Set.of(1, 99))))
@@ -694,11 +632,9 @@ public class BranchServiceTest {
 
     @Test
     public void test_updateBranchOverview_duplicate_weekday_writes_nothing() {
-        //given
         userStub.user = ownerUser();
         UpdateBranchOverviewCommand c = overview();
 
-        //when + then
         assertThatThrownBy(() -> service.updateBranchOverview(OWNER_EMAIL, BRANCH_ID,
                 new UpdateBranchOverviewCommand(c.name(), c.description(), c.cancellationPolicy(), c.address(),
                         List.of(c.openingHours().get(0), c.openingHours().get(0)),

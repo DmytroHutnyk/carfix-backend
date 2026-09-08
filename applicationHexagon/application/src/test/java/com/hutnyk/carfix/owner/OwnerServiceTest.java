@@ -45,13 +45,10 @@ public class OwnerServiceTest {
 
     @Test
     public void test_loadByOwnerUsername_returns_the_owner_for_its_email() {
-        //given
         stub.owner = owner();
 
-        //when
         Optional<Owner> result = service.loadByOwnerUsername(EMAIL);
 
-        //then
         assertThat(result).isPresent();
         assertThat(result.get().getBusinessName()).isEqualTo("AutoSerwis Kowalski");
         assertThat(stub.receivedEmail).isEqualTo(EMAIL);
@@ -59,10 +56,8 @@ public class OwnerServiceTest {
 
     @Test
     public void test_loadByOwnerUsername_is_empty_when_no_owner_aggregate() {
-        //given
         stub.owner = null;
 
-        //when + then
         assertThat(service.loadByOwnerUsername(EMAIL)).isEmpty();
     }
 }

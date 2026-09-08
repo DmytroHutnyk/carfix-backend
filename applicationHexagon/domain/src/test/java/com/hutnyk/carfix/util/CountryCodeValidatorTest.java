@@ -17,36 +17,28 @@ public class CountryCodeValidatorTest {
             "+44"
     })
     public void test_validateCountryCode_valid_countryCode_and_fieldName_not_null(String countryCode) {
-        //given
         String fieldName = "countryCode";
 
-        //when
         String result = CountryCodeValidator.validateCountryCode(countryCode, fieldName);
 
-        //then
         assertThat(result).isEqualTo(countryCode);
     }
 
     @Test
     public void test_validateCountryCode_valid_countryCode_and_fieldName_is_null() {
-        //given
         String countryCode = "+1";
         String fieldName = null;
 
-        //when
         String result = CountryCodeValidator.validateCountryCode(countryCode, fieldName);
 
-        //then
         assertThat(result).isEqualTo(countryCode);
     }
 
     @Test
     public void test_validateCountryCode_throws_when_countryCode_is_null() {
-        //given
         String countryCode = null;
         String fieldName = "countryCode";
 
-        //when + then
         assertThatThrownBy(() -> CountryCodeValidator.validateCountryCode(countryCode, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -59,10 +51,8 @@ public class CountryCodeValidatorTest {
             ""
     })
     public void test_validateCountryCode_throws_when_countryCode_empty_or_blank(String countryCode) {
-        //given
         String fieldName = "countryCode";
 
-        //when + then
         assertThatThrownBy(() -> CountryCodeValidator.validateCountryCode(countryCode, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -80,10 +70,8 @@ public class CountryCodeValidatorTest {
             "+abc"          // invalid format
     })
     public void test_validateCountryCode_throws_when_countryCode_not_valid(String countryCode) {
-        //given
         String fieldName = "countryCode";
 
-        //when + then
         assertThatThrownBy(() -> CountryCodeValidator.validateCountryCode(countryCode, fieldName))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")
@@ -92,15 +80,12 @@ public class CountryCodeValidatorTest {
 
     @Test
     public void test_validateCountryCode_trims_whitespace() {
-        //given
         String countryCode = "  +1  ";
         String fieldName = "countryCode";
         String expectedTrimmed = "+1";
 
-        //when
         String result = CountryCodeValidator.validateCountryCode(countryCode, fieldName);
 
-        //then
         assertThat(result).isEqualTo(expectedTrimmed);
     }
 }

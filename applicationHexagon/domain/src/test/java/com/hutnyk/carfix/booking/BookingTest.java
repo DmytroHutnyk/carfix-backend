@@ -222,20 +222,15 @@ public class BookingTest {
 
     @Test
     public void scheduleAcceptsAStartEqualToNow() {
-        //given
         LocalDate date = LocalDate.of(2030, 6, 12);
-        //when
         Booking booking = Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(), plan(date),
                 List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), date.atTime(9, 0));
-        //then
         assertThat(booking.getStartTime()).isEqualTo(LocalTime.of(9, 0));
     }
 
     @Test
     public void scheduleRejectsAStartOneMinuteBeforeNow() {
-        //given
         LocalDate date = LocalDate.of(2030, 6, 12);
-        //when //then
         assertThatThrownBy(() -> Booking.schedule(BookingId.genId(), BRANCH_ID, CarProfileId.genId(), plan(date),
                 List.of(service(27, 90, "300.00"), service(11, 50, "120.00")), date.atTime(9, 1)))
                 .isInstanceOf(DomainObjectValidationException.class);

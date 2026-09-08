@@ -68,9 +68,7 @@ import java.util.UUID;
 @PersistenceAdapter
 public class BookingAdapterOut implements BookingPortOut {
 
-    /* 23P01 exclusion_violation: the GiST constraint said no. 40P01 deadlock_detected / 40001
-       serialization_failure: Postgres aborted us while two writers waited on each other's rows —
-       equally "somebody else got there first", never a defect to 500 on. */
+    // Postgres 23P01, 40P01, and 40001 all mean this transaction lost a resource race.
     private static final Set<String> LOST_RACE_SQL_STATES = Set.of("23P01", "40P01", "40001");
     private static final int MAX_CAUSE_DEPTH = 20;
 

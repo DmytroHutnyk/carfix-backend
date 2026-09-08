@@ -3,7 +3,6 @@ package com.hutnyk.carfix.branch.exception;
 import com.hutnyk.carfix.exception.ValidationException;
 import com.hutnyk.carfix.openingHours.DayOfWeek;
 
-/** The registration payload contradicts itself: a name declared twice, a reference to an undeclared type, a weekday listed twice. */
 public class InvalidBranchRegistrationException extends ValidationException {
 
     private InvalidBranchRegistrationException(String field, String message, Object rejectedValue) {

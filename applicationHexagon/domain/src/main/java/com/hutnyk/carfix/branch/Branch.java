@@ -77,7 +77,6 @@ public final class Branch {
                 .build();
     }
 
-    /** A branch the owner registers: ACTIVE right away (no verification flow exists yet). */
     public static Branch create(
             BranchId id,
             String name,

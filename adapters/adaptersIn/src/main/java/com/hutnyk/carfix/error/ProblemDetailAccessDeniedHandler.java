@@ -12,11 +12,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 import java.io.IOException;
 
-/**
- * Answers URL-rule authorization failures raised in the filter chain, which never reach
- * {@code GlobalExceptionHandler}. Produces the same body as the {@code @PreAuthorize} path so a
- * client cannot tell the two apart.
- */
+/** Makes filter-chain and method-level authorization failures indistinguishable. */
 @RequiredArgsConstructor
 public class ProblemDetailAccessDeniedHandler implements AccessDeniedHandler {
 

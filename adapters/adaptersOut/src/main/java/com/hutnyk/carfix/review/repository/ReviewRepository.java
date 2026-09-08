@@ -27,9 +27,7 @@ public interface ReviewRepository extends JpaRepository<ReviewEntity, UUID> {
             """)
     void deleteByCustomerId(@Param("customerId") UUID customerId);
 
-    /**
-     * Raw stars, not an average: the mean is a business rule and lives in the domain({@code BranchRating}).
-     */
+    // Return raw stars; BranchRating owns averaging.
     @Query("""
             SELECT r.starsNumber
             FROM ReviewEntity r

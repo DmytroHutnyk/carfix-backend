@@ -2,10 +2,7 @@ package com.hutnyk.carfix.exception;
 
 import lombok.Getter;
 
-/**
- * An outbound dependency: payment provider, mail gateway, geocoding API failed, timed out, or
- * answered nonsense. Maps to 502.
- */
+/** Outbound dependency failed, timed out, or returned an invalid response. Maps to 502. */
 @Getter
 public abstract class ExternalServiceException extends CarFixException {
 

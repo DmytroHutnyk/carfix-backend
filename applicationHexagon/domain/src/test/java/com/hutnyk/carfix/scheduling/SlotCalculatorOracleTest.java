@@ -28,10 +28,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/**
- * Randomized cross-check of {@link SlotCalculator} against an independent brute-force oracle,
- * plus minute-set property tests for the TimeRange algebra and the bipartite matcher.
- */
+/** Cross-checks slot calculation, range algebra, and matching against independent randomized oracles. */
 class SlotCalculatorOracleTest {
 
     private static final int SEEDS = 3000;
@@ -55,7 +52,6 @@ class SlotCalculatorOracleTest {
     private static final int[] ROLES = {10, 11, 12};
     private static final int[] EQUIPMENT_TYPES = {20, 21};
 
-    // ------------------------------------------------------------------ instance
 
     private record Instance(long seed, List<Service> services, List<BaySchedule> bays,
                             List<EmployeeSchedule> employees, List<EquipmentSchedule> equipment,
@@ -70,12 +66,7 @@ class SlotCalculatorOracleTest {
         }
     }
 
-    /**
-     * Two profiles. "Sparse" resources get 0-3 arbitrary ranges (most instances are infeasible —
-     * this stresses the rejection paths); "generous" resources get the whole 08:00-14:00 window
-     * minus 0-2 busy chunks, which makes most instances yield real slots. Both profiles emit
-     * overlapping / adjacent pieces in random order so the schedules' self-union is exercised.
-     */
+    // Sparse cases stress rejection; generous cases produce slots. Both scramble overlapping ranges.
     private static Instance generate(long seed) {
         Random rnd = new Random(seed);
         boolean generous = rnd.nextInt(10) < 7;
@@ -208,7 +199,6 @@ class SlotCalculatorOracleTest {
         return out;
     }
 
-    // ------------------------------------------------------------------ oracle
 
     private static final class Oracle {
 
@@ -420,7 +410,6 @@ class SlotCalculatorOracleTest {
         return grid;
     }
 
-    // ------------------------------------------------------------------ the cross-check
 
     @Test
     void oracle_cross_check_over_random_instances() {
@@ -642,7 +631,6 @@ class SlotCalculatorOracleTest {
         return problems;
     }
 
-    // ------------------------------------------------------------------ reporting
 
     private static TreeSet<Integer> minus(Collection<Integer> a, Collection<Integer> b) {
         TreeSet<Integer> out = new TreeSet<>(a);
@@ -777,7 +765,6 @@ class SlotCalculatorOracleTest {
                 .isGreaterThan(50);
     }
 
-    // ------------------------------------------------------------------ determinism
 
     @Test
     void results_are_independent_of_input_list_order_and_repeated_runs() {
@@ -829,7 +816,6 @@ class SlotCalculatorOracleTest {
         }
     }
 
-    // ------------------------------------------------------------------ ceilToGrid
 
     @Test
     void ceilToGrid_ignores_nothing_below_the_minute_and_always_lands_clean() {
@@ -856,7 +842,6 @@ class SlotCalculatorOracleTest {
         }
     }
 
-    // ------------------------------------------------------------------ TimeRange algebra
 
     @Test
     void time_range_algebra_matches_a_minute_set_brute_force() {
@@ -949,7 +934,6 @@ class SlotCalculatorOracleTest {
         return TimeRange.of(DAY.plusMinutes(Math.min(a, b)), DAY.plusMinutes(Math.max(a, b)));
     }
 
-    // ------------------------------------------------------------------ matcher
 
     @Test
     void requirement_matcher_matches_brute_force_distinct_assignment() {
@@ -998,15 +982,12 @@ class SlotCalculatorOracleTest {
     /** Reachable only in-domain: SlotService rejects duplicate serviceIds before this point. */
     @Test
     void the_same_service_booked_twice_becomes_two_sequential_segments() {
-        //given
         Service oilChange = svc(1, 30, Set.of(10));
 
-        //when
         List<VisitPlan> plans = SlotCalculator.computeVisits(List.of(oilChange, oilChange),
                 List.of(new BaySchedule(100, 1, List.of(hours(9, 10)))), mechanicAllDay(),
                 List.of(), DAY);
 
-        //then
         assertThat(plans).hasSize(1);
         assertThat(plans.getFirst().segments()).extracting(SegmentPlan::serviceId)
                 .containsExactly(1, 1);
@@ -1015,22 +996,15 @@ class SlotCalculatorOracleTest {
                         TimeRange.of(at(9, 30), at(10, 0)));
     }
 
-    /**
-     * Documents an accepted trade-off (spec section 6 step 4: "accept the first feasible one").
-     * Order [1,2] forces a 10-minute grid gap and ends 11:00; order [2,1] would end 10:50.
-     * The set of feasible starts is unaffected, but the booked visit blocks 10 extra minutes.
-     */
+    // First feasible service order may reserve longer without changing feasible start set.
     @Test
     void plan_is_the_first_feasible_permutation_not_the_one_with_the_shortest_span() {
-        //given
         List<Service> services = List.of(svc(1, 50, Set.of(10)), svc(2, 60, Set.of(10)));
 
-        //when
         List<VisitPlan> plans = SlotCalculator.computeVisits(services,
                 List.of(new BaySchedule(100, 1, List.of(hours(9, 11)))), mechanicAllDay(),
                 List.of(), DAY);
 
-        //then
         assertThat(plans).hasSize(1);
         assertThat(plans.getFirst().segments()).extracting(SegmentPlan::serviceId)
                 .containsExactly(1, 2);
@@ -1040,12 +1014,10 @@ class SlotCalculatorOracleTest {
 
     @Test
     void after_an_on_grid_segment_end_only_the_next_two_grid_points_are_offered() {
-        //given
         EmployeeId anna = EmployeeId.of(new UUID(0L, 1L));
         EmployeeId jan = EmployeeId.of(new UUID(0L, 2L));
         List<Service> services = List.of(svc(1, 60, Set.of(10)), svc(2, 30, Set.of(11)));
 
-        //when / then — first segment ends 10:00, so 10:00 and 10:15 work but 10:30 does not
         for (int minute : new int[]{0, 15}) {
             assertThat(startsWithSecondEmployeeFreeFrom(services, anna, jan, minute))
                     .as("second employee free from 10:%02d", minute).containsExactly(at(9, 0));
@@ -1067,7 +1039,6 @@ class SlotCalculatorOracleTest {
     /** SlotService passes {@code LocalDateTime.now(branchClock)}, which carries seconds. */
     @Test
     void notBefore_carrying_seconds_skips_the_grid_point_it_lands_on() {
-        //given / when / then
         assertThat(SlotCalculator.computeVisits(List.of(svc(1, 30, Set.of(10))),
                 List.of(new BaySchedule(100, 1, List.of(hours(10, 11)))), mechanicAllDay(),
                 List.of(), at(10, 15).plusSeconds(1)))
@@ -1078,19 +1049,13 @@ class SlotCalculatorOracleTest {
                 .extracting(VisitPlan::start).containsExactly(at(10, 15), at(10, 30));
     }
 
-    /**
-     * Documents that the employee tie-break uses {@link UUID#compareTo} (signed longs), which is
-     * NOT the byte-wise order PostgreSQL uses for {@code uuid}. Deterministic, but a query that
-     * pre-sorted candidates in SQL would pick the other employee.
-     */
+    // Java UUID and PostgreSQL uuid order differ; moving this tie-break into SQL changes assignment.
     @Test
     void employee_tie_break_uses_java_signed_uuid_order_not_postgres_byte_order() {
-        //given
         UUID highBitSet = UUID.fromString("ffffffff-0000-0000-0000-000000000000");
         UUID lowest = UUID.fromString("00000000-0000-0000-0000-000000000001");
         assertThat(highBitSet.compareTo(lowest)).isNegative();
 
-        //when
         List<VisitPlan> plans = SlotCalculator.computeVisits(List.of(svc(1, 60, Set.of(10))),
                 List.of(new BaySchedule(100, 1, List.of(hours(9, 10)))),
                 List.of(new EmployeeSchedule(EmployeeId.of(lowest), Set.of(10), List.of(hours(8, 14))),
@@ -1098,7 +1063,6 @@ class SlotCalculatorOracleTest {
                                 List.of(hours(8, 14)))),
                 List.of(), DAY);
 
-        //then
         assertThat(plans.getFirst().segments().getFirst().employeeByRequirementId())
                 .containsEntry(10, EmployeeId.of(highBitSet));
     }
@@ -1106,16 +1070,13 @@ class SlotCalculatorOracleTest {
     /** A same-date availability row may legitimately end at next-day 00:00; no start may cross it. */
     @Test
     void window_ending_at_next_midnight_never_yields_a_next_day_start() {
-        //given
         TimeRange lateShift = TimeRange.of(at(23, 0), LocalDateTime.of(2026, 8, 15, 0, 0));
 
-        //when
         List<VisitPlan> plans = SlotCalculator.computeVisits(List.of(svc(1, 15, Set.of(10))),
                 List.of(new BaySchedule(100, 1, List.of(lateShift))),
                 List.of(new EmployeeSchedule(EmployeeId.of(new UUID(0L, 1L)), Set.of(10),
                         List.of(lateShift))), List.of(), DAY);
 
-        //then
         assertThat(plans).extracting(VisitPlan::start)
                 .containsExactly(at(23, 0), at(23, 15), at(23, 30), at(23, 45));
         assertThat(plans.getLast().end()).isEqualTo(LocalDateTime.of(2026, 8, 15, 0, 0));

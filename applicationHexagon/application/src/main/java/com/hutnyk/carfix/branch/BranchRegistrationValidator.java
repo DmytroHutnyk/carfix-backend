@@ -13,11 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-/**
- * Cross-field checks a registration must pass before any row is written: type names unique per list,
- * every name reference resolves to a declared type, at most one opening-hours row per weekday.
- * Pure — no ports. Names are matched trimmed and case-insensitively ({@link #key}).
- */
+/** Validates cross-field references and uniqueness before any registration row is written. */
 public final class BranchRegistrationValidator {
 
     private BranchRegistrationValidator() {

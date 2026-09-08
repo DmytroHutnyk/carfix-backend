@@ -11,7 +11,6 @@ import lombok.Getter;
 import java.time.LocalDate;
 import java.util.regex.Pattern;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class CarProfile {
@@ -59,10 +58,7 @@ public final class CarProfile {
         this.modelVersionId = Validator.notNull(modelVersionId, "modelVersionId");
     }
 
-    /**
-     * Assembles an existing car profile from persistence (only null checks; trusts stored data).
-     * Does not validate the dates.
-     */
+    // Rehydration trusts stored dates but still enforces structural invariants.
     public static CarProfile of(
             CarProfileId id,
             String name,
@@ -86,10 +82,6 @@ public final class CarProfile {
                 .build();
     }
 
-    /**
-     * Creates a brand-new car profile (validates VIN, plates and dates).
-     * Validates the dates.
-     */
     public static CarProfile create(
             CarProfileId id,
             String name,

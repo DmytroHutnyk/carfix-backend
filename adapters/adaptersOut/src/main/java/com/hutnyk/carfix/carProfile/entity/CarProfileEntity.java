@@ -44,8 +44,6 @@ public class CarProfileEntity {
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customerEntity;
 
-//    @Column(name = "file_id")
-//    private Integer fileId;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)

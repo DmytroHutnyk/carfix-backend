@@ -4,12 +4,7 @@ import lombok.Getter;
 
 import java.util.Map;
 
-/**
- * A value did not satisfy a format rule or an invariant.
- * <p>
- * Abstract on purpose: every concrete validation failure names itself and supplies its own
- * {@link ErrorCode}.
- */
+/** Base for named validation failures carrying their own ErrorCode. */
 @Getter
 public abstract class ValidationException extends CarFixException {
 
@@ -24,12 +19,7 @@ public abstract class ValidationException extends CarFixException {
         this.rejectedValue = rejectedValue;
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Publishes the failing field and its reason. {@code rejectedValue} is deliberately not
-     * published on its own as it may already appear inside the message.
-     */
+    // Publish field and reason only; rejected values may contain sensitive data.
     @Override
     public Map<String, String> details() {
         return fieldName == null ? Map.of() : Map.of(fieldName, getMessage());

@@ -65,9 +65,7 @@ public class BookingNotificationAdapterOutTest {
 
     @Test
     public void test_sendBookingConfirmed_sends_the_confirmation_to_the_customer() {
-        //when
         adapter.sendBookingConfirmed(CUSTOMER, view(BookingStatus.SCHEDULED));
-        //then
         assertThat(sent).hasSize(1);
         assertThat(sent.getFirst().to()).isEqualTo("john@example.com");
         assertThat(sent.getFirst().subject()).startsWith("Booking confirmed · SpeedCare Wola");
@@ -75,9 +73,7 @@ public class BookingNotificationAdapterOutTest {
 
     @Test
     public void test_sendBookingCancelled_sends_the_cancellation_to_the_customer() {
-        //when
         adapter.sendBookingCancelled(CUSTOMER, view(BookingStatus.CANCELLED));
-        //then
         assertThat(sent).hasSize(1);
         assertThat(sent.getFirst().to()).isEqualTo("john@example.com");
         assertThat(sent.getFirst().subject()).startsWith("Booking cancelled · SpeedCare Wola");

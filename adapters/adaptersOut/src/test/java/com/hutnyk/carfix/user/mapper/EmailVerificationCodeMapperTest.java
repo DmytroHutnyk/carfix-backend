@@ -16,12 +16,9 @@ public class EmailVerificationCodeMapperTest {
 
     @Test
     public void test_toEntity_and_toDomain_round_trip_every_field() {
-        //given
         EmailVerificationCode code = EmailVerificationCode.of(USER_ID, "abc123hash", NOW, NOW.plusSeconds(900), 2);
-        //when
         EmailVerificationCodeEntity entity = EmailVerificationCodeMapper.toEntity(code);
         EmailVerificationCode back = EmailVerificationCodeMapper.toDomain(entity);
-        //then
         assertThat(entity.getUserId()).isEqualTo(USER_ID.id());
         assertThat(entity.getCodeHash()).isEqualTo("abc123hash");
         assertThat(entity.getIssuedAt()).isEqualTo(NOW);
@@ -36,13 +33,10 @@ public class EmailVerificationCodeMapperTest {
 
     @Test
     public void test_updateEntity_overwrites_hash_timestamps_and_attempts_but_never_the_id() {
-        //given
         EmailVerificationCodeEntity entity = EmailVerificationCodeMapper.toEntity(
                 EmailVerificationCode.of(USER_ID, "oldhash", NOW, NOW.plusSeconds(900), 4));
         EmailVerificationCode fresh = EmailVerificationCode.of(USER_ID, "newhash", NOW.plusSeconds(120), NOW.plusSeconds(1020), 0);
-        //when
         EmailVerificationCodeEntity result = EmailVerificationCodeMapper.updateEntity(entity, fresh);
-        //then
         assertThat(result).isSameAs(entity);
         assertThat(entity.getUserId()).isEqualTo(USER_ID.id());
         assertThat(entity.getCodeHash()).isEqualTo("newhash");
@@ -53,7 +47,6 @@ public class EmailVerificationCodeMapperTest {
 
     @Test
     public void test_null_guards() {
-        //when + then
         assertThat(EmailVerificationCodeMapper.toEntity(null)).isNull();
         assertThat(EmailVerificationCodeMapper.toDomain(null)).isNull();
     }

@@ -3,11 +3,7 @@ package com.hutnyk.carfix.exception;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/**
- * {@code ValidationErrorType} supplies validation exceptions with a default message and doubles as
- * their {@link ErrorCode}: every constant is a published code in the {@link ErrorCategory#VALIDATION}
- * category.
- */
+/** Validation rules double as published error codes and default messages. */
 @Getter
 @AllArgsConstructor
 public enum ValidationErrorType implements ErrorCode {
@@ -51,4 +47,3 @@ public enum ValidationErrorType implements ErrorCode {
         return ErrorCategory.VALIDATION;
     }
 }
-

@@ -35,13 +35,10 @@ public class EmployeeMapperTest {
 
     @Test
     public void test_toEntity_copies_fields_and_role_references() {
-        //given
         Employee employee = Employee.create(EmployeeId.genId(), "Oleh", "Savchuk", BranchId.of(BRANCH_UUID), Set.of(3, 5));
 
-        //when
         EmployeeEntity entity = EmployeeMapper.toEntity(employee, branch(), Set.of(role(3), role(5)));
 
-        //then
         assertThat(entity.getId()).isEqualTo(employee.getId().id());
         assertThat(entity.getFirstName()).isEqualTo("Oleh");
         assertThat(entity.getLastName()).isEqualTo("Savchuk");
@@ -54,7 +51,6 @@ public class EmployeeMapperTest {
 
     @Test
     public void test_toDomain_reads_account_link_and_roles() {
-        //given
         UUID account = UUID.randomUUID();
         EmployeeEntity entity = new EmployeeEntity();
         entity.setId(UUID.randomUUID());
@@ -67,10 +63,8 @@ public class EmployeeMapperTest {
         entity.setBranchEntity(branch());
         entity.setRoles(Set.of(role(1)));
 
-        //when
         Employee employee = EmployeeMapper.toDomain(entity);
 
-        //then
         assertThat(employee.getId()).isEqualTo(EmployeeId.of(entity.getId()));
         assertThat(employee.getUserId()).isEqualTo(UserId.of(account));
         assertThat(employee.getStatus()).isEqualTo(EmployeeStatus.SUSPENDED);
@@ -81,7 +75,6 @@ public class EmployeeMapperTest {
 
     @Test
     public void test_toDomain_tolerates_missing_roles_collection() {
-        //given
         EmployeeEntity entity = new EmployeeEntity();
         entity.setId(UUID.randomUUID());
         entity.setFirstName("Adam");
@@ -89,7 +82,6 @@ public class EmployeeMapperTest {
         entity.setStatus(EmployeeStatus.ACTIVE);
         entity.setBranchEntity(branch());
 
-        //when + then
         assertThat(EmployeeMapper.toDomain(entity).getRoleIds()).isEmpty();
         assertThat(EmployeeMapper.toDomain((EmployeeEntity) null)).isNull();
         assertThat(EmployeeMapper.toEntity((Employee) null, null, null)).isNull();

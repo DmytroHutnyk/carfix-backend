@@ -15,11 +15,9 @@ public class OpeningHoursTest {
 
     @Test
     public void test_create_keeps_mode_and_has_no_id() {
-        //when
         OpeningHours hours = OpeningHours.create(DayOfWeek.SATURDAY, LocalTime.of(9, 0), LocalTime.of(14, 0),
                 OpeningHoursMode.BY_APPOINTMENT, BRANCH_ID);
 
-        //then
         assertThat(hours.getId()).isNull();
         assertThat(hours.getDayOfWeek()).isEqualTo(DayOfWeek.SATURDAY);
         assertThat(hours.getStartTime()).isEqualTo(LocalTime.of(9, 0));
@@ -30,7 +28,6 @@ public class OpeningHoursTest {
 
     @Test
     public void test_create_rejects_close_not_after_open() {
-        //when + then
         assertThatThrownBy(() -> OpeningHours.create(DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(9, 0),
                 OpeningHoursMode.OPEN, BRANCH_ID))
                 .isInstanceOf(DomainObjectValidationException.class)
@@ -40,7 +37,6 @@ public class OpeningHoursTest {
 
     @Test
     public void test_of_requires_mode() {
-        //when + then
         assertThatThrownBy(() -> OpeningHours.of(1, DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0), null, BRANCH_ID))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("fieldName")
@@ -49,7 +45,6 @@ public class OpeningHoursTest {
 
     @Test
     public void test_mode_constants_match_db_check() {
-        //then
         assertThat(OpeningHoursMode.values()).extracting(Enum::name).containsExactly("OPEN", "BY_APPOINTMENT");
     }
 }

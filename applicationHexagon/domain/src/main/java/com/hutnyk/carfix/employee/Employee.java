@@ -77,7 +77,6 @@ public final class Employee {
                 .build();
     }
 
-    /** A staff member the owner registers: active, no account, no salary yet. */
     public static Employee create(EmployeeId id, String firstName, String lastName, BranchId branchId, Set<Integer> roleIds) {
         return of(id, firstName, lastName, null, EmployeeStatus.ACTIVE, null, null, branchId, roleIds);
     }

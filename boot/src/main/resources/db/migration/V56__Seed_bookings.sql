@@ -1,6 +1,5 @@
 SET search_path TO carfix;
 
--- ---------------------------------------------------------------------------
 -- Seed part 5 of 6 — bookings, their service segments and the occupancy rows
 -- that hold the concrete resources.
 --
@@ -22,7 +21,6 @@ SET search_path TO carfix;
 --   ...0007 has no services, which exercises the empty-services / null-total
 --           read path. V57 excludes it from the "every booking has segments"
 --           assertion by id.
--- ---------------------------------------------------------------------------
 
 -- Anchors: the next Tuesday/Wednesday/Thursday on or after tomorrow. Starting
 -- at tomorrow keeps every anchored booking clear of the two CURRENT_DATE ones,

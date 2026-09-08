@@ -118,7 +118,6 @@ public class SearchControllerTest {
 
     @Test
     public void test_suggestions_returns_three_groups() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/search/suggestions").param("q", "tire"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.services[0].name").value("Tire Replacement"))
@@ -132,7 +131,6 @@ public class SearchControllerTest {
 
     @Test
     public void test_suggestions_passes_location_to_port() throws Exception {
-        //when
         mockMvc.perform(get("/api/search/suggestions")
                         .param("q", "tire")
                         .param("city", "Warsaw")
@@ -140,7 +138,6 @@ public class SearchControllerTest {
                         .param("country", "Poland"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedSuggestionsQuery.city()).isEqualTo("Warsaw");
         assertThat(stub.receivedSuggestionsQuery.voivodeship()).isEqualTo("Masovian Voivodeship");
         assertThat(stub.receivedSuggestionsQuery.country()).isEqualTo("Poland");
@@ -148,11 +145,9 @@ public class SearchControllerTest {
 
     @Test
     public void test_suggestions_defaults_to_no_location() throws Exception {
-        //when
         mockMvc.perform(get("/api/search/suggestions").param("q", "tire"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedSuggestionsQuery.city()).isNull();
         assertThat(stub.receivedSuggestionsQuery.voivodeship()).isNull();
         assertThat(stub.receivedSuggestionsQuery.country()).isNull();
@@ -162,24 +157,20 @@ public class SearchControllerTest {
 
     @Test
     public void test_suggestions_passes_car_profile_and_principal() throws Exception {
-        //given
         authenticate();
         UUID carProfileId = UUID.randomUUID();
 
-        //when
         mockMvc.perform(get("/api/search/suggestions")
                         .param("q", "tire")
                         .param("carProfileId", carProfileId.toString()))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedSuggestionsQuery.carProfileId()).isEqualTo(carProfileId);
         assertThat(stub.receivedSuggestionsPrincipalEmail).isEqualTo(EMAIL);
     }
 
     @Test
     public void test_workshops_returns_page_with_matched_services() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/search/workshops")
                         .param("q", "brake")
                         .param("city", "Warsaw")
@@ -203,10 +194,8 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_without_coordinates_returns_null_distance() throws Exception {
-        //given
         stub.distanceKm = null;
 
-        //when + then
         mockMvc.perform(get("/api/search/workshops")
                         .param("q", "brake")
                         .param("city", "Warsaw"))
@@ -220,11 +209,9 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_unrated_branch_serializes_null_rating() throws Exception {
-        //given
         stub.rating = null;
         stub.reviewCount = null;
 
-        //when + then
         mockMvc.perform(get("/api/search/workshops")
                         .param("q", "brake")
                         .param("city", "Warsaw"))
@@ -235,13 +222,11 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_applies_paging_defaults_and_anonymous_principal() throws Exception {
-        //when
         mockMvc.perform(get("/api/search/workshops")
                         .param("q", "brake")
                         .param("city", "Warsaw"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedQuery.page()).isZero();
         assertThat(stub.receivedQuery.size()).isEqualTo(20);
         assertThat(stub.receivedPrincipalEmail).isNull();
@@ -249,11 +234,9 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_passes_all_filters_and_authenticated_principal() throws Exception {
-        //given
         authenticate();
         UUID carProfileId = UUID.randomUUID();
 
-        //when
         mockMvc.perform(get("/api/search/workshops")
                         .param("categoryId", "4")
                         .param("city", "Warsaw")
@@ -267,7 +250,6 @@ public class SearchControllerTest {
                         .param("size", "5"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedQuery.categoryId()).isEqualTo(4);
         assertThat(stub.receivedQuery.city()).isEqualTo("Warsaw");
         assertThat(stub.receivedQuery.voivodeship()).isEqualTo("Masovian Voivodeship");
@@ -283,10 +265,8 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_maps_invalid_filter_to_400() throws Exception {
-        //given
         stub.toThrow = new InvalidSearchFilterException("exactly one filter");
 
-        //when + then
         mockMvc.perform(get("/api/search/workshops").param("city", "Warsaw"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_SEARCH_FILTER"))
@@ -297,7 +277,6 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_rejects_oversized_page_before_the_port() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/search/workshops")
                         .param("q", "brake")
                         .param("city", "Warsaw")
@@ -309,7 +288,6 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_rejects_latitude_out_of_range_before_the_port() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/search/workshops")
                         .param("q", "brake")
                         .param("city", "Warsaw")
@@ -322,7 +300,6 @@ public class SearchControllerTest {
 
     @Test
     public void test_suggestions_missing_query_is_rejected_before_the_port() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/search/suggestions"))
                 .andExpect(status().isBadRequest());
 
@@ -331,42 +308,35 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_forwards_availability_params() throws Exception {
-        //when
         mockMvc.perform(get("/api/search/workshops")
                         .param("serviceName", "Oil and filter change").param("city", "Warsaw")
                         .param("from", "2026-08-18").param("to", "2026-08-20")
                         .param("timeFrom", "13:00").param("timeTo", "19:00"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedQuery.availability()).isEqualTo(new AvailabilityWindow(
                 LocalDate.of(2026, 8, 18), LocalDate.of(2026, 8, 20), LocalTime.of(13, 0), LocalTime.of(19, 0)));
     }
 
     @Test
     public void test_workshops_without_availability_params_passes_null_window() throws Exception {
-        //when
         mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil and filter change"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedQuery.availability()).isNull();
     }
 
     @Test
     public void test_workshops_partial_availability_params_still_reach_the_port() throws Exception {
-        //when
         mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil").param("from", "2026-08-18"))
                 .andExpect(status().isOk());
 
-        //then
         assertThat(stub.receivedQuery.availability())
                 .isEqualTo(new AvailabilityWindow(LocalDate.of(2026, 8, 18), null, null, null));
     }
 
     @Test
     public void test_workshops_malformed_time_or_date_is_400() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil")
                         .param("from", "2026-08-18").param("to", "2026-08-18").param("timeFrom", "1pm"))
                 .andExpect(status().isBadRequest());
@@ -379,13 +349,11 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_response_carries_tz_next_available_starts_and_echo_window() throws Exception {
-        //given
         stub.starts = List.of(new AvailableStartView(LocalDate.of(2026, 8, 18), LocalTime.of(13, 15)),
                 new AvailableStartView(LocalDate.of(2026, 8, 19), LocalTime.of(9, 0)));
         stub.echoAvailability = new AvailabilityWindow(LocalDate.of(2026, 8, 18), LocalDate.of(2026, 8, 20),
                 LocalTime.of(13, 0), null);
 
-        //when + then
         mockMvc.perform(get("/api/search/workshops").param("serviceName", "Oil")
                         .param("from", "2026-08-18").param("to", "2026-08-20").param("timeFrom", "13:00"))
                 .andExpect(status().isOk())
@@ -401,7 +369,6 @@ public class SearchControllerTest {
 
     @Test
     public void test_workshops_response_has_no_starts_and_null_echo_window_without_filter() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/search/workshops").param("q", "brake"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].tz").value("Europe/Warsaw"))

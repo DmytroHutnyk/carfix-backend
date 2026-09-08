@@ -19,14 +19,11 @@ public class EmployeeTest {
 
     @Test
     public void test_of_builds_employee_with_every_field() {
-        //given
         UserId account = UserId.genId();
 
-        //when
         Employee result = Employee.of(ID, "Jan", "Kowalski", account, EmployeeStatus.SUSPENDED,
                 "senior", new BigDecimal("8500.00"), BRANCH_ID, Set.of(1, 2));
 
-        //then
         assertThat(result.getId()).isEqualTo(ID);
         assertThat(result.getFirstName()).isEqualTo("Jan");
         assertThat(result.getLastName()).isEqualTo("Kowalski");
@@ -40,10 +37,8 @@ public class EmployeeTest {
 
     @Test
     public void test_create_is_active_without_account_salary_or_notes() {
-        //when
         Employee result = Employee.create(ID, "Oleh", "Savchuk", BRANCH_ID, Set.of(7));
 
-        //then
         assertThat(result.getStatus()).isEqualTo(EmployeeStatus.ACTIVE);
         assertThat(result.getUserId()).isNull();
         assertThat(result.getSalary()).isNull();
@@ -53,7 +48,6 @@ public class EmployeeTest {
 
     @Test
     public void test_of_throws_when_salary_is_negative() {
-        //when + then
         assertThatThrownBy(() -> Employee.of(ID, "Jan", "Kowalski", null, EmployeeStatus.ACTIVE, null,
                 new BigDecimal("-1.00"), BRANCH_ID, Set.of()))
                 .isInstanceOf(DomainObjectValidationException.class)
@@ -63,7 +57,6 @@ public class EmployeeTest {
 
     @Test
     public void test_names_and_identity_are_mandatory() {
-        //when + then
         assertThatThrownBy(() -> Employee.create(ID, " ", "Kowalski", BRANCH_ID, Set.of(1)))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType", "fieldName")
@@ -84,14 +77,11 @@ public class EmployeeTest {
 
     @Test
     public void test_role_ids_are_defensively_copied() {
-        //given
         java.util.Set<Integer> mutable = new java.util.HashSet<>(Set.of(1));
 
-        //when
         Employee result = Employee.create(ID, "Jan", "Kowalski", BRANCH_ID, mutable);
         mutable.add(2);
 
-        //then
         assertThat(result.getRoleIds()).containsExactly(1);
     }
 }

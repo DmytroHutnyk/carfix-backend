@@ -61,7 +61,8 @@ public class SecurityConfig {
                         context.securityContextRepository(securityContextRepository())
                 )
 
-                .requestCache(RequestCacheConfigurer::disable)                                                          //disabling the request cache will prevent sessions from being created on failed authentication attempts
+                // Prevent failed authentication from creating sessions.
+                .requestCache(RequestCacheConfigurer::disable)
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
@@ -97,9 +98,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Permits all to actuator amd swagger endpoints, and denies all endpoints that are not listed in first <code>securityFilterChain</code>.
-     */
     @Bean
     @Order(2)
     @SneakyThrows
@@ -134,10 +132,6 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 
-    /**Configures <code>AuthenticationProvider</code> to {@link DaoAuthenticationProvider}.
-     *
-     * @return Bean
-     */
     @Bean
     public AuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
@@ -145,25 +139,13 @@ public class SecurityConfig {
         return authenticationProvider;
     }
 
-    /**Configures <code>SecurityContextRepository</code> to {@link HttpSessionSecurityContextRepository}.
-     * <p>Exposed for manual use in <code>login</code> controller, as starting from Spring Security 6.0 persistence of <code>HttpSession</code>
-     * is handled manually.
-     *
-     * @return Bean
-     */
+    // Spring Security 6 requires controllers to persist login context explicitly.
     @Bean
     public SecurityContextRepository securityContextRepository(){
         return new HttpSessionSecurityContextRepository();
     }
 
-    /**Configures <code>SessionAuthenticationStrategy</code> to {@link SessionFixationProtectionStrategy}.
-     *
-     * <p>Must be set manually starting from Spring Security 6.0, as SessionManagementFilter is no longer doing it automatically.
-     *
-     * <p>Enables protection against session fixation, must be called manually on login.
-     *
-     * @return Bean
-     */
+    // Spring Security 6 requires login controllers to invoke session-fixation protection.
     @Bean
     public SessionAuthenticationStrategy sessionAuthenticationStrategy(){
         return new SessionFixationProtectionStrategy();

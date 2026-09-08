@@ -25,15 +25,12 @@ public class ServiceBayMapperTest {
 
     @Test
     public void test_toTypeEntity_and_toTypeDomain_round_trip_with_branch() {
-        //given
         ServiceBayType type = ServiceBayType.create("With lift", BranchId.of(BRANCH_UUID));
 
-        //when
         ServiceBayTypeEntity entity = ServiceBayMapper.toTypeEntity(type, branch());
         entity.setId(4);
         ServiceBayType back = ServiceBayMapper.toTypeDomain(entity);
 
-        //then
         assertThat(entity.getName()).isEqualTo("With lift");
         assertThat(entity.getBranchEntity().getId()).isEqualTo(BRANCH_UUID);
         assertThat(back.getId()).isEqualTo(4);
@@ -42,31 +39,25 @@ public class ServiceBayMapperTest {
 
     @Test
     public void test_toTypeDomain_platform_type_has_no_branch() {
-        //given
         ServiceBayTypeEntity entity = new ServiceBayTypeEntity();
         entity.setId(1);
         entity.setName("Two-post lift");
 
-        //when
         ServiceBayType type = ServiceBayMapper.toTypeDomain(entity);
 
-        //then
         assertThat(type.getBranchId()).isNull();
     }
 
     @Test
     public void test_toEntity_copies_every_field_and_references() {
-        //given
         ServiceBay bay = ServiceBay.create("Bay 1", 4, BranchId.of(BRANCH_UUID));
         ServiceBayTypeEntity type = new ServiceBayTypeEntity();
         type.setId(4);
 
-        //when
         ServiceBayEntity entity = ServiceBayMapper.toEntity(bay, type, branch());
         entity.setId(10);
         ServiceBay back = ServiceBayMapper.toDomain(entity);
 
-        //then
         assertThat(entity.getId()).isEqualTo(10);
         assertThat(entity.getStatus()).isEqualTo(ServiceBayStatus.ACTIVE);
         assertThat(entity.getServiceBayTypeEntity()).isSameAs(type);
@@ -77,7 +68,6 @@ public class ServiceBayMapperTest {
 
     @Test
     public void test_null_guards() {
-        //when + then
         assertThat(ServiceBayMapper.toTypeEntity(null, null)).isNull();
         assertThat(ServiceBayMapper.toEntity((ServiceBay) null, null, null)).isNull();
     }

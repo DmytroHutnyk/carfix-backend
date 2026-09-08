@@ -72,9 +72,7 @@ public class BookingEmailMapperTest {
 
     @Test
     public void test_confirmed_email_carries_subject_recipient_and_every_detail_in_the_text_body() {
-        //when
         EmailMessage message = BookingEmailMapper.confirmed(customer("John"), view());
-        //then
         assertThat(message.to()).isEqualTo("john@example.com");
         assertThat(message.subject()).isEqualTo("Booking confirmed · SpeedCare <Wola> · Wed, Jun 12, 2030 10:00");
         assertThat(message.textBody())
@@ -96,9 +94,7 @@ public class BookingEmailMapperTest {
 
     @Test
     public void test_cancelled_email_uses_the_cancellation_wording() {
-        //when
         EmailMessage message = BookingEmailMapper.cancelled(customer("John"), view());
-        //then
         assertThat(message.subject()).isEqualTo("Booking cancelled · SpeedCare <Wola> · Wed, Jun 12, 2030 10:00");
         assertThat(message.textBody())
                 .contains("Your booking has been cancelled. For your records:")
@@ -109,9 +105,7 @@ public class BookingEmailMapperTest {
 
     @Test
     public void test_html_body_is_a_full_document_with_escaped_values() {
-        //when
         EmailMessage message = BookingEmailMapper.confirmed(customer("<b>Bob</b>"), view());
-        //then
         assertThat(message.htmlBody())
                 .startsWith("<!doctype html>")
                 .contains("Hi &lt;b&gt;Bob&lt;/b&gt;,")
@@ -125,13 +119,10 @@ public class BookingEmailMapperTest {
 
     @Test
     public void test_vehicle_without_plates_omits_the_plates_part() {
-        //given
         BookingView noPlates = view(BookingStatus.SCHEDULED, null,
                 List.of(new BookingServiceView("Diagnostics", new BigDecimal("150.00"))),
                 new BigDecimal("150.00"));
-        //when
         EmailMessage message = BookingEmailMapper.confirmed(customer("John"), noPlates);
-        //then
         assertThat(message.textBody()).contains("Weekend Car (BMW X5)").contains("Total: 150 PLN");
     }
 }

@@ -145,7 +145,6 @@ public class EmailVerificationControllerTest {
 
     @Test
     public void test_post_email_verification_returns_202_and_asks_the_port_for_the_principal() throws Exception {
-        //when + then
         mockMvc.perform(post("/api/users/me/email-verification"))
                 .andExpect(status().isAccepted());
         assertThat(stub.requestedFor).isEqualTo(EMAIL);
@@ -153,9 +152,7 @@ public class EmailVerificationControllerTest {
 
     @Test
     public void test_post_email_verification_when_already_verified_returns_409_with_the_code() throws Exception {
-        //given
         stub.requestFailure = new EmailAlreadyVerifiedException(EMAIL);
-        //when + then
         mockMvc.perform(post("/api/users/me/email-verification"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_VERIFIED"))
@@ -164,9 +161,7 @@ public class EmailVerificationControllerTest {
 
     @Test
     public void test_post_email_verification_inside_the_cooldown_returns_422() throws Exception {
-        //given
         stub.requestFailure = new VerificationCodeResendTooSoonException(42);
-        //when + then
         mockMvc.perform(post("/api/users/me/email-verification"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VERIFICATION_CODE_RESEND_TOO_SOON"));
@@ -174,7 +169,6 @@ public class EmailVerificationControllerTest {
 
     @Test
     public void test_post_confirm_returns_200_with_the_verified_core() throws Exception {
-        //when + then
         mockMvc.perform(post("/api/users/me/email-verification/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"code\":\"123456\"}"))
@@ -187,7 +181,6 @@ public class EmailVerificationControllerTest {
 
     @Test
     public void test_post_confirm_with_a_malformed_code_returns_400_and_never_reaches_the_port() throws Exception {
-        //when + then
         mockMvc.perform(post("/api/users/me/email-verification/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"code\":\"12ab\"}"))
@@ -198,9 +191,7 @@ public class EmailVerificationControllerTest {
 
     @Test
     public void test_post_confirm_with_a_wrong_code_returns_400_with_the_field_error() throws Exception {
-        //given
         stub.verifyFailure = new VerificationCodeInvalidException(3);
-        //when + then
         mockMvc.perform(post("/api/users/me/email-verification/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"code\":\"123456\"}"))

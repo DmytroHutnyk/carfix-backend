@@ -53,7 +53,6 @@ public final class Equipment {
                 .build();
     }
 
-    /** A unit the owner registers: active from day one, no notes yet. */
     public static Equipment create(String name, Integer equipmentTypeId, BranchId branchId) {
         return of(null, name, null, EquipmentStatus.ACTIVE, equipmentTypeId, branchId);
     }

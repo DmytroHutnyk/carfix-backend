@@ -28,12 +28,10 @@ public class AddressTest {
 
     @Test
     public void test_of_carries_geo_fields() {
-        //when
         Address result = Address.of(
                 1, "Marszałkowska", "12", "3A", "00-001", 5,
                 new BigDecimal("52.229676"), new BigDecimal("21.012229"), "ChIJAZ_place_id");
 
-        //then
         assertThat(result.getLatitude()).isEqualByComparingTo("52.229676");
         assertThat(result.getLongitude()).isEqualByComparingTo("21.012229");
         assertThat(result.getGooglePlaceId()).isEqualTo("ChIJAZ_place_id");
@@ -41,10 +39,8 @@ public class AddressTest {
 
     @Test
     public void test_of_allows_null_geo_fields() {
-        //when
         Address result = Address.of(1, "Marszałkowska", "12", null, "00-001", 5, null, null, null);
 
-        //then
         assertThat(result.getLatitude()).isNull();
         assertThat(result.getLongitude()).isNull();
         assertThat(result.getGooglePlaceId()).isNull();
@@ -65,19 +61,15 @@ public class AddressTest {
             "Flat 10"
     })
     public void test_validateFlatNumber_valid_flatNumber_and_fieldName_not_null(String flatNumber) {
-        //when
         Address result = createAddressWithFlatNumber(flatNumber);
 
-        //then
         assertThat(result.getFlatNumber()).isEqualTo(flatNumber);
     }
 
     @Test
     public void test_validateFlatNumber_returns_null_when_flatNumber_is_null() {
-        //when
         Address result = createAddressWithFlatNumber(null);
 
-        //then
         assertThat(result.getFlatNumber()).isNull();
     }
 
@@ -87,7 +79,6 @@ public class AddressTest {
             ""
     })
     public void test_validateFlatNumber_throws_when_flatNumber_is_blank(String flatNumber) {
-        //when + then
         assertThatThrownBy(() -> createAddressWithFlatNumber(flatNumber))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .extracting("errorType")

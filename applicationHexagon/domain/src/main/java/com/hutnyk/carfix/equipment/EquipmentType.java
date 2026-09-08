@@ -32,7 +32,6 @@ public final class EquipmentType {
                 .build();
     }
 
-    /** Owner-declared type: always belongs to a branch. */
     public static EquipmentType create(String name, BranchId branchId) {
         return of(null, name, Validator.notNull(branchId, "branchId"));
     }

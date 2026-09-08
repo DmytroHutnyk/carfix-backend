@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-//@With
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class Customer {

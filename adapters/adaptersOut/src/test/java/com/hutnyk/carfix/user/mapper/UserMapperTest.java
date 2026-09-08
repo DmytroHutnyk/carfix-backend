@@ -48,12 +48,9 @@ public class UserMapperTest {
 
     @Test
     public void test_toEntity_and_toDomain_round_trip_email_verified_at() {
-        //given
         User user = user(null, null, VERIFIED_AT);
-        //when
         UserEntity entity = UserMapper.toEntity(user, null, null);
         User back = UserMapper.toDomain(entity);
-        //then
         assertThat(entity.getEmailVerifiedAt()).isEqualTo(VERIFIED_AT);
         assertThat(back.getEmailVerifiedAt()).isEqualTo(VERIFIED_AT);
         assertThat(back.getId()).isEqualTo(user.getId());
@@ -64,15 +61,12 @@ public class UserMapperTest {
 
     @Test
     public void test_toDomain_keeps_an_unverified_user_unverified() {
-        //given
         UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
-        //when + then
         assertThat(UserMapper.toDomain(entity).isEmailVerified()).isFalse();
     }
 
     @Test
     public void test_updateEntity_copies_every_scalar_field_of_the_domain_object() {
-        //given
         UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
         User changed = User.builder()
                 .id(UserId.of(entity.getId()))
@@ -87,9 +81,7 @@ public class UserMapperTest {
                 .preferredCityId(null)
                 .emailVerifiedAt(VERIFIED_AT)
                 .build();
-        //when
         UserMapper.updateEntity(entity, changed, null, null);
-        //then
         assertThat(entity.getName()).isEqualTo("Jane");
         assertThat(entity.getSurname()).isEqualTo("Roe");
         assertThat(entity.getPhoneCountryCode()).isEqualTo("+49");
@@ -102,40 +94,31 @@ public class UserMapperTest {
 
     @Test
     public void test_updateEntity_keeps_an_already_verified_email_verified() {
-        //given
         UserEntity entity = UserMapper.toEntity(user(null, null, VERIFIED_AT), null, null);
 
-        //when
         UserMapper.updateEntity(entity, user(null, null, VERIFIED_AT), null, null);
 
-        //then
         assertThat(entity.getEmailVerifiedAt()).isEqualTo(VERIFIED_AT);
         assertThat(UserMapper.toDomain(entity).isEmailVerified()).isTrue();
     }
 
     @Test
     public void test_updateEntity_copies_a_freshly_set_email_verified_at() {
-        //given
         UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
 
-        //when
         UserMapper.updateEntity(entity, user(null, null, VERIFIED_AT), null, null);
 
-        //then
         assertThat(entity.getEmailVerifiedAt()).isEqualTo(VERIFIED_AT);
         assertThat(UserMapper.toDomain(entity).isEmailVerified()).isTrue();
     }
 
     @Test
     public void test_toEntity_and_toDomain_round_trip_the_preferred_city() {
-        //given
         CityEntity city = warsaw();
 
-        //when
         UserEntity entity = UserMapper.toEntity(user(null, 11), null, city);
         User back = UserMapper.toDomain(entity);
 
-        //then
         assertThat(entity.getPreferredCityEntity()).isSameAs(city);
         assertThat(back.getPreferredCityId()).isEqualTo(11);
         assertThat(back.getAddressId()).isNull();
@@ -143,17 +126,14 @@ public class UserMapperTest {
 
     @Test
     public void test_toDomain_yields_no_preferred_city_when_the_reference_is_null() {
-        //given
         UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
 
-        //when + then
         assertThat(entity.getPreferredCityEntity()).isNull();
         assertThat(UserMapper.toDomain(entity).getPreferredCityId()).isNull();
     }
 
     @Test
     public void test_updateEntity_copies_editable_fields_address_link_and_preferred_city() {
-        //given
         UserEntity entity = UserMapper.toEntity(user(null, null), null, null);
         AddressEntity address = new AddressEntity();
         address.setId(9);
@@ -171,10 +151,8 @@ public class UserMapperTest {
                 .preferredCityId(11)
                 .build();
 
-        //when
         UserMapper.updateEntity(entity, updated, address, city);
 
-        //then
         assertThat(entity.getName()).isEqualTo("Jane");
         assertThat(entity.getSurname()).isEqualTo("Roe");
         assertThat(entity.getDateOfBirth()).isNull();
@@ -186,13 +164,10 @@ public class UserMapperTest {
 
     @Test
     public void test_updateEntity_clears_the_preferred_city_when_the_user_has_none() {
-        //given
         UserEntity entity = UserMapper.toEntity(user(null, 11), null, warsaw());
 
-        //when
         UserMapper.updateEntity(entity, user(null, null), null, null);
 
-        //then
         assertThat(entity.getPreferredCityEntity()).isNull();
         assertThat(UserMapper.toDomain(entity).getPreferredCityId()).isNull();
     }

@@ -27,11 +27,9 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_car_profile_not_found_keeps_its_message_and_maps_to_not_found() {
-        //given
         UUID id = UUID.fromString("00000000-0000-0000-0000-000000000007");
         CarProfileNotFoundException exception = new CarProfileNotFoundException(id);
 
-        //then
         assertThat(exception.getMessage())
                 .isEqualTo("Car profile not found: 00000000-0000-0000-0000-000000000007");
         assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
@@ -40,10 +38,8 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_model_version_not_found_keeps_its_message_and_maps_to_not_found() {
-        //given
         ModelVersionNotFoundException exception = new ModelVersionNotFoundException(42);
 
-        //then
         assertThat(exception.getMessage()).isEqualTo("Model version not found: 42");
         assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
         assertThat(exception.getErrorCode().code()).isEqualTo("MODEL_VERSION_NOT_FOUND");
@@ -51,10 +47,8 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_email_already_taken_reproduces_the_register_form_contract() {
-        //given
         EmailAlreadyTakenException exception = new EmailAlreadyTakenException("john@example.com");
 
-        //then
         assertThat(exception).isInstanceOf(UserAlreadyExistsException.class);
         assertThat(exception.category()).isEqualTo(ErrorCategory.CONFLICT);
         assertThat(exception.details()).containsExactly(
@@ -63,11 +57,9 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_phone_number_already_taken_reproduces_the_register_form_contract() {
-        //given
         PhoneNumberAlreadyTakenException exception =
                 new PhoneNumberAlreadyTakenException(new PhoneNumber("+48", "123456789"));
 
-        //then
         assertThat(exception).isInstanceOf(UserAlreadyExistsException.class);
         assertThat(exception.category()).isEqualTo(ErrorCategory.CONFLICT);
         assertThat(exception.details()).containsExactly(
@@ -76,13 +68,11 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_authenticated_user_missing_maps_to_authentication() {
-        //given
         AuthenticatedUserMissingException byEmail =
                 AuthenticatedUserMissingException.forEmail("john@example.com");
         AuthenticatedUserMissingException noAggregate =
                 AuthenticatedUserMissingException.noCustomerAggregate("john@example.com");
 
-        //then
         assertThat(byEmail.category()).isEqualTo(ErrorCategory.AUTHENTICATION);
         assertThat(byEmail.getMessage()).isEqualTo("Authenticated user not found: john@example.com");
         assertThat(noAggregate.getMessage())
@@ -91,10 +81,8 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_car_brand_not_found_is_a_404_with_its_own_code() {
-        //when
         CarBrandNotFoundException exception = new CarBrandNotFoundException(42);
 
-        //then
         assertThat(exception.getErrorCode().code()).isEqualTo("CAR_BRAND_NOT_FOUND");
         assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
         assertThat(exception.getMessage()).isEqualTo("Car brand not found: 42");
@@ -102,10 +90,8 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_service_category_not_found_is_a_404_with_its_own_code() {
-        //when
         ServiceCategoryNotFoundException exception = new ServiceCategoryNotFoundException(7);
 
-        //then
         assertThat(exception.getErrorCode().code()).isEqualTo("SERVICE_CATEGORY_NOT_FOUND");
         assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
         assertThat(exception.getMessage()).isEqualTo("Service category not found: 7");
@@ -113,11 +99,9 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_invalid_branch_registration_publishes_the_offending_path() {
-        //when
         InvalidBranchRegistrationException exception =
                 InvalidBranchRegistrationException.unknownReference("serviceBays[0].type", "service bay type", "Lift");
 
-        //then
         assertThat(exception.getErrorCode().code()).isEqualTo("INVALID_BRANCH_REGISTRATION");
         assertThat(exception.category()).isEqualTo(ErrorCategory.VALIDATION);
         assertThat(exception.details()).containsExactly(entry("serviceBays[0].type", "Unknown service bay type: Lift"));
@@ -125,10 +109,8 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_email_already_verified_maps_to_conflict_without_field_details() {
-        //given
         EmailAlreadyVerifiedException exception = new EmailAlreadyVerifiedException("john@example.com");
 
-        //then
         assertThat(exception.category()).isEqualTo(ErrorCategory.CONFLICT);
         assertThat(exception.getErrorCode().code()).isEqualTo("EMAIL_ALREADY_VERIFIED");
         assertThat(exception.getMessage()).isEqualTo("Email john@example.com is already verified");
@@ -137,10 +119,8 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_verification_code_invalid_reports_the_code_field_and_attempts_left() {
-        //given
         VerificationCodeInvalidException exception = new VerificationCodeInvalidException(3);
 
-        //then
         assertThat(exception.category()).isEqualTo(ErrorCategory.VALIDATION);
         assertThat(exception.getErrorCode().code()).isEqualTo("VERIFICATION_CODE_INVALID");
         assertThat(exception.details()).containsExactly(entry("code", "Incorrect verification code. 3 attempt(s) left"));
@@ -148,7 +128,6 @@ public class FeatureExceptionsTest {
 
     @Test
     public void test_verification_code_state_failures_map_to_their_categories() {
-        //then
         assertThat(new VerificationCodeNotFoundException().category()).isEqualTo(ErrorCategory.NOT_FOUND);
         assertThat(new VerificationCodeNotFoundException().getMessage()).isEqualTo("No active verification code. Request a new one");
         assertThat(new VerificationCodeExpiredException().category()).isEqualTo(ErrorCategory.BUSINESS_RULE);

@@ -109,6 +109,11 @@ public class SlotServiceTest {
         }
 
         @Override
+        public boolean existsByIdAndOwnerId(BranchId branchId, UUID ownerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Optional<ZoneId> findActiveBranchZone(BranchId branchId) {
             lastZoneBranchId = branchId;
             return exists ? Optional.of(zone) : Optional.empty();
@@ -664,15 +669,12 @@ public class SlotServiceTest {
 
     @Test
     void test_week_of_closed_days_returns_empty_days_without_loading_anything_else() {
-        //given
         seedHappyPath();
         LocalDate saturday = TOMORROW.plusDays(1);
         LocalDate sunday = TOMORROW.plusDays(2);
         seedDay(saturday, LocalTime.of(9, 0), LocalTime.of(12, 0));
         availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
-        //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1), saturday, sunday));
-        //then
         assertThat(view.chainable()).isTrue();
         assertThat(view.days()).extracting(DaySlotsView::date).containsExactly(saturday, sunday);
         assertThat(view.days()).allSatisfy(day -> assertThat(day.slots()).isEmpty());
@@ -688,27 +690,21 @@ public class SlotServiceTest {
 
     @Test
     void test_closed_days_inside_the_range_are_empty_while_open_days_keep_their_slots() {
-        //given
         seedHappyPath();
         LocalDate saturday = TOMORROW.plusDays(1);
         seedDay(saturday, LocalTime.of(9, 0), LocalTime.of(12, 0));
         availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
-        //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, saturday));
-        //then
         assertThat(starts(view, TOMORROW)).startsWith(LocalTime.of(9, 0)).endsWith(LocalTime.of(11, 0));
         assertThat(starts(view, saturday)).isEmpty();
     }
 
     @Test
     void test_closed_exception_empties_a_weekly_open_day() {
-        //given
         seedHappyPath();
         availabilityPortOut.openingHoursExceptions.add(OpeningHoursException.of(
                 null, TOMORROW, null, null, false, "inventory", BRANCH_ID));
-        //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW.plusDays(1)));
-        //then
         assertThat(starts(view, TOMORROW)).isEmpty();
         assertThat(availabilityPortOut.lastExceptionsFrom).isEqualTo(TOMORROW);
         assertThat(availabilityPortOut.lastExceptionsTo).isEqualTo(TOMORROW.plusDays(1));
@@ -716,7 +712,6 @@ public class SlotServiceTest {
 
     @Test
     void test_open_exception_opens_a_weekly_closed_day() {
-        //given
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)));
         availabilityPortOut.bays.add(ServiceBay.of(BAY_ID, "Bay 1", ServiceBayStatus.ACTIVE, null, LIFT, BRANCH_ID));
         availabilityPortOut.employees.add(new EmployeeCandidateView(EmployeeId.of(EMPLOYEE_ID), Set.of(MECHANIC)));
@@ -725,57 +720,44 @@ public class SlotServiceTest {
         availabilityPortOut.openingHours = new ArrayList<>(monToFri(LocalTime.of(8, 0), LocalTime.of(18, 0)));
         availabilityPortOut.openingHoursExceptions.add(OpeningHoursException.of(
                 null, saturday, LocalTime.of(9, 0), LocalTime.of(12, 0), true, null, BRANCH_ID));
-        //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1), saturday, saturday));
-        //then
         assertThat(starts(view, saturday)).hasSize(9)
                 .startsWith(LocalTime.of(9, 0)).endsWith(LocalTime.of(11, 0));
     }
 
     @Test
     void test_opening_hours_clip_resource_availability() {
-        //given
         seedHappyPath();
         availabilityPortOut.openingHours = new ArrayList<>(
                 allWeek(LocalTime.of(10, 0), LocalTime.of(11, 30)));
-        //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW));
-        //then
         assertThat(starts(view, TOMORROW))
                 .containsExactly(LocalTime.of(10, 0), LocalTime.of(10, 15), LocalTime.of(10, 30));
     }
 
     @Test
     void test_visit_cannot_span_a_closed_break_between_two_opening_windows() {
-        //given
         seedHappyPath();
         availabilityPortOut.openingHours = new ArrayList<>();
         availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(10, 0), OpeningHoursMode.OPEN, BRANCH_ID));
         availabilityPortOut.openingHours.add(OpeningHours.of(null, DayOfWeek.FRIDAY, LocalTime.of(11, 0), LocalTime.of(12, 0), OpeningHoursMode.OPEN, BRANCH_ID));
-        //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW));
-        //then
         assertThat(starts(view, TOMORROW)).containsExactly(LocalTime.of(9, 0), LocalTime.of(11, 0));
     }
 
     @Test
     void test_unchainable_pair_is_reported_before_the_calendar_is_consulted() {
-        //given
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)), service(2, Set.of(LIFT + 1)));
         availabilityPortOut.openingHours = new ArrayList<>();
-        //when
         BranchSlotsView view = slotService.getSlots(query(List.of(1, 2), TOMORROW, TOMORROW));
-        //then
         assertThat(view.chainable()).isFalse();
         assertThat(availabilityPortOut.openingHoursLoaded).isFalse();
     }
 
     @Test
     void test_from_more_than_a_year_ahead_rejected() {
-        //given
         seedHappyPath();
         LocalDate limit = TODAY.plusYears(1);
-        //when //then
         assertThat(slotService.getSlots(query(List.of(1), limit, limit)).days()).hasSize(1);
         assertThatThrownBy(() -> slotService.getSlots(query(List.of(1), limit.plusDays(1), limit.plusDays(1))))
                 .isInstanceOf(InvalidSlotQueryException.class);
@@ -783,9 +765,7 @@ public class SlotServiceTest {
 
     @Test
     void test_extreme_dates_are_a_400_not_an_overflow() {
-        //given
         seedHappyPath();
-        //when //then
         assertThatThrownBy(() -> slotService.getSlots(query(List.of(1), LocalDate.MAX, LocalDate.MAX)))
                 .isInstanceOf(InvalidSlotQueryException.class);
     }
@@ -798,10 +778,8 @@ public class SlotServiceTest {
 
     @Test
     void test_response_echoes_the_branch_zone_on_every_path() {
-        //given
         branchPortOut.zone = KYIV;
         seedHappyPath();
-        //when //then
         assertThat(slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW)).tz()).isEqualTo("Europe/Kyiv");
         servicePortOut.toReturn = List.of(service(1, Set.of(LIFT)), service(2, Set.of(LIFT + 1)));
         assertThat(slotService.getSlots(query(List.of(1, 2), TOMORROW, TOMORROW)).tz()).isEqualTo("Europe/Kyiv");
@@ -809,11 +787,8 @@ public class SlotServiceTest {
 
     @Test
     void test_lookups_receive_the_query_ids() {
-        //given
         seedHappyPath();
-        //when
         slotService.getSlots(query(List.of(1), TOMORROW, TOMORROW));
-        //then
         assertThat(branchPortOut.lastZoneBranchId).isEqualTo(BRANCH_ID);
         assertThat(servicePortOut.lastLoadByIds).containsExactly(1);
         assertThat(availabilityPortOut.lastBaysBranchId).isEqualTo(BRANCH_ID);

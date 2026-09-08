@@ -2,9 +2,6 @@ package com.hutnyk.carfix.exception;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Codes for failures belonging to no single feature.
- */
 @RequiredArgsConstructor
 public enum CoreErrorCode implements ErrorCode {
 

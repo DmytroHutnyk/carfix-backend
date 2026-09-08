@@ -179,7 +179,6 @@ public class OwnerBranchControllerTest {
 
     @Test
     public void test_post_returns_201_with_id_name_and_status_and_maps_every_nested_field() throws Exception {
-        //when + then
         mockMvc.perform(post("/api/owner/branches").contentType(MediaType.APPLICATION_JSON).content(FULL_BODY))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(CREATED_BRANCH_ID.id().toString()))
@@ -213,7 +212,6 @@ public class OwnerBranchControllerTest {
 
     @Test
     public void test_missing_top_level_fields_are_400_validation_failed_with_field_errors() throws Exception {
-        //when + then
         mockMvc.perform(post("/api/owner/branches").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\" \",\"phoneNumber\":\"221234567\",\"email\":\"nope\"}"))
                 .andExpect(status().isBadRequest())
@@ -229,12 +227,10 @@ public class OwnerBranchControllerTest {
 
     @Test
     public void test_nested_list_violations_are_reported_with_indexed_paths() throws Exception {
-        //given — a service without bay types and an employee without roles
         String body = FULL_BODY
                 .replace("\"bayTypes\": [\"Basic\"]", "\"bayTypes\": []")
                 .replace("\"roles\": [\"EV high-voltage\"]}", "\"roles\": []}");
 
-        //when + then
         mockMvc.perform(post("/api/owner/branches").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -245,7 +241,6 @@ public class OwnerBranchControllerTest {
 
     @Test
     public void test_malformed_time_is_400_malformed_request() throws Exception {
-        //when + then
         mockMvc.perform(post("/api/owner/branches").contentType(MediaType.APPLICATION_JSON)
                         .content(FULL_BODY.replace("\"opensAt\": \"09:00\", \"closesAt\": \"17:00\"", "\"opensAt\": \"9am\", \"closesAt\": \"17:00\"")))
                 .andExpect(status().isBadRequest())
@@ -254,11 +249,9 @@ public class OwnerBranchControllerTest {
 
     @Test
     public void test_null_list_element_is_400_not_500() throws Exception {
-        //given
         String body = FULL_BODY.replace("\"equipmentRequirements\": [{\"name\": \"Lift\", \"types\": [\"2-post lift\"]}]",
                 "\"equipmentRequirements\": [null]");
 
-        //when + then
         mockMvc.perform(post("/api/owner/branches").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))

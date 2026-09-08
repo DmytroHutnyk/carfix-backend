@@ -19,15 +19,12 @@ public class RegionMapperTest {
 
     @Test
     public void test_round_trip_keeps_the_id_the_name_and_the_country_reference() {
-        //given
         Region region = Region.of(3, "Masovian Voivodeship", CountryIso.PL);
         CountryEntity country = poland();
 
-        //when
         RegionEntity entity = RegionMapper.toEntity(region, country);
         Region result = RegionMapper.toDomain(entity);
 
-        //then
         assertThat(entity.getId()).isEqualTo(3);
         assertThat(entity.getName()).isEqualTo("Masovian Voivodeship");
         assertThat(entity.getCountryEntity()).isSameAs(country);
@@ -38,7 +35,6 @@ public class RegionMapperTest {
 
     @Test
     public void test_null_guards() {
-        //when + then
         assertThat(RegionMapper.toDomain(null)).isNull();
         assertThat(RegionMapper.toEntity(null, poland())).isNull();
     }

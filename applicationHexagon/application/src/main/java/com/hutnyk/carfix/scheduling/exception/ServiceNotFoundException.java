@@ -4,10 +4,7 @@ import com.hutnyk.carfix.exception.NotFoundException;
 
 import java.util.List;
 
-/**
- * At least one requested service is missing, not ACTIVE, or belongs to another branch.
- * The whole requested set is echoed — naming the offending id would confirm which ids are real.
- */
+/** Echoes requested set without revealing which service is missing, inactive, or foreign. */
 public class ServiceNotFoundException extends NotFoundException {
 
     public ServiceNotFoundException(List<Integer> serviceIds) {

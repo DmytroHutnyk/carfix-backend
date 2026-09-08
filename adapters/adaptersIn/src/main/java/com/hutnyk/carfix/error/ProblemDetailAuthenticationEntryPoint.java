@@ -12,12 +12,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 
 import java.io.IOException;
 
-/**
- * Answers unauthenticated requests with the same problem body the rest of the API uses, replacing
- * {@code HttpStatusEntryPoint}, which returns a 401 with no body at all.
- * <p>
- * The detail never says whether the account exists or the session merely expired.
- */
+/** Gives filter-chain 401s the same body as controller failures without leaking account existence. */
 @RequiredArgsConstructor
 public class ProblemDetailAuthenticationEntryPoint implements AuthenticationEntryPoint {
 

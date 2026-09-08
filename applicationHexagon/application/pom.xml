@@ -18,7 +18,6 @@
     <url/>
 
     <dependencies>
-        <!-- Modules dependencies -->
         <dependency>
             <groupId>com.hutnyk.carfix</groupId>
             <artifactId>domain</artifactId>
@@ -36,7 +35,6 @@
         </dependency>
 
 
-        <!-- Dependencies -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>

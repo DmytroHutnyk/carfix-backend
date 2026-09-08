@@ -26,17 +26,14 @@ public class ReviewMapperTest {
 
     @Test
     void toDomain_maps_every_field() {
-        //given
         ReviewEntity entity = new ReviewEntity();
         entity.setId(REVIEW_ID);
         entity.setStarsNumber(4);
         entity.setContents("Fast and honest");
         entity.setBookingEntity(bookingEntity());
 
-        //when
         Review review = ReviewMapper.toDomain(entity);
 
-        //then
         assertThat(review.getId()).isEqualTo(ReviewId.of(REVIEW_ID));
         assertThat(review.getStarsNumber()).isEqualTo(4);
         assertThat(review.getContents()).isEqualTo("Fast and honest");
@@ -45,30 +42,24 @@ public class ReviewMapperTest {
 
     @Test
     void toDomain_keeps_null_contents_null() {
-        //given
         ReviewEntity entity = new ReviewEntity();
         entity.setId(REVIEW_ID);
         entity.setStarsNumber(5);
         entity.setContents(null);
         entity.setBookingEntity(bookingEntity());
 
-        //when
         Review review = ReviewMapper.toDomain(entity);
 
-        //then
         assertThat(review.getContents()).isNull();
     }
 
     @Test
     void toEntity_maps_every_field_and_attaches_the_booking_reference() {
-        //given
         Review review = Review.of(ReviewId.of(REVIEW_ID), 3, "Average", BookingId.of(BOOKING_ID));
         BookingEntity booking = bookingEntity();
 
-        //when
         ReviewEntity entity = ReviewMapper.toEntity(review, booking);
 
-        //then
         assertThat(entity.getId()).isEqualTo(REVIEW_ID);
         assertThat(entity.getStarsNumber()).isEqualTo(3);
         assertThat(entity.getContents()).isEqualTo("Average");
@@ -77,24 +68,20 @@ public class ReviewMapperTest {
 
     @Test
     void null_input_maps_to_null() {
-        //given / when / then
         assertThat(ReviewMapper.toDomain(null)).isNull();
         assertThat(ReviewMapper.toEntity(null, bookingEntity())).isNull();
     }
 
     @Test
     void toBranchReviewView_copies_fields() {
-        //given
         ReviewEntity entity = new ReviewEntity();
         entity.setId(REVIEW_ID);
         entity.setStarsNumber(5);
         entity.setContents("Excellent service!");
         entity.setCreatedAt(Instant.parse("2026-01-15T18:30:00Z"));
 
-        //when
         BranchReviewView view = ReviewMapper.toBranchReviewView(entity, "Jan", "Kowalski");
 
-        //then
         assertThat(view.reviewId()).isEqualTo(REVIEW_ID);
         assertThat(view.starsNumber()).isEqualTo(5);
         assertThat(view.contents()).isEqualTo("Excellent service!");

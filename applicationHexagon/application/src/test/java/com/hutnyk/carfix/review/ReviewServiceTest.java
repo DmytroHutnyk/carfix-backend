@@ -13,6 +13,7 @@ import com.hutnyk.carfix.carProfile.CarProfileId;
 import com.hutnyk.carfix.customer.Customer;
 import com.hutnyk.carfix.customer.CustomerStatus;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingView;
 import com.hutnyk.carfix.in.review.commands.AddReviewCommand;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
@@ -133,6 +134,11 @@ public class ReviewServiceTest {
         }
 
         @Override
+        public List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public List<BookingView> findAllViewsByCustomerId(UUID customerId) {
             throw new UnsupportedOperationException();
         }
@@ -216,6 +222,11 @@ public class ReviewServiceTest {
         }
 
         @Override
+        public boolean existsByIdAndOwnerId(BranchId branchId, UUID ownerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Branch insert(Branch branch) {
             throw new UnsupportedOperationException();
         }
@@ -259,10 +270,8 @@ public class ReviewServiceTest {
 
     @Test
     void adding_a_review_to_a_completed_booking_stores_it() {
-        //when
         Review saved = service.addReview(EMAIL, command(3));
 
-        //then
         assertThat(reviewPort.inserted).isNotNull();
         assertThat(saved.getStarsNumber()).isEqualTo(3);
         assertThat(saved.getBookingId()).isEqualTo(BOOKING_ID);
@@ -272,11 +281,8 @@ public class ReviewServiceTest {
 
     @Test
     void adding_a_review_refreshes_the_branch_rating_including_the_new_review() {
-        //given — the branch already has 5 and 4; adding a 3 must give (5+4+3)/3 = 4.0
-        //when
         service.addReview(EMAIL, command(3));
 
-        //then
         assertThat(branchPort.receivedBranchId).isEqualTo(BRANCH_ID);
         assertThat(branchPort.receivedRating.count()).isEqualTo(3);
         assertThat(branchPort.receivedRating.average()).isEqualByComparingTo(new BigDecimal("4.0"));
@@ -284,10 +290,8 @@ public class ReviewServiceTest {
 
     @Test
     void a_booking_can_only_be_reviewed_once() {
-        //given
         reviewPort.exists = true;
 
-        //when / then
         assertThatThrownBy(() -> service.addReview(EMAIL, command(4)))
                 .isInstanceOf(ReviewAlreadyExistsException.class);
         assertThat(reviewPort.inserted).isNull();
@@ -296,10 +300,8 @@ public class ReviewServiceTest {
 
     @Test
     void reviewing_a_booking_that_is_not_the_customers_is_not_found() {
-        //given
         bookingPort.found = Optional.empty();
 
-        //when / then
         assertThatThrownBy(() -> service.addReview(EMAIL, command(4)))
                 .isInstanceOf(ReviewedBookingNotFoundException.class);
         assertThat(reviewPort.inserted).isNull();
@@ -307,10 +309,8 @@ public class ReviewServiceTest {
 
     @Test
     void reviewing_a_booking_that_is_not_completed_is_rejected() {
-        //given
         bookingPort.found = Optional.of(bookingOn(LocalDate.of(2030, 1, 10)));
 
-        //when / then
         assertThatThrownBy(() -> service.addReview(EMAIL, command(4)))
                 .isInstanceOf(ReviewNotAllowedException.class);
         assertThat(reviewPort.inserted).isNull();

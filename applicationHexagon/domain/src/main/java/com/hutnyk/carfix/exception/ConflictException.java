@@ -4,10 +4,7 @@ import lombok.Getter;
 
 import java.util.Map;
 
-/**
- * The request collides with state that already exists e.g a taken email, an overlapping booking,
- * a bay already reserved for that slot. Maps to 409.
- */
+/** Request conflicts with existing state. Maps to 409. */
 @Getter
 public abstract class ConflictException extends CarFixException {
 
@@ -16,10 +13,7 @@ public abstract class ConflictException extends CarFixException {
     //Nullable
     private final Object rejectedValue;
 
-    /**
-     * @param fieldName the request field the client should highlight, as the client spelled it
-     * @param rejectedValue the colliding value, for logging — never published to the client
-     */
+    // rejectedValue is log-only; never publish it to clients.
     protected ConflictException(ErrorCode errorCode, String message, String fieldName, Object rejectedValue) {
         super(errorCode, message);
         this.fieldName = fieldName;

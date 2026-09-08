@@ -26,7 +26,6 @@ public class OpeningHoursMapperTest {
 
     @Test
     void test_weekly_row_maps_to_domain() {
-        //given
         OpeningHoursEntity entity = new OpeningHoursEntity();
         entity.setId(7);
         entity.setDayOfWeek(DayOfWeek.FRIDAY);
@@ -34,9 +33,7 @@ public class OpeningHoursMapperTest {
         entity.setCloseTime(LocalTime.of(18, 0));
         entity.setMode(OpeningHoursMode.OPEN);
         entity.setBranchEntity(branch());
-        //when
         OpeningHours domain = OpeningHoursMapper.toDomain(entity);
-        //then
         assertThat(domain.getId()).isEqualTo(7);
         assertThat(domain.getDayOfWeek()).isEqualTo(DayOfWeek.FRIDAY);
         assertThat(domain.getStartTime()).isEqualTo(LocalTime.of(8, 0));
@@ -47,16 +44,13 @@ public class OpeningHoursMapperTest {
 
     @Test
     void test_closed_exception_maps_with_null_hours() {
-        //given
         OpeningHoursExceptionEntity entity = new OpeningHoursExceptionEntity();
         entity.setId(3);
         entity.setDate(LocalDate.of(2026, 8, 14));
         entity.setIsOpen(false);
         entity.setReason("holiday");
         entity.setBranchEntity(branch());
-        //when
         OpeningHoursException domain = OpeningHoursMapper.toDomain(entity);
-        //then
         assertThat(domain.getId()).isEqualTo(3);
         assertThat(domain.getDate()).isEqualTo(LocalDate.of(2026, 8, 14));
         assertThat(domain.getIsOpen()).isFalse();
@@ -68,7 +62,6 @@ public class OpeningHoursMapperTest {
 
     @Test
     void test_open_exception_maps_hours() {
-        //given
         OpeningHoursExceptionEntity entity = new OpeningHoursExceptionEntity();
         entity.setId(4);
         entity.setDate(LocalDate.of(2026, 8, 15));
@@ -76,9 +69,7 @@ public class OpeningHoursMapperTest {
         entity.setStartTime(LocalTime.of(9, 0));
         entity.setCloseTime(LocalTime.of(13, 0));
         entity.setBranchEntity(branch());
-        //when
         OpeningHoursException domain = OpeningHoursMapper.toDomain(entity);
-        //then
         assertThat(domain.getIsOpen()).isTrue();
         assertThat(domain.getStartTime()).isEqualTo(LocalTime.of(9, 0));
         assertThat(domain.getCloseTime()).isEqualTo(LocalTime.of(13, 0));

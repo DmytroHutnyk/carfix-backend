@@ -15,10 +15,8 @@ public class CarFixExceptionTest {
 
     @Test
     public void test_exception_exposes_its_code_message_and_category() {
-        //given
         TestException exception = new TestException(CoreErrorCode.NOT_FOUND, "nothing here");
 
-        //then
         assertThat(exception.getErrorCode()).isEqualTo(CoreErrorCode.NOT_FOUND);
         assertThat(exception.getMessage()).isEqualTo("nothing here");
         assertThat(exception.category()).isEqualTo(ErrorCategory.NOT_FOUND);
@@ -26,16 +24,13 @@ public class CarFixExceptionTest {
 
     @Test
     public void test_details_are_empty_unless_a_subtype_overrides_them() {
-        //given
         TestException exception = new TestException(CoreErrorCode.INTERNAL_ERROR, "boom");
 
-        //then
         assertThat(exception.details()).isEmpty();
     }
 
     @Test
     public void test_a_null_error_code_is_rejected_at_construction() {
-        //then
         assertThatThrownBy(() -> new TestException(null, "boom"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("errorCode");
@@ -43,7 +38,6 @@ public class CarFixExceptionTest {
 
     @Test
     public void test_every_core_code_reports_a_category_and_a_non_blank_code() {
-        //then
         for (CoreErrorCode code : CoreErrorCode.values()) {
             assertThat(code.category()).as(code.name()).isNotNull();
             assertThat(code.code()).as(code.name()).isNotBlank();
@@ -52,7 +46,6 @@ public class CarFixExceptionTest {
 
     @Test
     public void test_it_is_an_unchecked_exception() {
-        //then
         assertThat(RuntimeException.class)
                 .isAssignableFrom(CarFixException.class);
     }

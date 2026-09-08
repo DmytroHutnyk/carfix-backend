@@ -46,11 +46,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Layer 2 of the availability search: batch-loads what the slot math needs for every candidate
- * branch at once, then runs the M4 calculator per branch x day and keeps the first starts inside
- * the window. Plain class, no Spring — SearchService builds it around its ports.
- */
+/** Batch-loads candidate schedules, then keeps each branch's first feasible starts in range. */
 public final class SearchAvailabilityFilter {
 
     public static final int MAX_STARTS_PER_BRANCH = 3;
@@ -77,10 +73,7 @@ public final class SearchAvailabilityFilter {
                              Map<LocalDate, Map<Integer, List<TimeRange>>> equipmentOccupancy) {
     }
 
-    /**
-     * Precondition (enforced by SearchService): from and to non-null with from <= to, and timeFrom
-     * before timeTo when both are given.
-     */
+    // SearchService guarantees valid date and optional time bounds.
     public List<WorkshopResultView> filter(List<WorkshopResultView> candidates, AvailabilityWindow window) {
         if (candidates.isEmpty()) {
             return List.of();

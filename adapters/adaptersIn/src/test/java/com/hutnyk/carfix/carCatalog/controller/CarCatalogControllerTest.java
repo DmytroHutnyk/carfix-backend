@@ -40,7 +40,6 @@ public class CarCatalogControllerTest {
 
     @Test
     public void test_getBrands_returns_brand_json() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/car-catalog/brands"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -50,7 +49,6 @@ public class CarCatalogControllerTest {
 
     @Test
     public void test_getModels_returns_model_json_for_brand() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/car-catalog/brands/7/models"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(10))
@@ -60,7 +58,6 @@ public class CarCatalogControllerTest {
 
     @Test
     public void test_getVersions_returns_version_json_for_model() throws Exception {
-        //when + then
         mockMvc.perform(get("/api/car-catalog/models/10/versions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(100))

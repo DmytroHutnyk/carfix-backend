@@ -7,11 +7,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.util.concurrent.Executor;
 
-/**
- * Delivery contract shared by every {@link EmailSender}: the message is handed to the executor only after the
- * surrounding transaction commits (immediately when there is none), and a failed delivery is logged, never
- * propagated — an outage of the mail server must not fail the use case that produced the email.
- */
+/** Sends after commit and logs delivery failures without failing the originating use case. */
 @Slf4j
 @RequiredArgsConstructor
 public abstract class AfterCommitEmailSender implements EmailSender {

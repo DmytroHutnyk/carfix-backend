@@ -4,12 +4,7 @@ import com.hutnyk.carfix.out.address.AddressPortOut;
 
 import java.math.BigDecimal;
 
-/**
- * Finds the city row an address or a preferred location should point at, inserting the region
- * and/or city when the Google-English names are not stored yet. Coordinates are the city centre
- * of a preferred-location pick: stored on insert, filled in when the existing row has none, never
- * overwritten. Plain class, no Spring, constructed by each service around its {@link AddressPortOut}.
- */
+/** Inserts missing location rows and fills absent coordinates without replacing stored ones. */
 public final class CityResolver {
 
     private final AddressPortOut addressPortOut;

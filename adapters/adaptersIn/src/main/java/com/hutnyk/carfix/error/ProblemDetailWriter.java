@@ -12,13 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Serializes a {@link ProblemDetail} straight onto the servlet response.
- * <p>
- * Needed because Spring Security answers from inside the filter chain, where no message converter
- * runs, which also means {@code instance} is not filled in for us, so it is set here from the
- * request URI. Without it the web client's {@code isProblemDetailError} guard rejects the body.
- */
+/** Filter-chain responses bypass message converters, so this also fills required instance URI. */
 @NoArgsConstructor
 final class ProblemDetailWriter {
     public static void write(ObjectMapper objectMapper,

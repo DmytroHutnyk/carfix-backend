@@ -1,10 +1,6 @@
 package com.hutnyk.carfix.exception;
 
-/**
- * The domain names the <em>kind</em> of failure; the web adapter alone decides which HTTP status
- * each kind becomes. Adding a constant here is deliberate: the adapter maps categories with an
- * exhaustive {@code switch}, so an unmapped category fails the build rather than the request.
- */
+/** Web adapter maps these with an exhaustive switch, making unmapped categories fail compilation. */
 public enum ErrorCategory {
 
     /** Input did not satisfy a format or invariant rule. */

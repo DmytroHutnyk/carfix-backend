@@ -47,46 +47,37 @@ public class UserTest {
 
     @Test
     public void test_validateBirthDate_valid_date_and_fieldName_not_null() {
-        //when
         LocalDate birthDate = LocalDate.now().minusYears(30);
         User result = createUserWithBirthDate(birthDate);
 
-        //then
         assertThat(result.getDateOfBirth()).isEqualTo(birthDate);
     }
 
     @Test
     public void test_validateBirthDate_valid_date_exactly_1900_01_01() {
-        //when
         LocalDate birthDate = LocalDate.of(1900, 1, 1);
         User result = createUserWithBirthDate(birthDate);
 
-        //then
         assertThat(result.getDateOfBirth()).isEqualTo(birthDate);
     }
 
     @Test
     public void test_validateBirthDate_valid_date_today() {
-        //when
         LocalDate birthDate = LocalDate.now();
         User result = createUserWithBirthDate(birthDate);
 
-        //then
         assertThat(result.getDateOfBirth()).isEqualTo(birthDate);
     }
 
     @Test
     public void test_validateBirthDate_returns_null_when_dateOfBirth_is_null() {
-        //when
         User result = createUserWithBirthDate(null);
 
-        //then
         assertThat(result.getDateOfBirth()).isNull();
     }
 
     @Test
     public void test_validateBirthDate_throws_when_date_in_future() {
-        //when + then
         LocalDate futureDate = LocalDate.now().plusDays(1);
         assertThatThrownBy(() -> createUserWithBirthDate(futureDate))
                 .isInstanceOf(DomainObjectValidationException.class)
@@ -96,7 +87,6 @@ public class UserTest {
 
     @Test
     public void test_validateBirthDate_throws_when_date_before_1900_01_01() {
-        //when + then
         LocalDate oldDate = LocalDate.of(1899, 5, 5);
         assertThatThrownBy(() -> createUserWithBirthDate(oldDate))
                 .isInstanceOf(DomainObjectValidationException.class)
@@ -106,24 +96,19 @@ public class UserTest {
 
     @Test
     public void test_of_carries_the_preferred_city_id() {
-        //when
         User result = User.of(UserId.genId(), "John", "Doe", new PhoneNumber("+1", "1234567890"),
                 "john.doe@example.com", UserRole.CUSTOMER, PasswordHash.of("hashedPassword123"),
                 null, null, 11, null);
 
-        //then
         assertThat(result.getPreferredCityId()).isEqualTo(11);
     }
 
     @Test
     public void test_linkAddress_returns_a_copy_pointing_at_the_address_and_keeps_everything_else() {
-        //given
         User user = createUserWithPreferredCity(11);
 
-        //when
         User linked = user.linkAddress(42);
 
-        //then
         assertThat(linked.getAddressId()).isEqualTo(42);
         assertThat(linked.getId()).isEqualTo(user.getId());
         assertThat(linked.getEmail()).isEqualTo(user.getEmail());
@@ -139,10 +124,8 @@ public class UserTest {
 
     @Test
     public void test_linkAddress_rejects_null_and_unlinkAddress_clears() {
-        //given
         User user = createUserWithBirthDate(null).linkAddress(7);
 
-        //when + then
         assertThatThrownBy(() -> user.linkAddress(null))
                 .isInstanceOf(DomainObjectValidationException.class);
         assertThat(user.unlinkAddress().getAddressId()).isNull();
@@ -150,21 +133,16 @@ public class UserTest {
 
     @Test
     public void test_a_new_user_is_not_email_verified() {
-        //given
         User user = createUserWithBirthDate(null);
-        //then
         assertThat(user.isEmailVerified()).isFalse();
         assertThat(user.getEmailVerifiedAt()).isNull();
     }
 
     @Test
     public void test_verifyEmail_stamps_the_time_and_keeps_every_other_field() {
-        //given
         User user = createUserWithBirthDate(LocalDate.of(1990, 5, 1));
         Instant now = Instant.parse("2026-08-16T10:00:00Z");
-        //when
         User verified = user.verifyEmail(now);
-        //then
         assertThat(verified.isEmailVerified()).isTrue();
         assertThat(verified.getEmailVerifiedAt()).isEqualTo(now);
         assertThat(verified.getId()).isEqualTo(user.getId());
@@ -176,9 +154,7 @@ public class UserTest {
 
     @Test
     public void test_verifyEmail_twice_is_a_conflict() {
-        //given
         User verified = createUserWithBirthDate(null).verifyEmail(Instant.parse("2026-08-16T10:00:00Z"));
-        //when + then
         assertThatThrownBy(() -> verified.verifyEmail(Instant.parse("2026-08-16T11:00:00Z")))
                 .isInstanceOf(EmailAlreadyVerifiedException.class)
                 .hasMessage("Email john.doe@example.com is already verified");
@@ -186,7 +162,6 @@ public class UserTest {
 
     @Test
     public void test_verifyEmail_rejects_a_null_instant() {
-        //when + then
         assertThatThrownBy(() -> createUserWithBirthDate(null).verifyEmail(null))
                 .isInstanceOf(DomainObjectValidationException.class);
     }

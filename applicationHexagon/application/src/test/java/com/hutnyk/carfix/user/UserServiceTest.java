@@ -18,6 +18,7 @@ import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.in.address.query.AddressView;
 import com.hutnyk.carfix.in.address.query.LocationView;
 import com.hutnyk.carfix.in.booking.query.BookingView;
+import com.hutnyk.carfix.in.booking.query.OwnerBranchBookingView;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsPage;
 import com.hutnyk.carfix.in.branch.query.BranchReviewsQuery;
 import com.hutnyk.carfix.in.carProfile.query.CarProfileView;
@@ -319,6 +320,11 @@ public class UserServiceTest {
         }
 
         @Override
+        public List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Optional<Booking> findByIdAndOwnerId(UUID bookingId, UUID ownerId) {
             throw new UnsupportedOperationException();
         }
@@ -441,18 +447,14 @@ public class UserServiceTest {
         return newService(new StubUserPortOut(null, calls));
     }
 
-    // ---- updateUser -------------------------------------------------------------------------
 
     @Test
     public void test_updateUser_takes_editable_fields_from_the_command() {
-        //given
         UpdateUserCommand command = new UpdateUserCommand("New", "Surname", LocalDate.of(2000, 1, 15),
                 new LocationCommand("Warsaw", "Masovian Voivodeship", "PL", new BigDecimal("52.2297"), new BigDecimal("21.0122")));
 
-        //when
         User result = service.updateUser("john@example.com", command);
 
-        //then
         assertThat(result.getName()).isEqualTo("New");
         assertThat(result.getSurname()).isEqualTo("Surname");
         assertThat(result.getDateOfBirth()).isEqualTo(LocalDate.of(2000, 1, 15));
@@ -465,14 +467,11 @@ public class UserServiceTest {
 
     @Test
     public void test_updateUser_preferred_location_in_an_unknown_city_inserts_region_and_city() {
-        //given
         UpdateUserCommand command = new UpdateUserCommand("New", "Surname", null,
                 new LocationCommand("Berlin", "Berlin", "DE", new BigDecimal("52.52"), new BigDecimal("13.405")));
 
-        //when
         User result = service.updateUser("john@example.com", command);
 
-        //then
         assertThat(addressPortOut.insertedRegions).hasSize(1);
         assertThat(addressPortOut.insertedRegions.get(0).getCountryIso()).isEqualTo(CountryIso.DE);
         assertThat(addressPortOut.insertedCities).hasSize(1);
@@ -484,13 +483,10 @@ public class UserServiceTest {
 
     @Test
     public void test_updateUser_preserves_credentials_identity_and_address_link_from_the_loaded_user() {
-        //given
         UpdateUserCommand command = new UpdateUserCommand("New", "Surname", null, null);
 
-        //when
         service.updateUser("john@example.com", command);
 
-        //then
         assertThat(userPortOut.updated.getPasswordHash()).isEqualTo(EXISTING_HASH);
         assertThat(userPortOut.updated.getEmail()).isEqualTo("john@example.com");
         assertThat(userPortOut.updated.getRole()).isEqualTo(UserRole.CUSTOMER);
@@ -501,37 +497,29 @@ public class UserServiceTest {
 
     @Test
     public void test_updateUser_preserves_the_email_verification_stamp() {
-        //given
         userPortOut.stored = existingUser(7, VERIFIED_EARLIER);
         UpdateUserCommand command = new UpdateUserCommand("New", "Surname", null, null);
 
-        //when
         service.updateUser("john@example.com", command);
 
-        //then
         assertThat(userPortOut.updated.getEmailVerifiedAt()).isEqualTo(VERIFIED_EARLIER);
     }
 
     @Test
     public void test_updateUser_null_dateOfBirth_and_null_location_clear_them_instead_of_keeping_old_values() {
-        //given
         UpdateUserCommand command = new UpdateUserCommand("New", "Surname", null, null);
 
-        //when
         service.updateUser("john@example.com", command);
 
-        //then
         assertThat(userPortOut.updated.getDateOfBirth()).isNull();
         assertThat(userPortOut.updated.getPreferredCityId()).isNull();
     }
 
     @Test
     public void test_updateUser_rejects_an_unsupported_country_before_touching_the_port() {
-        //given
         UpdateUserCommand command = new UpdateUserCommand("New", "Surname", null,
                 new LocationCommand("Nowhere", null, "XX", null, null));
 
-        //when + then
         assertThatThrownBy(() -> service.updateUser("john@example.com", command))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .hasMessage("Country XX is not supported");
@@ -540,28 +528,22 @@ public class UserServiceTest {
 
     @Test
     public void test_updating_a_user_whose_record_vanished_fails_as_authentication() {
-        //given
         UserService serviceWithNoUser = serviceWithNoUser();
         UpdateUserCommand command = new UpdateUserCommand("John", "Doe", LocalDate.of(1990, 5, 1), null);
 
-        //when + then
         assertThatThrownBy(() -> serviceWithNoUser.updateUser("gone@example.com", command))
                 .isInstanceOf(AuthenticatedUserMissingException.class)
                 .hasMessage("Authenticated user not found: gone@example.com");
     }
 
-    // ---- updateAddress ----------------------------------------------------------------------
 
     @Test
     public void test_updateAddress_for_a_user_without_address_inserts_it_links_the_user_and_returns_the_view() {
-        //given
         StubUserPortOut freshUsers = new StubUserPortOut(existingUser(null), calls);
         UserService fresh = newService(freshUsers);
 
-        //when
         AddressView view = fresh.updateAddress("john@example.com", ADDRESS_COMMAND);
 
-        //then
         assertThat(addressPortOut.inserted).hasSize(1);
         Address inserted = addressPortOut.inserted.get(0);
         assertThat(inserted.getId()).isEqualTo(500);
@@ -581,10 +563,8 @@ public class UserServiceTest {
 
     @Test
     public void test_updateAddress_for_a_user_with_address_updates_the_same_row_and_does_not_touch_the_user() {
-        //when
         AddressView view = service.updateAddress("john@example.com", ADDRESS_COMMAND);
 
-        //then
         assertThat(addressPortOut.inserted).isEmpty();
         assertThat(addressPortOut.updated).hasSize(1);
         assertThat(addressPortOut.updated.get(0).getId()).isEqualTo(7);
@@ -595,14 +575,11 @@ public class UserServiceTest {
 
     @Test
     public void test_updateAddress_creates_missing_region_and_city_on_demand() {
-        //given
         UpdateUserAddressCommand berlin = new UpdateUserAddressCommand(
                 "Unter den Linden", "1", null, "10117", "Berlin", "Berlin", "DE", null, null, null);
 
-        //when
         service.updateAddress("john@example.com", berlin);
 
-        //then
         assertThat(addressPortOut.insertedRegions).hasSize(1);
         assertThat(addressPortOut.insertedRegions.get(0).getCountryIso()).isEqualTo(CountryIso.DE);
         assertThat(addressPortOut.insertedCities).hasSize(1);
@@ -612,11 +589,9 @@ public class UserServiceTest {
 
     @Test
     public void test_updateAddress_rejects_an_unsupported_country_before_any_write() {
-        //given
         UpdateUserAddressCommand bad = new UpdateUserAddressCommand(
                 "Street", "1", null, "00000", "Town", "Region", "XX", null, null, null);
 
-        //when + then
         assertThatThrownBy(() -> service.updateAddress("john@example.com", bad))
                 .isInstanceOf(DomainObjectValidationException.class)
                 .hasMessage("Country XX is not supported");
@@ -625,14 +600,11 @@ public class UserServiceTest {
         assertThat(addressPortOut.insertedRegions).isEmpty();
     }
 
-    // ---- deleteAddress ----------------------------------------------------------------------
 
     @Test
     public void test_deleteAddress_unlinks_the_user_then_deletes_the_row() {
-        //when
         service.deleteAddress("john@example.com");
 
-        //then
         assertThat(userPortOut.updated.getAddressId()).isNull();
         assertThat(userPortOut.updated.getPreferredCityId()).isEqualTo(11);
         assertThat(addressPortOut.deleted).containsExactly(7);
@@ -641,26 +613,20 @@ public class UserServiceTest {
 
     @Test
     public void test_deleteAddress_without_address_is_a_no_op() {
-        //given
         StubUserPortOut noAddress = new StubUserPortOut(existingUser(null), calls);
         UserService fresh = newService(noAddress);
 
-        //when
         fresh.deleteAddress("john@example.com");
 
-        //then
         assertThat(noAddress.updated).isNull();
         assertThat(addressPortOut.deleted).isEmpty();
     }
 
-    // ---- deleteAccount ----------------------------------------------------------------------
 
     @Test
     public void test_deleteAccount_removes_dependents_in_dependency_order_then_customer_and_address() {
-        //when
         service.deleteAccount("john@example.com");
 
-        //then
         assertThat(reviewPortOut.deletedFor).isEqualTo(EXISTING_ID.id());
         assertThat(bookingPortOut.deletedFor).isEqualTo(EXISTING_ID.id());
         assertThat(carProfilePortOut.deletedFor).isEqualTo(EXISTING_ID.id());
@@ -673,13 +639,10 @@ public class UserServiceTest {
 
     @Test
     public void test_deleteAccount_without_an_address_skips_the_address_delete() {
-        //given
         UserService fresh = newService(new StubUserPortOut(existingUser(null), calls));
 
-        //when
         fresh.deleteAccount("john@example.com");
 
-        //then
         assertThat(customerPortOut.deletedFor).isEqualTo(EXISTING_ID.id());
         assertThat(addressPortOut.deleted).isEmpty();
         assertThat(calls).containsExactly("review.delete", "booking.delete", "carProfile.delete", "customer.delete");
@@ -687,7 +650,6 @@ public class UserServiceTest {
 
     @Test
     public void test_deleteAccount_for_a_non_customer_is_forbidden_and_deletes_nothing() {
-        //given
         User owner = User.builder()
                 .id(EXISTING_ID).name("Olivia").surname("Owner").phoneNumber(EXISTING_PHONE)
                 .email("owner@example.com").role(UserRole.OWNER).passwordHash(EXISTING_HASH)
@@ -695,7 +657,6 @@ public class UserServiceTest {
                 .build();
         UserService fresh = newService(new StubUserPortOut(owner, calls));
 
-        //when + then
         assertThatThrownBy(() -> fresh.deleteAccount("owner@example.com"))
                 .isInstanceOf(AccountDeletionNotAllowedException.class);
         assertThat(reviewPortOut.deletedFor).isNull();
@@ -707,19 +668,15 @@ public class UserServiceTest {
 
     @Test
     public void test_deleteAccount_for_a_vanished_user_fails_as_authentication() {
-        //when + then
         assertThatThrownBy(() -> serviceWithNoUser().deleteAccount("gone@example.com"))
                 .isInstanceOf(AuthenticatedUserMissingException.class);
         assertThat(customerPortOut.deletedFor).isNull();
     }
 
-    // ---- requestEmailVerification -----------------------------------------------------------
 
     @Test
     public void test_request_issues_a_hashed_code_and_emails_the_plain_code_to_the_user() {
-        //when
         service.requestEmailVerification(EMAIL);
-        //then
         assertThat(codePortOut.inserted).isNotNull();
         assertThat(codePortOut.updated).isNull();
         assertThat(codePortOut.inserted.getUserId()).isEqualTo(EXISTING_ID);
@@ -734,9 +691,7 @@ public class UserServiceTest {
 
     @Test
     public void test_request_for_an_already_verified_email_is_a_conflict_and_sends_nothing() {
-        //given
         userPortOut.stored = existingUser(7, VERIFIED_EARLIER);
-        //when + then
         assertThatThrownBy(() -> service.requestEmailVerification(EMAIL))
                 .isInstanceOf(EmailAlreadyVerifiedException.class);
         assertThat(codePortOut.inserted).isNull();
@@ -745,9 +700,7 @@ public class UserServiceTest {
 
     @Test
     public void test_request_within_the_cooldown_is_refused_with_the_seconds_left() {
-        //given
         codePortOut.stored = EmailVerificationCode.issue(EXISTING_ID, "111111", NOW.minusSeconds(15));
-        //when + then
         assertThatThrownBy(() -> service.requestEmailVerification(EMAIL))
                 .isInstanceOf(VerificationCodeResendTooSoonException.class)
                 .hasMessage("A verification code was sent recently. You can request a new one in 45 seconds");
@@ -758,13 +711,10 @@ public class UserServiceTest {
 
     @Test
     public void test_request_after_the_cooldown_replaces_the_existing_code_through_update() {
-        //given
         EmailVerificationCode old = EmailVerificationCode.issue(EXISTING_ID, "111111", NOW.minus(EmailVerificationCode.RESEND_COOLDOWN))
                 .registerFailedAttempt();
         codePortOut.stored = old;
-        //when
         service.requestEmailVerification(EMAIL);
-        //then
         assertThat(codePortOut.inserted).isNull();
         assertThat(codePortOut.updated).isNotNull();
         assertThat(codePortOut.updated.getAttempts()).isZero();
@@ -775,20 +725,15 @@ public class UserServiceTest {
 
     @Test
     public void test_request_for_a_vanished_user_fails_as_authentication() {
-        //when + then
         assertThatThrownBy(() -> serviceWithNoUser().requestEmailVerification("gone@example.com"))
                 .isInstanceOf(AuthenticatedUserMissingException.class);
     }
 
-    // ---- verifyEmail --------------------------------------------------------------------------
 
     @Test
     public void test_verify_with_the_right_code_marks_the_user_verified_now_and_consumes_the_code() {
-        //given
         codePortOut.stored = EmailVerificationCode.issue(EXISTING_ID, "123456", NOW.minusSeconds(60));
-        //when
         User result = service.verifyEmail(EMAIL, "123456");
-        //then
         assertThat(result.isEmailVerified()).isTrue();
         assertThat(result.getEmailVerifiedAt()).isEqualTo(NOW);
         assertThat(userPortOut.updated.getEmailVerifiedAt()).isEqualTo(NOW);
@@ -798,9 +743,7 @@ public class UserServiceTest {
 
     @Test
     public void test_verify_with_a_wrong_code_records_the_attempt_and_reports_attempts_left() {
-        //given
         codePortOut.stored = EmailVerificationCode.issue(EXISTING_ID, "123456", NOW.minusSeconds(60));
-        //when + then
         assertThatThrownBy(() -> service.verifyEmail(EMAIL, "000000"))
                 .isInstanceOf(VerificationCodeInvalidException.class)
                 .hasMessage("Incorrect verification code. 4 attempt(s) left");
@@ -811,13 +754,11 @@ public class UserServiceTest {
 
     @Test
     public void test_the_last_wrong_attempt_exhausts_the_code() {
-        //given
         EmailVerificationCode code = EmailVerificationCode.issue(EXISTING_ID, "123456", NOW.minusSeconds(60));
         for (int i = 0; i < EmailVerificationCode.MAX_ATTEMPTS - 1; i++) {
             code = code.registerFailedAttempt();
         }
         codePortOut.stored = code;
-        //when + then
         assertThatThrownBy(() -> service.verifyEmail(EMAIL, "000000"))
                 .isInstanceOf(VerificationCodeAttemptsExceededException.class);
         assertThat(codePortOut.updated.getAttempts()).isEqualTo(EmailVerificationCode.MAX_ATTEMPTS);
@@ -826,13 +767,11 @@ public class UserServiceTest {
 
     @Test
     public void test_an_exhausted_code_is_refused_even_with_the_right_digits() {
-        //given
         EmailVerificationCode code = EmailVerificationCode.issue(EXISTING_ID, "123456", NOW.minusSeconds(60));
         for (int i = 0; i < EmailVerificationCode.MAX_ATTEMPTS; i++) {
             code = code.registerFailedAttempt();
         }
         codePortOut.stored = code;
-        //when + then
         assertThatThrownBy(() -> service.verifyEmail(EMAIL, "123456"))
                 .isInstanceOf(VerificationCodeAttemptsExceededException.class);
         assertThat(userPortOut.updated).isNull();
@@ -840,9 +779,7 @@ public class UserServiceTest {
 
     @Test
     public void test_an_expired_code_is_refused_even_with_the_right_digits() {
-        //given
         codePortOut.stored = EmailVerificationCode.issue(EXISTING_ID, "123456", NOW.minus(EmailVerificationCode.TTL));
-        //when + then
         assertThatThrownBy(() -> service.verifyEmail(EMAIL, "123456"))
                 .isInstanceOf(VerificationCodeExpiredException.class);
         assertThat(userPortOut.updated).isNull();
@@ -851,7 +788,6 @@ public class UserServiceTest {
 
     @Test
     public void test_verify_without_an_active_code_is_not_found() {
-        //when + then
         assertThatThrownBy(() -> service.verifyEmail(EMAIL, "123456"))
                 .isInstanceOf(VerificationCodeNotFoundException.class);
         assertThat(userPortOut.updated).isNull();
@@ -859,10 +795,8 @@ public class UserServiceTest {
 
     @Test
     public void test_verify_for_an_already_verified_email_is_a_conflict() {
-        //given
         userPortOut.stored = existingUser(7, VERIFIED_EARLIER);
         codePortOut.stored = EmailVerificationCode.issue(EXISTING_ID, "123456", NOW.minusSeconds(60));
-        //when + then
         assertThatThrownBy(() -> service.verifyEmail(EMAIL, "123456"))
                 .isInstanceOf(EmailAlreadyVerifiedException.class);
         assertThat(userPortOut.updated).isNull();

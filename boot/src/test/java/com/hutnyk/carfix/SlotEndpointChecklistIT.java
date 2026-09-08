@@ -29,15 +29,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.test.context.ActiveProfiles;
 
-/**
- * Run-time robust: every query window is derived from the clock at run time and every expected
- * number is derived from the seeded opening hours and service durations, so the verdict does not
- * depend on which calendar day, weekday or hour the harness runs.
- *
- * <p>Checks 1-6 deliberately query a window that starts TOMORROW: today is legitimately clamped to
- * "now rounded up to the 15-minute grid", which makes full-day expectations meaningless. The clamp
- * itself is covered by check 7, which is the only today-based check.
- */
+/** Real-HTTP slot checklist derives windows and counts from current clock and seeded DB. */
 @ActiveProfiles("dev")
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -71,7 +63,6 @@ class SlotEndpointChecklistIT {
     private final ObjectMapper mapper = new ObjectMapper();
     private final List<Chk> report = new ArrayList<>();
 
-    // -------------------------------------------------------------- run window
 
     private LocalDate today() {
         return LocalDate.now(WARSAW);
@@ -99,7 +90,6 @@ class SlotEndpointChecklistIT {
         return out;
     }
 
-    // ---------------------------------------------------------------- harness
 
     private static final class Chk {
         final String id;
@@ -203,7 +193,6 @@ class SlotEndpointChecklistIT {
         return count(day) == 0 ? "(none)" : span(day, count(day) - 1);
     }
 
-    /** Verifies grid alignment, exact duration, and 15-minute ascending step across a day. */
     private static void shape(Chk c, JsonNode day, String date, int expectedMinutes) {
         LocalTime prev = null;
         for (JsonNode s : day.get("slots")) {
@@ -228,9 +217,7 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    // --------------------------------------------------------------- fixtures
 
-    /** Opening hours of a branch, keyed by weekday. A missing key means the branch is closed. */
     private record Hours(LocalTime open, LocalTime close) {}
 
     private Map<DayOfWeek, Hours> hours(String branchId) {
@@ -249,12 +236,7 @@ class SlotEndpointChecklistIT {
         return out;
     }
 
-    /**
-     * Dates inside [from,to] on which the branch holds ANY resource occupancy. Full-day
-     * expectations are derived from the opening hours alone, so they only hold on days with no
-     * bookings; V56 anchors its seeded bookings to CURRENT_DATE at migration time, so which days
-     * those are moves with every reseed.
-     */
+    // Full-day expectations apply only where no resource occupancy reduces available slots.
     private Set<LocalDate> busyDates(String branchId, LocalDate from, LocalDate to) {
         String sql =
                 "SELECT DISTINCT d FROM ("
@@ -282,7 +264,6 @@ class SlotEndpointChecklistIT {
         return out;
     }
 
-    /** Last date for which the seed generated availability rows for a branch. */
     private LocalDate availabilityHorizon(String branchId) {
         java.sql.Date d =
                 jdbc.queryForObject(
@@ -294,9 +275,7 @@ class SlotEndpointChecklistIT {
         return d == null ? null : d.toLocalDate();
     }
 
-    // ------------------------------------------------------- slot arithmetic
 
-    /** Number of grid-aligned starts of {@code duration} that fit in [open,close). */
     private static int fits(LocalTime open, LocalTime close, int duration) {
         long window = Duration.between(open, close).toMinutes();
         return window < duration ? 0 : (int) ((window - duration) / GRID) + 1;
@@ -310,11 +289,7 @@ class SlotEndpointChecklistIT {
         return start + "-" + start.plusMinutes(duration);
     }
 
-    /**
-     * Asserts the full-day shape of every day in the window, deriving each day's expectation from
-     * the branch's opening hours for that weekday. Days on which the branch holds bookings are
-     * reported and skipped: their reduced counts are correct behaviour, not a deviation.
-     */
+    // Skip occupied days: reduced counts there are correct, not failed full-day expectations.
     private void assertWindow(
             Chk c,
             JsonNode body,
@@ -362,7 +337,6 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    // ------------------------------------------------------------------ tests
 
     @Test
     void runManualChecklist() throws Exception {
@@ -414,7 +388,6 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /** 1. Single simple service, one week. */
     private void check1() throws Exception {
         Chk c = check("1", "single service, one week");
         try {
@@ -427,7 +400,6 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /** 2. Engine replacement — the greedy-matching trap. */
     private void check2() throws Exception {
         Chk c = check("2", "engine replacement (greedy trap)");
         try {
@@ -446,7 +418,6 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /** 3. Clutch replacement — two trolley jacks drawn from one pool of two. */
     private void check3() throws Exception {
         Chk c = check("3", "clutch replacement (two jacks)");
         try {
@@ -465,7 +436,6 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /** 4. Disjoint bay types -> chainable:false, 200, all days empty. */
     private void check4() throws Exception {
         Chk c = check("4", "disjoint bay types -> chainable false");
         try {
@@ -487,7 +457,6 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /** 5. Chainable pair -> one contiguous 150-minute visit. */
     private void check5() throws Exception {
         Chk c = check("5", "chainable pair");
         try {
@@ -500,14 +469,7 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /**
-     * 6. A booked window must be excluded from the day it falls on.
-     *
-     * <p>The check seeds its own bay booking on the first open, booking-free day of the window and
-     * removes it again, so the verdict no longer depends on where V56 (which anchors its bookings to
-     * CURRENT_DATE at migration time) happened to land one. Rows are inserted and removed by this
-     * check; it reports SKIPPED only when the window holds no open, booking-free day at all.
-     */
+    // Seed and remove one bay booking so exclusion check does not depend on V56 dates.
     private void check6() throws Exception {
         Chk c = check("6", "booked window excluded");
         try {
@@ -624,7 +586,6 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /** 7. from = today -> nothing in the past, later days untruncated. */
     private void check7() throws Exception {
         Chk c = check("7", "from = today");
         try {
@@ -642,9 +603,7 @@ class SlotEndpointChecklistIT {
             JsonNode day0 = b.get("days").get(0);
             c.eq("day 0 date", today.toString(), day0.get("date").asText());
 
-            // Today is legitimately empty when the branch is closed, when the remaining window no
-            // longer fits the visit (after close, and after 13:00 on the short Saturday), or when
-            // the branch is fully booked for the rest of the day.
+            // Today may be empty when closed, too little time remains, or remaining slots are booked.
             Hours h0 = hours.get(today.getDayOfWeek());
             LocalTime earliestToday = h0 == null ? null : (ceil.isAfter(h0.open()) ? ceil : h0.open());
             boolean roomLeftToday = h0 != null && fits(earliestToday, h0.close(), 60) > 0;
@@ -701,13 +660,11 @@ class SlotEndpointChecklistIT {
         return base.plusMinutes(GRID);
     }
 
-    /** 8. Error paths a-k. */
     private void check8() {
         Chk c = check("8", "error paths a-k");
         LocalDate from = from();
         LocalDate next = from.plusDays(1);
         Map<String, String[]> cases = new LinkedHashMap<>();
-        // key -> {query, expected status, expected code}
         cases.put("a 4 service ids", new String[] {
             slotsUrl(BRANCH_A, "11,27,7,43", from, next), "400", "MALFORMED_REQUEST"});
         cases.put("b from > to", new String[] {
@@ -773,7 +730,6 @@ class SlotEndpointChecklistIT {
         c.note(okCount + "/" + cases.size() + " error cases exact (status + code + problem fields + instance)");
     }
 
-    /** 9. No authentication anywhere. */
     private void check9() {
         Chk c = check("9", "no auth");
         try {
@@ -804,12 +760,7 @@ class SlotEndpointChecklistIT {
         }
     }
 
-    /**
-     * 10. Opening-hours exceptions (added 2026-08-16). Seed availability follows the weekly hours,
-     * so only exceptions can move a day away from its weekly shape: a closed exception must empty
-     * the day (availability rows still exist underneath), and an open exception with narrower
-     * hours must clip the day to those hours. Rows are inserted and removed by this check.
-     */
+    // Temporary exceptions must override weekly shape without changing underlying availability.
     private void check10() throws Exception {
         Chk c = check("10", "opening-hours exceptions");
         try {

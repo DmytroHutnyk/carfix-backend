@@ -53,7 +53,6 @@ public final class ServiceBay {
                 .build();
     }
 
-    /** A bay the owner registers: active from day one, no notes yet. */
     public static ServiceBay create(String name, Integer serviceBayTypeId, BranchId branchId) {
         return of(null, name, ServiceBayStatus.ACTIVE, null, serviceBayTypeId, branchId);
     }
