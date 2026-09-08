@@ -58,4 +58,38 @@ public class ServiceBayTest {
                 .extracting("errorType", "fieldName")
                 .containsExactly(ValidationErrorType.NULL_VALUE, "serviceBayTypeId");
     }
+
+    @Test
+    public void test_create_with_notes_builds_active_bay_with_notes() {
+        ServiceBay result = ServiceBay.create("Bay 2", 5, "handles vans", BRANCH_ID);
+
+        assertThat(result.getId()).isNull();
+        assertThat(result.getStatus()).isEqualTo(ServiceBayStatus.ACTIVE);
+        assertThat(result.getNotes()).isEqualTo("handles vans");
+        assertThat(result.getServiceBayTypeId()).isEqualTo(5);
+    }
+
+    @Test
+    public void test_update_replaces_fields_and_preserves_id_status_branch() {
+        ServiceBay existing = ServiceBay.of(9, "Old", ServiceBayStatus.SUSPENDED, "old note", 2, BRANCH_ID);
+
+        ServiceBay result = existing.update("New", 7, "new note");
+
+        assertThat(result.getId()).isEqualTo(9);
+        assertThat(result.getStatus()).isEqualTo(ServiceBayStatus.SUSPENDED);
+        assertThat(result.getBranchId()).isEqualTo(BRANCH_ID);
+        assertThat(result.getName()).isEqualTo("New");
+        assertThat(result.getServiceBayTypeId()).isEqualTo(7);
+        assertThat(result.getNotes()).isEqualTo("new note");
+    }
+
+    @Test
+    public void test_update_requires_name() {
+        ServiceBay existing = ServiceBay.of(9, "Old", ServiceBayStatus.ACTIVE, null, 2, BRANCH_ID);
+
+        assertThatThrownBy(() -> existing.update("  ", 7, null))
+                .isInstanceOf(DomainObjectValidationException.class)
+                .extracting("fieldName")
+                .isEqualTo("name");
+    }
 }

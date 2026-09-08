@@ -4,6 +4,8 @@ import com.hutnyk.carfix.booking.BookingId;
 import com.hutnyk.carfix.booking.entity.BookingEntity;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
+import com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView;
+import com.hutnyk.carfix.in.serviceBay.query.ServiceBayTypeView;
 import com.hutnyk.carfix.scheduling.mapper.TimeRangeMapper;
 import com.hutnyk.carfix.serviceBay.ServiceBay;
 import com.hutnyk.carfix.serviceBay.ServiceBayAvailability;
@@ -54,6 +56,30 @@ public class ServiceBayMapper {
         entity.setServiceBayTypeEntity(type);
         entity.setBranchEntity(branch);
         return entity;
+    }
+
+    public static void updateEntity(ServiceBayEntity entity, ServiceBay bay, ServiceBayTypeEntity type) {
+        if (entity == null || bay == null) return;
+        entity.setName(bay.getName());
+        entity.setStatus(bay.getStatus());
+        entity.setNotes(bay.getNotes());
+        entity.setServiceBayTypeEntity(type);
+    }
+
+    public static OwnerServiceBayView toOwnerView(ServiceBayEntity e) {
+        if (e == null) return null;
+        return new OwnerServiceBayView(
+                e.getId(),
+                e.getName(),
+                e.getServiceBayTypeEntity().getId(),
+                e.getServiceBayTypeEntity().getName(),
+                e.getNotes(),
+                e.getStatus());
+    }
+
+    public static ServiceBayTypeView toTypeView(ServiceBayTypeEntity e) {
+        if (e == null) return null;
+        return new ServiceBayTypeView(e.getId(), e.getName());
     }
 
     public static ServiceBayAvailability toDomain(ServiceBayAvailabilityEntity e) {

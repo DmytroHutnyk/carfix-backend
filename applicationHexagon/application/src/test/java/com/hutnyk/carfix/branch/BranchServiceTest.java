@@ -159,6 +159,7 @@ public class BranchServiceTest {
         @Override public void replaceOpeningHours(BranchId branchId, List<OpeningHours> openingHours) { this.replacedHours = openingHours; }
         @Override public void replaceOpeningHoursExceptions(BranchId branchId, List<OpeningHoursException> exceptions) { this.replacedExceptions = exceptions; }
         @Override public void replaceCarBrands(BranchId branchId, Set<Integer> carBrandIds) { this.replacedBrands = carBrandIds; }
+        @Override public boolean existsByIdAndOwnerId(BranchId branchId, java.util.UUID ownerId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubReviewPortOut implements ReviewPortOut {
@@ -221,6 +222,12 @@ public class BranchServiceTest {
         final List<ServiceBay> bays = new ArrayList<>();
         @Override public ServiceBayType insertType(ServiceBayType type) { ServiceBayType t = ServiceBayType.of(400 + types.size(), type.getName(), type.getBranchId()); types.add(t); return t; }
         @Override public ServiceBay insert(ServiceBay bay) { bays.add(bay); return bay; }
+        @Override public ServiceBay update(ServiceBay bay) { throw new UnsupportedOperationException(); }
+        @Override public List<com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView> findViewsByBranchId(UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView> findViewByIdAndBranchId(Integer bayId, UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<ServiceBay> findByIdAndBranchId(Integer bayId, UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public List<com.hutnyk.carfix.in.serviceBay.query.ServiceBayTypeView> findTypesForBranch(UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public boolean existsTypeForBranch(Integer typeId, UUID branchId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubEquipmentPortOut implements EquipmentPortOut {

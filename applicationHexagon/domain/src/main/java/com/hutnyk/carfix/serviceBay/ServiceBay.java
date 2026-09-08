@@ -57,4 +57,12 @@ public final class ServiceBay {
     public static ServiceBay create(String name, Integer serviceBayTypeId, BranchId branchId) {
         return of(null, name, ServiceBayStatus.ACTIVE, null, serviceBayTypeId, branchId);
     }
+
+    public static ServiceBay create(String name, Integer serviceBayTypeId, String notes, BranchId branchId) {
+        return of(null, name, ServiceBayStatus.ACTIVE, notes, serviceBayTypeId, branchId);
+    }
+
+    public ServiceBay update(String name, Integer serviceBayTypeId, String notes) {
+        return of(id, name, status, notes, serviceBayTypeId, branchId);
+    }
 }
