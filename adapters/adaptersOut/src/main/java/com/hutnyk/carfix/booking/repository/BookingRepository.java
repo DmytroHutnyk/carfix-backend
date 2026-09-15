@@ -82,10 +82,12 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID> {
             JOIN FETCH cm.carBrandEntity
             LEFT JOIN FETCH b.segments seg
             LEFT JOIN FETCH seg.serviceEntity
-            WHERE br.id = :branchId AND b.date = :date
-            ORDER BY b.startTime
+            WHERE br.id = :branchId AND b.date BETWEEN :from AND :to
+            ORDER BY b.date, b.startTime
             """)
-    List<BookingEntity> findBranchDayWithDetails(@Param("branchId") UUID branchId, @Param("date") LocalDate date);
+    List<BookingEntity> findBranchRangeWithDetails(@Param("branchId") UUID branchId,
+                                                   @Param("from") LocalDate from,
+                                                   @Param("to") LocalDate to);
 
     @Query("SELECT b.id FROM BookingEntity b WHERE b.carProfileEntity.customerEntity.id = :customerId")
     List<UUID> findIdsByCustomerId(@Param("customerId") UUID customerId);

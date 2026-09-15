@@ -6,6 +6,6 @@ import com.hutnyk.carfix.serviceBay.dto.request.UpdateServiceBayRequest;
 public class UpdateServiceBayCommandMapper {
     public static UpdateServiceBayCommand toCommand(UpdateServiceBayRequest request) {
         if (request == null) return null;
-        return new UpdateServiceBayCommand(request.name(), request.serviceBayTypeId(), request.notes());
+        return new UpdateServiceBayCommand(request.name(), request.serviceBayType(), request.notes());
     }
 }

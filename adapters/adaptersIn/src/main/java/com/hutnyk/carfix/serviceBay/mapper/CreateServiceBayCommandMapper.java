@@ -6,6 +6,6 @@ import com.hutnyk.carfix.serviceBay.dto.request.CreateServiceBayRequest;
 public class CreateServiceBayCommandMapper {
     public static CreateServiceBayCommand toCommand(CreateServiceBayRequest request) {
         if (request == null) return null;
-        return new CreateServiceBayCommand(request.name(), request.serviceBayTypeId(), request.notes());
+        return new CreateServiceBayCommand(request.name(), request.serviceBayType(), request.notes());
     }
 }

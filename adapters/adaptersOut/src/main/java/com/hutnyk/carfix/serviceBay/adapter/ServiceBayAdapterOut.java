@@ -77,7 +77,9 @@ public class ServiceBayAdapterOut implements ServiceBayPortOut {
     }
 
     @Override
-    public boolean existsTypeForBranch(Integer typeId, UUID branchId) {
-        return serviceBayTypeRepository.existsForBranch(typeId, branchId);
+    public Optional<ServiceBayType> findTypeByNameForBranch(String name, UUID branchId) {
+        return serviceBayTypeRepository.findByNameForBranch(name, branchId).stream()
+                .findFirst()
+                .map(ServiceBayMapper::toTypeDomain);
     }
 }
