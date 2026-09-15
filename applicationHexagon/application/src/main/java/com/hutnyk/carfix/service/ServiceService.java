@@ -4,7 +4,6 @@ import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
 import com.hutnyk.carfix.components.ApplicationService;
 import com.hutnyk.carfix.equipment.EquipmentType;
-import com.hutnyk.carfix.equipment.exception.EquipmentTypeNotFoundException;
 import com.hutnyk.carfix.in.service.OwnerServicePortIn;
 import com.hutnyk.carfix.in.service.commands.CreateServiceCommand;
 import com.hutnyk.carfix.in.service.commands.ServiceEmployeeRequirementCommand;
@@ -20,11 +19,10 @@ import com.hutnyk.carfix.out.service.ServicePortOut;
 import com.hutnyk.carfix.out.serviceBay.ServiceBayPortOut;
 import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.role.Role;
-import com.hutnyk.carfix.role.exception.RoleNotFoundException;
 import com.hutnyk.carfix.service.exception.ServiceCategoryNotFoundException;
 import com.hutnyk.carfix.service.exception.ServiceInUseException;
 import com.hutnyk.carfix.service.exception.ServiceNotFoundException;
-import com.hutnyk.carfix.serviceBay.exception.ServiceBayTypeNotFoundException;
+import com.hutnyk.carfix.serviceBay.ServiceBayType;
 import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import lombok.RequiredArgsConstructor;
@@ -122,12 +120,14 @@ public class ServiceService implements OwnerServicePortIn {
         requireKnownCategory(categoryId);
         Map<String, Integer> bayTypeIds = bayTypeMap(branchId);
         Map<String, Integer> roleIds = roleMap(branchId);
-        Set<Integer> resolvedBayTypes = resolveBayTypes(bayTypes, bayTypeIds);
+        Map<String, Integer> equipmentTypeIds = new HashMap<>();
+        Set<Integer> resolvedBayTypes = resolveBayTypes(bayTypes, bayTypeIds, branchId);
         List<EmployeeRequirement> employees = employeeRequirements.stream()
-                .map(r -> EmployeeRequirement.of(null, r.name(), resolveRoles(r.roles(), roleIds)))
+                .map(r -> EmployeeRequirement.of(null, r.name(), resolveRoles(r.roles(), roleIds, branchId)))
                 .toList();
         List<EquipmentRequirement> equipment = equipmentRequirements.stream()
-                .map(r -> EquipmentRequirement.of(null, r.name(), resolveEquipmentTypes(r.types(), branchId)))
+                .map(r -> EquipmentRequirement.of(null, r.name(),
+                        resolveEquipmentTypes(r.types(), branchId, equipmentTypeIds)))
                 .toList();
         return Service.of(id, name.trim(), normalizeDescription(description), durationMinutes, price, status,
                 BranchId.of(branchId), categoryId, resolvedBayTypes, employees, equipment);
@@ -157,36 +157,44 @@ public class ServiceService implements OwnerServicePortIn {
         return map;
     }
 
-    private static Set<Integer> resolveBayTypes(List<String> names, Map<String, Integer> bayTypeIds) {
+    private Set<Integer> resolveBayTypes(List<String> names, Map<String, Integer> bayTypeIds, UUID branchId) {
         Set<Integer> ids = new LinkedHashSet<>();
         for (String name : names) {
             Integer id = bayTypeIds.get(key(name));
             if (id == null) {
-                throw new ServiceBayTypeNotFoundException(name.trim());
+                id = serviceBayPortOut.insertType(ServiceBayType.create(name.trim(), BranchId.of(branchId))).getId();
+                bayTypeIds.put(key(name), id);
             }
             ids.add(id);
         }
         return ids;
     }
 
-    private static Set<Integer> resolveRoles(List<String> names, Map<String, Integer> roleIds) {
+    private Set<Integer> resolveRoles(List<String> names, Map<String, Integer> roleIds, UUID branchId) {
         Set<Integer> ids = new LinkedHashSet<>();
         for (String name : names) {
             Integer id = roleIds.get(key(name));
             if (id == null) {
-                throw new RoleNotFoundException(name.trim());
+                id = rolePortOut.insert(Role.create(name.trim(), BranchId.of(branchId))).getId();
+                roleIds.put(key(name), id);
             }
             ids.add(id);
         }
         return ids;
     }
 
-    private Set<Integer> resolveEquipmentTypes(List<String> names, UUID branchId) {
+    private Set<Integer> resolveEquipmentTypes(List<String> names, UUID branchId, Map<String, Integer> equipmentTypeIds) {
         Set<Integer> ids = new LinkedHashSet<>();
         for (String name : names) {
-            EquipmentType type = equipmentPortOut.findTypeByNameForBranch(name.trim(), branchId)
-                    .orElseThrow(() -> new EquipmentTypeNotFoundException(name.trim()));
-            ids.add(type.getId());
+            Integer id = equipmentTypeIds.get(key(name));
+            if (id == null) {
+                id = equipmentPortOut.findTypeByNameForBranch(name.trim(), branchId)
+                        .map(EquipmentType::getId)
+                        .orElseGet(() -> equipmentPortOut.insertType(
+                                EquipmentType.create(name.trim(), BranchId.of(branchId))).getId());
+                equipmentTypeIds.put(key(name), id);
+            }
+            ids.add(id);
         }
         return ids;
     }

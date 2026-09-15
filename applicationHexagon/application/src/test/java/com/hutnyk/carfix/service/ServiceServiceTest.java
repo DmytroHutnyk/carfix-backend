@@ -8,7 +8,6 @@ import com.hutnyk.carfix.branch.BranchStatus;
 import com.hutnyk.carfix.branch.CancellationPolicy;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
 import com.hutnyk.carfix.equipment.EquipmentType;
-import com.hutnyk.carfix.equipment.exception.EquipmentTypeNotFoundException;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchDetailView;
 import com.hutnyk.carfix.in.branch.query.OwnerBranchSummaryView;
 import com.hutnyk.carfix.in.service.commands.CreateServiceCommand;
@@ -27,11 +26,9 @@ import com.hutnyk.carfix.out.service.ServicePortOut;
 import com.hutnyk.carfix.out.serviceBay.ServiceBayPortOut;
 import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.role.Role;
-import com.hutnyk.carfix.role.exception.RoleNotFoundException;
 import com.hutnyk.carfix.service.exception.ServiceCategoryNotFoundException;
 import com.hutnyk.carfix.service.exception.ServiceInUseException;
 import com.hutnyk.carfix.service.exception.ServiceNotFoundException;
-import com.hutnyk.carfix.serviceBay.exception.ServiceBayTypeNotFoundException;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -123,7 +120,11 @@ public class ServiceServiceTest {
 
     private static final class StubServiceBayPortOut implements ServiceBayPortOut {
         List<ServiceBayTypeView> types = List.of(new ServiceBayTypeView(5, "General"));
-        @Override public com.hutnyk.carfix.serviceBay.ServiceBayType insertType(com.hutnyk.carfix.serviceBay.ServiceBayType type) { throw new UnsupportedOperationException(); }
+        com.hutnyk.carfix.serviceBay.ServiceBayType insertedType;
+        @Override public com.hutnyk.carfix.serviceBay.ServiceBayType insertType(com.hutnyk.carfix.serviceBay.ServiceBayType type) {
+            this.insertedType = type;
+            return com.hutnyk.carfix.serviceBay.ServiceBayType.of(50, type.getName(), type.getBranchId());
+        }
         @Override public com.hutnyk.carfix.serviceBay.ServiceBay insert(com.hutnyk.carfix.serviceBay.ServiceBay bay) { throw new UnsupportedOperationException(); }
         @Override public com.hutnyk.carfix.serviceBay.ServiceBay update(com.hutnyk.carfix.serviceBay.ServiceBay bay) { throw new UnsupportedOperationException(); }
         @Override public List<com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView> findViewsByBranchId(UUID branchId) { throw new UnsupportedOperationException(); }
@@ -135,13 +136,21 @@ public class ServiceServiceTest {
 
     private static final class StubRolePortOut implements RolePortOut {
         List<Role> roles = List.of(Role.of(1, "Mechanic", null));
-        @Override public Role insert(Role role) { throw new UnsupportedOperationException(); }
+        Role insertedRole;
+        @Override public Role insert(Role role) {
+            this.insertedRole = role;
+            return Role.of(60, role.getName(), role.getBranchId());
+        }
         @Override public List<Role> findAllForBranch(UUID branchId) { return roles; }
     }
 
     private static final class StubEquipmentPortOut implements EquipmentPortOut {
         Optional<EquipmentType> type = Optional.of(EquipmentType.of(7, "Oil Drain", null));
-        @Override public EquipmentType insertType(EquipmentType type) { throw new UnsupportedOperationException(); }
+        EquipmentType insertedType;
+        @Override public EquipmentType insertType(EquipmentType type) {
+            this.insertedType = type;
+            return EquipmentType.of(70, type.getName(), type.getBranchId());
+        }
         @Override public com.hutnyk.carfix.equipment.Equipment insert(com.hutnyk.carfix.equipment.Equipment equipment) { throw new UnsupportedOperationException(); }
         @Override public com.hutnyk.carfix.equipment.Equipment update(com.hutnyk.carfix.equipment.Equipment equipment) { throw new UnsupportedOperationException(); }
         @Override public List<com.hutnyk.carfix.in.equipment.query.OwnerEquipmentView> findViewsByBranchId(UUID branchId) { throw new UnsupportedOperationException(); }
@@ -215,30 +224,55 @@ public class ServiceServiceTest {
     }
 
     @Test
-    public void create_with_unknown_bay_type_name_is_service_bay_type_not_found() {
+    public void create_with_unknown_bay_type_name_creates_branch_bay_type() {
         bayStub.types = List.of();
 
-        assertThatThrownBy(() -> service.createService(EMAIL, BRANCH_ID, createCommand()))
-                .isInstanceOf(ServiceBayTypeNotFoundException.class);
-        assertThat(serviceStub.insertedService).isNull();
+        OwnerServiceView result = service.createService(EMAIL, BRANCH_ID, createCommand());
+
+        assertThat(result).isEqualTo(view());
+        assertThat(serviceStub.insertedService.getServiceBayTypeIds()).containsExactly(50);
+        assertThat(bayStub.insertedType.getName()).isEqualTo("General");
+        assertThat(bayStub.insertedType.getBranchId().id()).isEqualTo(BRANCH_ID);
     }
 
     @Test
-    public void create_with_unknown_role_name_is_role_not_found() {
+    public void create_reuses_existing_bay_type_case_insensitively() {
+        CreateServiceCommand command = new CreateServiceCommand(
+                "Oil Change", "notes", (short) 30, new BigDecimal("49.99"), 3,
+                List.of("general"),
+                List.of(new ServiceEmployeeRequirementCommand("Mechanic", List.of("Mechanic"))),
+                List.of(new ServiceEquipmentRequirementCommand("Oil Drain", List.of("Oil Drain"))));
+
+        service.createService(EMAIL, BRANCH_ID, command);
+
+        assertThat(bayStub.insertedType).isNull();
+        assertThat(serviceStub.insertedService.getServiceBayTypeIds()).containsExactly(5);
+    }
+
+    @Test
+    public void create_with_unknown_role_name_creates_branch_role() {
         roleStub.roles = List.of();
 
-        assertThatThrownBy(() -> service.createService(EMAIL, BRANCH_ID, createCommand()))
-                .isInstanceOf(RoleNotFoundException.class);
-        assertThat(serviceStub.insertedService).isNull();
+        OwnerServiceView result = service.createService(EMAIL, BRANCH_ID, createCommand());
+
+        assertThat(result).isEqualTo(view());
+        assertThat(serviceStub.insertedService.getEmployeeRequirements().getFirst().getRoleIds())
+                .containsExactly(60);
+        assertThat(roleStub.insertedRole.getName()).isEqualTo("Mechanic");
+        assertThat(roleStub.insertedRole.getBranchId().id()).isEqualTo(BRANCH_ID);
     }
 
     @Test
-    public void create_with_unknown_equipment_type_name_is_equipment_type_not_found() {
+    public void create_with_unknown_equipment_type_name_creates_branch_equipment_type() {
         equipmentStub.type = Optional.empty();
 
-        assertThatThrownBy(() -> service.createService(EMAIL, BRANCH_ID, createCommand()))
-                .isInstanceOf(EquipmentTypeNotFoundException.class);
-        assertThat(serviceStub.insertedService).isNull();
+        OwnerServiceView result = service.createService(EMAIL, BRANCH_ID, createCommand());
+
+        assertThat(result).isEqualTo(view());
+        assertThat(serviceStub.insertedService.getEquipmentRequirements().getFirst().getEquipmentTypeIds())
+                .containsExactly(70);
+        assertThat(equipmentStub.insertedType.getName()).isEqualTo("Oil Drain");
+        assertThat(equipmentStub.insertedType.getBranchId().id()).isEqualTo(BRANCH_ID);
     }
 
     @Test

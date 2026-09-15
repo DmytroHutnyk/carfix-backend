@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
-import com.hutnyk.carfix.equipment.exception.EquipmentTypeNotFoundException;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
 import com.hutnyk.carfix.in.service.OwnerServicePortIn;
 import com.hutnyk.carfix.in.service.commands.CreateServiceCommand;
@@ -19,12 +18,10 @@ import com.hutnyk.carfix.in.service.commands.UpdateServiceCommand;
 import com.hutnyk.carfix.in.service.query.EmployeeRequirementView;
 import com.hutnyk.carfix.in.service.query.EquipmentRequirementView;
 import com.hutnyk.carfix.in.service.query.OwnerServiceView;
-import com.hutnyk.carfix.role.exception.RoleNotFoundException;
 import com.hutnyk.carfix.service.ServiceStatus;
 import com.hutnyk.carfix.service.exception.ServiceCategoryNotFoundException;
 import com.hutnyk.carfix.service.exception.ServiceInUseException;
 import com.hutnyk.carfix.service.exception.ServiceNotFoundException;
-import com.hutnyk.carfix.serviceBay.exception.ServiceBayTypeNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -216,39 +213,6 @@ public class OwnerServiceControllerTest {
                         .content(VALID_BODY))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SERVICE_CATEGORY_NOT_FOUND"));
-    }
-
-    @Test
-    public void postWithUnknownBayTypeIs404() throws Exception {
-        stub.toThrow = new ServiceBayTypeNotFoundException("General");
-
-        mockMvc.perform(post("/api/owner/branches/" + BRANCH_ID + "/services")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(VALID_BODY))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("SERVICE_BAY_TYPE_NOT_FOUND"));
-    }
-
-    @Test
-    public void postWithUnknownRoleIs404() throws Exception {
-        stub.toThrow = new RoleNotFoundException("Mechanic");
-
-        mockMvc.perform(post("/api/owner/branches/" + BRANCH_ID + "/services")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(VALID_BODY))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("ROLE_NOT_FOUND"));
-    }
-
-    @Test
-    public void postWithUnknownEquipmentTypeIs404() throws Exception {
-        stub.toThrow = new EquipmentTypeNotFoundException("Oil Drain");
-
-        mockMvc.perform(post("/api/owner/branches/" + BRANCH_ID + "/services")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(VALID_BODY))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("EQUIPMENT_TYPE_NOT_FOUND"));
     }
 
     @Test

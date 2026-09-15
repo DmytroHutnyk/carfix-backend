@@ -7,8 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum EquipmentErrorCode implements ErrorCode {
 
-    EQUIPMENT_NOT_FOUND(ErrorCategory.NOT_FOUND),
-    EQUIPMENT_TYPE_NOT_FOUND(ErrorCategory.NOT_FOUND);
+    EQUIPMENT_NOT_FOUND(ErrorCategory.NOT_FOUND);
 
     private final ErrorCategory category;
 
