@@ -17,7 +17,7 @@ public interface BookingPortOut {
     List<BookingView> findAllViewsByCustomerId(UUID customerId);
     Optional<BookingView> findViewByIdAndCustomerId(UUID bookingId, UUID customerId);
     Optional<Booking> findByIdAndCustomerId(UUID bookingId, UUID customerId);
-    List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date);
+    List<OwnerBranchBookingView> findBranchBookings(UUID branchId, LocalDate from, LocalDate to);
 
     Optional<Booking> findByIdAndOwnerId(UUID bookingId, UUID ownerId);
 

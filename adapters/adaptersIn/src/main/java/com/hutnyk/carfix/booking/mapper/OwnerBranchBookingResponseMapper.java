@@ -19,6 +19,7 @@ public final class OwnerBranchBookingResponseMapper {
         return new OwnerBranchBookingResponse(
                 view.reference(),
                 view.status(),
+                view.date(),
                 view.start(),
                 view.end(),
                 new OwnerBranchBookingCustomerResponse(

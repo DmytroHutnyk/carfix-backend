@@ -9,6 +9,7 @@ import com.hutnyk.carfix.booking.exception.BookingNoShowNotAllowedException;
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
 import com.hutnyk.carfix.booking.exception.CarProfileAlreadyBookedException;
 import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
+import com.hutnyk.carfix.booking.exception.InvalidBranchBookingQueryException;
 import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
 import com.hutnyk.carfix.branch.Branch;
 import com.hutnyk.carfix.branch.BranchId;
@@ -482,7 +483,8 @@ public class BookingServiceTest {
         LocalTime overlapStart;
         LocalTime overlapEnd;
         UUID dayBranchId;
-        LocalDate dayDate;
+        LocalDate dayFrom;
+        LocalDate dayTo;
         List<OwnerBranchBookingView> dayBookings = List.of();
 
         @Override
@@ -507,9 +509,10 @@ public class BookingServiceTest {
         }
 
         @Override
-        public List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
+        public List<OwnerBranchBookingView> findBranchBookings(UUID branchId, LocalDate from, LocalDate to) {
             this.dayBranchId = branchId;
-            this.dayDate = date;
+            this.dayFrom = from;
+            this.dayTo = to;
             return dayBookings;
         }
 
@@ -953,24 +956,56 @@ public class BookingServiceTest {
     }
 
     @Test
-    public void getBranchDayBookingsForAnOwnedBranchDelegatesToThePort() {
+    public void getBranchBookingsForAnOwnedBranchDelegatesToThePort() {
         UUID branchId = UUID.randomUUID();
-        LocalDate date = LocalDate.of(2026, 9, 8);
+        LocalDate from = LocalDate.of(2026, 9, 8);
+        LocalDate to = LocalDate.of(2026, 9, 14);
 
-        List<OwnerBranchBookingView> result = service.getBranchDayBookings(OWNER_EMAIL, branchId, date);
+        List<OwnerBranchBookingView> result = service.getBranchBookings(OWNER_EMAIL, branchId, from, to);
 
         assertThat(result).isEmpty();
         assertThat(branchPortOut.ownerIdChecked).isEqualTo(OWNER_ID.id());
         assertThat(bookingPortOut.dayBranchId).isEqualTo(branchId);
-        assertThat(bookingPortOut.dayDate).isEqualTo(date);
+        assertThat(bookingPortOut.dayFrom).isEqualTo(from);
+        assertThat(bookingPortOut.dayTo).isEqualTo(to);
     }
 
     @Test
-    public void getBranchDayBookingsForAForeignBranchThrowsNotFound() {
+    public void getBranchBookingsForAForeignBranchThrowsNotFound() {
         branchPortOut.ownsBranch = false;
 
-        assertThatThrownBy(() -> service.getBranchDayBookings(OWNER_EMAIL, UUID.randomUUID(), LocalDate.of(2026, 9, 8)))
+        assertThatThrownBy(() -> service.getBranchBookings(
+                OWNER_EMAIL, UUID.randomUUID(), LocalDate.of(2026, 9, 8), LocalDate.of(2026, 9, 8)))
                 .isInstanceOf(BranchNotFoundException.class);
         assertThat(bookingPortOut.dayBranchId).isNull();
+    }
+
+    @Test
+    public void getBranchBookingsWithToBeforeFromIsRejectedBeforeAnyLookup() {
+        assertThatThrownBy(() -> service.getBranchBookings(
+                OWNER_EMAIL, UUID.randomUUID(), LocalDate.of(2026, 9, 8), LocalDate.of(2026, 9, 7)))
+                .isInstanceOf(InvalidBranchBookingQueryException.class);
+        assertThat(bookingPortOut.dayBranchId).isNull();
+    }
+
+    @Test
+    public void getBranchBookingsWithSpanOver92DaysIsRejected() {
+        assertThatThrownBy(() -> service.getBranchBookings(
+                OWNER_EMAIL, UUID.randomUUID(), LocalDate.of(2026, 1, 1), LocalDate.of(2026, 4, 3)))
+                .isInstanceOf(InvalidBranchBookingQueryException.class);
+        assertThat(bookingPortOut.dayBranchId).isNull();
+    }
+
+    @Test
+    public void getBranchBookingsWithSpanOfExactly92DaysIsAllowed() {
+        UUID branchId = UUID.randomUUID();
+        LocalDate from = LocalDate.of(2026, 1, 1);
+        LocalDate to = LocalDate.of(2026, 4, 2);
+
+        service.getBranchBookings(OWNER_EMAIL, branchId, from, to);
+
+        assertThat(bookingPortOut.dayBranchId).isEqualTo(branchId);
+        assertThat(bookingPortOut.dayFrom).isEqualTo(from);
+        assertThat(bookingPortOut.dayTo).isEqualTo(to);
     }
 }

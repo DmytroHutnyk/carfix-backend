@@ -131,7 +131,7 @@ public class ServiceServiceTest {
         @Override public Optional<com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView> findViewByIdAndBranchId(Integer bayId, UUID branchId) { throw new UnsupportedOperationException(); }
         @Override public Optional<com.hutnyk.carfix.serviceBay.ServiceBay> findByIdAndBranchId(Integer bayId, UUID branchId) { throw new UnsupportedOperationException(); }
         @Override public List<ServiceBayTypeView> findTypesForBranch(UUID branchId) { return types; }
-        @Override public boolean existsTypeForBranch(Integer typeId, UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<com.hutnyk.carfix.serviceBay.ServiceBayType> findTypeByNameForBranch(String name, UUID branchId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubRolePortOut implements RolePortOut {

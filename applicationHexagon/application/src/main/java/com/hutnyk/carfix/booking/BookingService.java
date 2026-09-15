@@ -3,6 +3,7 @@ package com.hutnyk.carfix.booking;
 import com.hutnyk.carfix.booking.exception.BookingNotFoundException;
 import com.hutnyk.carfix.booking.exception.CarProfileAlreadyBookedException;
 import com.hutnyk.carfix.booking.exception.InvalidBookingRequestException;
+import com.hutnyk.carfix.booking.exception.InvalidBranchBookingQueryException;
 import com.hutnyk.carfix.booking.exception.SlotNotAvailableException;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
@@ -40,6 +41,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,8 @@ import java.util.UUID;
 
 @ApplicationService
 public class BookingService implements BookingPortIn, OwnerBookingPortIn, OwnerBranchBookingPortIn {
+
+    private static final int MAX_RANGE_DAYS = 92;
 
     private final CustomerPortOut customerPortOut;
     private final BookingPortOut bookingPortOut;
@@ -149,13 +153,19 @@ public class BookingService implements BookingPortIn, OwnerBookingPortIn, OwnerB
 
     @Override
     @Transactional(readOnly = true)
-    public List<OwnerBranchBookingView> getBranchDayBookings(String ownerEmail, UUID branchId, LocalDate date) {
+    public List<OwnerBranchBookingView> getBranchBookings(String ownerEmail, UUID branchId, LocalDate from, LocalDate to) {
+        if (to.isBefore(from)) {
+            throw new InvalidBranchBookingQueryException("to must not be before from");
+        }
+        if (ChronoUnit.DAYS.between(from, to) + 1 > MAX_RANGE_DAYS) {
+            throw new InvalidBranchBookingQueryException("date range must be at most " + MAX_RANGE_DAYS + " days");
+        }
         Owner owner = ownerPortOut.findOwnerByUsername(ownerEmail)
                 .orElseThrow(() -> AuthenticatedUserMissingException.noOwnerAggregate(ownerEmail));
         if (!branchPortOut.existsByIdAndOwnerId(BranchId.of(branchId), owner.getUser().getId().id())) {
             throw new BranchNotFoundException(branchId);
         }
-        return bookingPortOut.findBranchDayBookings(branchId, date);
+        return bookingPortOut.findBranchBookings(branchId, from, to);
     }
 
     @Override

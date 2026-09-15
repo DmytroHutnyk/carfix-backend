@@ -16,7 +16,6 @@ import com.hutnyk.carfix.out.branch.OwnerBranchPortOut;
 import com.hutnyk.carfix.out.serviceBay.ServiceBayPortOut;
 import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.serviceBay.exception.ServiceBayNotFoundException;
-import com.hutnyk.carfix.serviceBay.exception.ServiceBayTypeNotFoundException;
 import com.hutnyk.carfix.user.PasswordHash;
 import com.hutnyk.carfix.user.PhoneNumber;
 import com.hutnyk.carfix.user.User;
@@ -74,9 +73,14 @@ public class ServiceBayServiceTest {
         Optional<OwnerServiceBayView> viewById = Optional.of(new OwnerServiceBayView(100, "Bay", 5, "Basic", null, ServiceBayStatus.ACTIVE));
         List<OwnerServiceBayView> views = List.of();
         List<ServiceBayTypeView> types = List.of();
-        boolean typeExists = true;
+        final java.util.List<ServiceBayType> typeStore = new java.util.ArrayList<>();
+        int nextTypeId = 500;
 
-        @Override public ServiceBayType insertType(ServiceBayType type) { throw new UnsupportedOperationException(); }
+        @Override public ServiceBayType insertType(ServiceBayType type) {
+            ServiceBayType stored = ServiceBayType.of(nextTypeId++, type.getName(), type.getBranchId());
+            typeStore.add(stored);
+            return stored;
+        }
         @Override public ServiceBay insert(ServiceBay bay) {
             this.insertedBay = bay;
             return ServiceBay.of(100, bay.getName(), bay.getStatus(), bay.getNotes(), bay.getServiceBayTypeId(), bay.getBranchId());
@@ -86,7 +90,12 @@ public class ServiceBayServiceTest {
         @Override public Optional<OwnerServiceBayView> findViewByIdAndBranchId(Integer bayId, UUID branchId) { return viewById; }
         @Override public Optional<ServiceBay> findByIdAndBranchId(Integer bayId, UUID branchId) { return existing; }
         @Override public List<ServiceBayTypeView> findTypesForBranch(UUID branchId) { return types; }
-        @Override public boolean existsTypeForBranch(Integer typeId, UUID branchId) { return typeExists; }
+        @Override public Optional<ServiceBayType> findTypeByNameForBranch(String name, UUID branchId) {
+            return typeStore.stream()
+                    .filter(t -> t.getName().equalsIgnoreCase(name)
+                            && (t.getBranchId() == null || t.getBranchId().id().equals(branchId)))
+                    .findFirst();
+        }
     }
 
     private final StubUserPortOut userStub = new StubUserPortOut();
@@ -96,8 +105,10 @@ public class ServiceBayServiceTest {
 
     @Test
     public void create_builds_active_bay_normalizes_input_and_returns_view() {
+        bayStub.typeStore.add(ServiceBayType.of(5, "Basic", null));
+
         OwnerServiceBayView result = service.createServiceBay(
-                EMAIL, BRANCH_ID, new CreateServiceBayCommand("  Bay 1 ", 5, "  a note  "));
+                EMAIL, BRANCH_ID, new CreateServiceBayCommand("  Bay 1 ", "Basic", "  a note  "));
 
         assertThat(result).isEqualTo(bayStub.viewById.orElseThrow());
         assertThat(bayStub.insertedBay.getStatus()).isEqualTo(ServiceBayStatus.ACTIVE);
@@ -109,7 +120,7 @@ public class ServiceBayServiceTest {
 
     @Test
     public void create_blank_notes_is_cleared_to_null() {
-        service.createServiceBay(EMAIL, BRANCH_ID, new CreateServiceBayCommand("Bay 1", 5, "   "));
+        service.createServiceBay(EMAIL, BRANCH_ID, new CreateServiceBayCommand("Bay 1", "Basic", "   "));
 
         assertThat(bayStub.insertedBay.getNotes()).isNull();
     }
@@ -119,28 +130,41 @@ public class ServiceBayServiceTest {
         branchStub.detail = Optional.empty();
 
         assertThatThrownBy(() -> service.createServiceBay(
-                EMAIL, BRANCH_ID, new CreateServiceBayCommand("Bay 1", 5, null)))
+                EMAIL, BRANCH_ID, new CreateServiceBayCommand("Bay 1", "Basic", null)))
                 .isInstanceOf(BranchNotFoundException.class);
         assertThat(bayStub.insertedBay).isNull();
     }
 
     @Test
-    public void create_with_unknown_type_is_service_bay_type_not_found() {
-        bayStub.typeExists = false;
+    public void create_reuses_an_existing_type_case_insensitively() {
+        bayStub.typeStore.add(ServiceBayType.of(7, "Basic", null));
+        int before = bayStub.typeStore.size();
 
-        assertThatThrownBy(() -> service.createServiceBay(
-                EMAIL, BRANCH_ID, new CreateServiceBayCommand("Bay 1", 99, null)))
-                .isInstanceOf(ServiceBayTypeNotFoundException.class);
-        assertThat(bayStub.insertedBay).isNull();
+        service.createServiceBay(EMAIL, BRANCH_ID, new CreateServiceBayCommand("Bay 1", "basic", null));
+
+        assertThat(bayStub.typeStore).hasSize(before);
+        assertThat(bayStub.insertedBay.getServiceBayTypeId()).isEqualTo(7);
+    }
+
+    @Test
+    public void create_mints_a_branch_type_when_none_matches() {
+        service.createServiceBay(EMAIL, BRANCH_ID, new CreateServiceBayCommand("Bay 1", "With lift", null));
+
+        assertThat(bayStub.typeStore).singleElement().satisfies(type -> {
+            assertThat(type.getName()).isEqualTo("With lift");
+            assertThat(type.getBranchId()).isEqualTo(com.hutnyk.carfix.branch.BranchId.of(BRANCH_ID));
+        });
+        assertThat(bayStub.insertedBay.getServiceBayTypeId()).isNotNull();
     }
 
     @Test
     public void update_preserves_status_replaces_fields_and_returns_view() {
+        bayStub.typeStore.add(ServiceBayType.of(7, "With lift", null));
         bayStub.existing = Optional.of(
                 ServiceBay.of(42, "Old", ServiceBayStatus.SUSPENDED, "old", 2, com.hutnyk.carfix.branch.BranchId.of(BRANCH_ID)));
 
         OwnerServiceBayView result = service.updateServiceBay(
-                EMAIL, BRANCH_ID, 42, new UpdateServiceBayCommand(" New ", 7, " new note "));
+                EMAIL, BRANCH_ID, 42, new UpdateServiceBayCommand(" New ", "With lift", " new note "));
 
         assertThat(result).isEqualTo(bayStub.viewById.orElseThrow());
         assertThat(bayStub.updatedBay.getId()).isEqualTo(42);
@@ -155,7 +179,7 @@ public class ServiceBayServiceTest {
         bayStub.existing = Optional.empty();
 
         assertThatThrownBy(() -> service.updateServiceBay(
-                EMAIL, BRANCH_ID, 999, new UpdateServiceBayCommand("New", 7, null)))
+                EMAIL, BRANCH_ID, 999, new UpdateServiceBayCommand("New", "With lift", null)))
                 .isInstanceOf(ServiceBayNotFoundException.class);
         assertThat(bayStub.updatedBay).isNull();
     }
@@ -165,7 +189,7 @@ public class ServiceBayServiceTest {
         branchStub.detail = Optional.empty();
 
         assertThatThrownBy(() -> service.updateServiceBay(
-                EMAIL, BRANCH_ID, 42, new UpdateServiceBayCommand("New", 7, null)))
+                EMAIL, BRANCH_ID, 42, new UpdateServiceBayCommand("New", "With lift", null)))
                 .isInstanceOf(BranchNotFoundException.class);
     }
 

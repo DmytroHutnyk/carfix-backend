@@ -106,8 +106,8 @@ public class BookingAdapterOut implements BookingPortOut {
     }
 
     @Override
-    public List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
-        List<BookingEntity> bookings = bookingRepository.findBranchDayWithDetails(branchId, date);
+    public List<OwnerBranchBookingView> findBranchBookings(UUID branchId, LocalDate from, LocalDate to) {
+        List<BookingEntity> bookings = bookingRepository.findBranchRangeWithDetails(branchId, from, to);
         if (bookings.isEmpty()) {
             return List.of();
         }
@@ -192,6 +192,7 @@ public class BookingAdapterOut implements BookingPortOut {
         return new OwnerBranchBookingView(
                 BookingId.of(entity.getId()).reference(),
                 status.name(),
+                entity.getDate(),
                 entity.getStartTime(),
                 entity.getEndTime(),
                 new OwnerBranchBookingCustomerView(

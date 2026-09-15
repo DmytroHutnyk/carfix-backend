@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface OwnerBranchBookingPortIn {
 
-    List<OwnerBranchBookingView> getBranchDayBookings(String ownerEmail, UUID branchId, LocalDate date);
+    List<OwnerBranchBookingView> getBranchBookings(String ownerEmail, UUID branchId, LocalDate from, LocalDate to);
 }
