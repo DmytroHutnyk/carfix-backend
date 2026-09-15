@@ -260,6 +260,13 @@ public class BranchServiceTest {
         final List<Service> services = new ArrayList<>();
         @Override public List<Service> loadByIds(java.util.Collection<Integer> serviceIds) { throw new UnsupportedOperationException(); }
         @Override public Service insert(Service service) { services.add(service); return service; }
+        @Override public List<com.hutnyk.carfix.in.service.query.OwnerServiceView> findViewsByBranchId(java.util.UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public java.util.Optional<com.hutnyk.carfix.in.service.query.OwnerServiceView> findViewByIdAndBranchId(Integer serviceId, java.util.UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public java.util.Optional<Service> findByIdAndBranchId(Integer serviceId, java.util.UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Service update(Service service) { throw new UnsupportedOperationException(); }
+        @Override public Service updateStatus(Service service) { throw new UnsupportedOperationException(); }
+        @Override public void deleteById(Integer serviceId) { throw new UnsupportedOperationException(); }
+        @Override public boolean existsBookingReference(Integer serviceId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubServiceCategoryPortOut implements ServiceCategoryPortOut {

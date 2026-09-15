@@ -3,6 +3,9 @@ package com.hutnyk.carfix.service.mapper;
 import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.branch.entity.BranchEntity;
 import com.hutnyk.carfix.equipment.entity.EquipmentTypeEntity;
+import com.hutnyk.carfix.in.service.query.EmployeeRequirementView;
+import com.hutnyk.carfix.in.service.query.EquipmentRequirementView;
+import com.hutnyk.carfix.in.service.query.OwnerServiceView;
 import com.hutnyk.carfix.role.entity.RoleEntity;
 import com.hutnyk.carfix.service.EmployeeRequirement;
 import com.hutnyk.carfix.service.EquipmentRequirement;
@@ -14,10 +17,37 @@ import com.hutnyk.carfix.service.entity.ServiceEntity;
 import com.hutnyk.carfix.service.entity.ServiceEquipmentRequirementEntity;
 import com.hutnyk.carfix.serviceBay.entity.ServiceBayTypeEntity;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ServiceMapper {
+
+    public static OwnerServiceView toOwnerView(ServiceEntity e) {
+        if (e == null) return null;
+        return new OwnerServiceView(
+                e.getId(),
+                e.getName(),
+                e.getDescription(),
+                e.getDurationMinutes(),
+                e.getPrice(),
+                e.getStatus(),
+                e.getServiceCategoryEntity().getId(),
+                e.getServiceCategoryEntity().getName(),
+                e.getServiceBayTypes().stream().map(ServiceBayTypeEntity::getName).sorted().toList(),
+                e.getEmployeeRequirements().stream().map(ServiceMapper::toEmployeeRequirementView).toList(),
+                e.getEquipmentRequirements().stream().map(ServiceMapper::toEquipmentRequirementView).toList());
+    }
+
+    private static EmployeeRequirementView toEmployeeRequirementView(ServiceEmployeeRequirementEntity e) {
+        List<String> roles = e.getRoles().stream().map(RoleEntity::getName).sorted().toList();
+        return new EmployeeRequirementView(e.getName(), roles);
+    }
+
+    private static EquipmentRequirementView toEquipmentRequirementView(ServiceEquipmentRequirementEntity e) {
+        List<String> types = e.getEquipmentTypes().stream().map(EquipmentTypeEntity::getName).sorted().toList();
+        return new EquipmentRequirementView(e.getName(), types);
+    }
 
     public static Service toDomain(ServiceEntity e) {
         if (e == null) return null;
@@ -70,6 +100,19 @@ public class ServiceMapper {
         entity.setServiceCategoryEntity(category);
         entity.setServiceBayTypes(bayTypes);
         return entity;
+    }
+
+    public static void updateEntity(
+            ServiceEntity entity,
+            Service service,
+            ServiceCategoryEntity category,
+            Set<ServiceBayTypeEntity> bayTypes) {
+        entity.setName(service.getName());
+        entity.setDescription(service.getDescription());
+        entity.setDurationMinutes(service.getDurationMinutes());
+        entity.setPrice(service.getPrice());
+        entity.setServiceCategoryEntity(category);
+        entity.setServiceBayTypes(bayTypes);
     }
 
     public static ServiceEmployeeRequirementEntity toEntity(

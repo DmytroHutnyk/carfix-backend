@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ServiceErrorCode implements ErrorCode {
 
-    SERVICE_CATEGORY_NOT_FOUND(ErrorCategory.NOT_FOUND);
+    SERVICE_CATEGORY_NOT_FOUND(ErrorCategory.NOT_FOUND),
+    SERVICE_NOT_FOUND(ErrorCategory.NOT_FOUND),
+    SERVICE_IN_USE(ErrorCategory.CONFLICT);
 
     private final ErrorCategory category;
 

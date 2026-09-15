@@ -1,14 +1,13 @@
-package com.hutnyk.carfix.equipment.exception;
+package com.hutnyk.carfix.role.exception;
 
 import com.hutnyk.carfix.exception.ErrorCategory;
 import com.hutnyk.carfix.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public enum EquipmentErrorCode implements ErrorCode {
+public enum RoleErrorCode implements ErrorCode {
 
-    EQUIPMENT_NOT_FOUND(ErrorCategory.NOT_FOUND),
-    EQUIPMENT_TYPE_NOT_FOUND(ErrorCategory.NOT_FOUND);
+    ROLE_NOT_FOUND(ErrorCategory.NOT_FOUND);
 
     private final ErrorCategory category;
 
