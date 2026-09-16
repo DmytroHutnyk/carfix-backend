@@ -4,9 +4,11 @@ import com.hutnyk.carfix.branch.BranchId;
 import com.hutnyk.carfix.exception.DomainObjectValidationException;
 import com.hutnyk.carfix.exception.ValidationErrorType;
 import com.hutnyk.carfix.util.Validator;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.With;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -25,6 +27,8 @@ public final class Service {
     private final String description;
     private final Short durationMinutes;
     private final BigDecimal price;
+
+    @With(AccessLevel.PRIVATE)
     private final ServiceStatus status;
     private final BranchId branchId;
     private final Integer serviceCategoryId;
@@ -90,6 +94,14 @@ public final class Service {
                 .employeeRequirements(employeeRequirements)
                 .equipmentRequirements(equipmentRequirements)
                 .build();
+    }
+
+    public Service activate() {
+        return withStatus(ServiceStatus.ACTIVE);
+    }
+
+    public Service suspend() {
+        return withStatus(ServiceStatus.SUSPENDED);
     }
 
     private static Short validateDurationMinutes(Short durationMinutes) {

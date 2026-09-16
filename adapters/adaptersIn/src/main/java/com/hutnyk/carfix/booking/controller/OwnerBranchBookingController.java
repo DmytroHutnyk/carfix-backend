@@ -28,12 +28,14 @@ public class OwnerBranchBookingController {
 
     @GetMapping
     @PreAuthorize("hasRole('OWNER')")
-    public ResponseEntity<List<OwnerBranchBookingResponse>> getBranchDayBookings(
+    public ResponseEntity<List<OwnerBranchBookingResponse>> getBranchBookings(
             @PathVariable(name = "branchId") UUID branchId,
-            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @AuthenticationPrincipal UserDetails principal) {
+        LocalDate effectiveTo = to != null ? to : from;
         List<OwnerBranchBookingResponse> response = ownerBranchBookingPortIn
-                .getBranchDayBookings(principal.getUsername(), branchId, date).stream()
+                .getBranchBookings(principal.getUsername(), branchId, from, effectiveTo).stream()
                 .map(OwnerBranchBookingResponseMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(response);

@@ -92,4 +92,45 @@ public class ServiceTest {
                 .extracting("errorType")
                 .isEqualTo(ValidationErrorType.EMPTY_STRING);
     }
+
+    @Test
+    public void test_suspend_returns_suspended_and_preserves_other_fields() {
+        Service active = service(Set.of(1, 4), List.of(mechanicSlot()), List.of());
+
+        Service suspended = active.suspend();
+
+        assertThat(suspended.getStatus()).isEqualTo(ServiceStatus.SUSPENDED);
+        assertThat(suspended.getId()).isEqualTo(active.getId());
+        assertThat(suspended.getName()).isEqualTo(active.getName());
+        assertThat(suspended.getDescription()).isEqualTo(active.getDescription());
+        assertThat(suspended.getDurationMinutes()).isEqualTo(active.getDurationMinutes());
+        assertThat(suspended.getPrice()).isEqualByComparingTo(active.getPrice());
+        assertThat(suspended.getServiceBayTypeIds()).isEqualTo(active.getServiceBayTypeIds());
+        assertThat(suspended.getEmployeeRequirements()).isEqualTo(active.getEmployeeRequirements());
+    }
+
+    @Test
+    public void test_activate_returns_active() {
+        Service suspended = Service.of(
+                5, "Engine Replacement", "Full engine swap", (short) 240, new BigDecimal("4500.00"),
+                ServiceStatus.SUSPENDED, BRANCH_ID, 7, Set.of(1), List.of(mechanicSlot()), List.of());
+
+        assertThat(suspended.activate().getStatus()).isEqualTo(ServiceStatus.ACTIVE);
+    }
+
+    @Test
+    public void test_activate_is_idempotent_when_already_active() {
+        Service active = service(Set.of(1), List.of(mechanicSlot()), List.of());
+
+        assertThat(active.activate().getStatus()).isEqualTo(ServiceStatus.ACTIVE);
+    }
+
+    @Test
+    public void test_suspend_is_idempotent_when_already_suspended() {
+        Service suspended = Service.of(
+                5, "Engine Replacement", "Full engine swap", (short) 240, new BigDecimal("4500.00"),
+                ServiceStatus.SUSPENDED, BRANCH_ID, 7, Set.of(1), List.of(mechanicSlot()), List.of());
+
+        assertThat(suspended.suspend().getStatus()).isEqualTo(ServiceStatus.SUSPENDED);
+    }
 }

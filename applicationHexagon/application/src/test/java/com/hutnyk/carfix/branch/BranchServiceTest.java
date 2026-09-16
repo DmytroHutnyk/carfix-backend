@@ -228,7 +228,7 @@ public class BranchServiceTest {
         @Override public Optional<com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView> findViewByIdAndBranchId(Integer bayId, UUID branchId) { throw new UnsupportedOperationException(); }
         @Override public Optional<ServiceBay> findByIdAndBranchId(Integer bayId, UUID branchId) { throw new UnsupportedOperationException(); }
         @Override public List<com.hutnyk.carfix.in.serviceBay.query.ServiceBayTypeView> findTypesForBranch(UUID branchId) { throw new UnsupportedOperationException(); }
-        @Override public boolean existsTypeForBranch(Integer typeId, UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Optional<ServiceBayType> findTypeByNameForBranch(String name, UUID branchId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubEquipmentPortOut implements EquipmentPortOut {
@@ -260,6 +260,13 @@ public class BranchServiceTest {
         final List<Service> services = new ArrayList<>();
         @Override public List<Service> loadByIds(java.util.Collection<Integer> serviceIds) { throw new UnsupportedOperationException(); }
         @Override public Service insert(Service service) { services.add(service); return service; }
+        @Override public List<com.hutnyk.carfix.in.service.query.OwnerServiceView> findViewsByBranchId(java.util.UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public java.util.Optional<com.hutnyk.carfix.in.service.query.OwnerServiceView> findViewByIdAndBranchId(Integer serviceId, java.util.UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public java.util.Optional<Service> findByIdAndBranchId(Integer serviceId, java.util.UUID branchId) { throw new UnsupportedOperationException(); }
+        @Override public Service update(Service service) { throw new UnsupportedOperationException(); }
+        @Override public Service updateStatus(Service service) { throw new UnsupportedOperationException(); }
+        @Override public void deleteById(Integer serviceId) { throw new UnsupportedOperationException(); }
+        @Override public boolean existsBookingReference(Integer serviceId) { throw new UnsupportedOperationException(); }
     }
 
     private static final class StubServiceCategoryPortOut implements ServiceCategoryPortOut {

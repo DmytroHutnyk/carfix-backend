@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.hutnyk.carfix.booking.exception.InvalidBranchBookingQueryException;
 import com.hutnyk.carfix.branch.exception.BranchNotFoundException;
 import com.hutnyk.carfix.error.GlobalExceptionHandler;
 import com.hutnyk.carfix.in.booking.OwnerBranchBookingPortIn;
@@ -44,6 +45,7 @@ public class OwnerBranchBookingControllerTest {
         return new OwnerBranchBookingView(
                 "BK-A1B2C3D4",
                 "COMPLETED",
+                LocalDate.of(2026, 9, 8),
                 LocalTime.of(9, 0),
                 LocalTime.of(10, 30),
                 new OwnerBranchBookingCustomerView("John Doe", "+48123456789", "john@example.com"),
@@ -59,15 +61,17 @@ public class OwnerBranchBookingControllerTest {
     private static final class StubPortIn implements OwnerBranchBookingPortIn {
         String receivedEmail;
         UUID receivedBranchId;
-        LocalDate receivedDate;
+        LocalDate receivedFrom;
+        LocalDate receivedTo;
         List<OwnerBranchBookingView> toReturn = List.of(sampleView());
         RuntimeException toThrow;
 
         @Override
-        public List<OwnerBranchBookingView> getBranchDayBookings(String ownerEmail, UUID branchId, LocalDate date) {
+        public List<OwnerBranchBookingView> getBranchBookings(String ownerEmail, UUID branchId, LocalDate from, LocalDate to) {
             this.receivedEmail = ownerEmail;
             this.receivedBranchId = branchId;
-            this.receivedDate = date;
+            this.receivedFrom = from;
+            this.receivedTo = to;
             if (toThrow != null) {
                 throw toThrow;
             }
@@ -101,11 +105,13 @@ public class OwnerBranchBookingControllerTest {
     }
 
     @Test
-    public void returnsTheDayBookingsInTheWireShape() throws Exception {
-        mockMvc.perform(get("/api/owner/branches/{branchId}/bookings", BRANCH_ID).param("date", "2026-09-08"))
+    public void returnsRangeBookingsInTheWireShape() throws Exception {
+        mockMvc.perform(get("/api/owner/branches/{branchId}/bookings", BRANCH_ID)
+                        .param("from", "2026-09-08").param("to", "2026-09-14"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reference").value("BK-A1B2C3D4"))
                 .andExpect(jsonPath("$[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$[0].date").value("2026-09-08"))
                 .andExpect(jsonPath("$[0].start").value("09:00:00"))
                 .andExpect(jsonPath("$[0].end").value("10:30:00"))
                 .andExpect(jsonPath("$[0].customer.name").value("John Doe"))
@@ -126,14 +132,44 @@ public class OwnerBranchBookingControllerTest {
 
         assertThat(stub.receivedEmail).isEqualTo(EMAIL);
         assertThat(stub.receivedBranchId).isEqualTo(BRANCH_ID);
-        assertThat(stub.receivedDate).isEqualTo(LocalDate.of(2026, 9, 8));
+        assertThat(stub.receivedFrom).isEqualTo(LocalDate.of(2026, 9, 8));
+        assertThat(stub.receivedTo).isEqualTo(LocalDate.of(2026, 9, 14));
+    }
+
+    @Test
+    public void fromOnlyDefaultsToEqualsFrom() throws Exception {
+        mockMvc.perform(get("/api/owner/branches/{branchId}/bookings", BRANCH_ID).param("from", "2026-09-08"))
+                .andExpect(status().isOk());
+
+        assertThat(stub.receivedFrom).isEqualTo(LocalDate.of(2026, 9, 8));
+        assertThat(stub.receivedTo).isEqualTo(LocalDate.of(2026, 9, 8));
+    }
+
+    @Test
+    public void toBeforeFromIs400() throws Exception {
+        stub.toThrow = new InvalidBranchBookingQueryException("to must not be before from");
+
+        mockMvc.perform(get("/api/owner/branches/{branchId}/bookings", BRANCH_ID)
+                        .param("from", "2026-09-08").param("to", "2026-09-07"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_BRANCH_BOOKING_QUERY"));
+    }
+
+    @Test
+    public void spanTooLargeIs400() throws Exception {
+        stub.toThrow = new InvalidBranchBookingQueryException("date range must be at most 92 days");
+
+        mockMvc.perform(get("/api/owner/branches/{branchId}/bookings", BRANCH_ID)
+                        .param("from", "2026-01-01").param("to", "2026-04-03"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_BRANCH_BOOKING_QUERY"));
     }
 
     @Test
     public void foreignOrUnknownBranchIs404() throws Exception {
         stub.toThrow = new BranchNotFoundException(BRANCH_ID);
 
-        mockMvc.perform(get("/api/owner/branches/{branchId}/bookings", BRANCH_ID).param("date", "2026-09-08"))
+        mockMvc.perform(get("/api/owner/branches/{branchId}/bookings", BRANCH_ID).param("from", "2026-09-08"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("BRANCH_NOT_FOUND"));
     }

@@ -18,7 +18,6 @@ import com.hutnyk.carfix.in.serviceBay.query.OwnerServiceBayView;
 import com.hutnyk.carfix.in.serviceBay.query.ServiceBayTypeView;
 import com.hutnyk.carfix.serviceBay.ServiceBayStatus;
 import com.hutnyk.carfix.serviceBay.exception.ServiceBayNotFoundException;
-import com.hutnyk.carfix.serviceBay.exception.ServiceBayTypeNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -147,7 +146,7 @@ public class OwnerServiceBayControllerTest {
     public void postCreatesAndReturns201WithView() throws Exception {
         mockMvc.perform(post("/api/owner/branches/" + BRANCH_ID + "/service-bays")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Bay 1\",\"serviceBayTypeId\":5,\"notes\":\"handles vans\"}"))
+                        .content("{\"name\":\"Bay 1\",\"serviceBayType\":\"Basic\",\"notes\":\"handles vans\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(BAY_ID))
                 .andExpect(jsonPath("$.type").value("Basic"))
@@ -156,7 +155,7 @@ public class OwnerServiceBayControllerTest {
         assertThat(stub.receivedEmail).isEqualTo(EMAIL);
         assertThat(stub.receivedBranchId).isEqualTo(BRANCH_ID);
         assertThat(stub.receivedCreate.name()).isEqualTo("Bay 1");
-        assertThat(stub.receivedCreate.serviceBayTypeId()).isEqualTo(5);
+        assertThat(stub.receivedCreate.serviceBayType()).isEqualTo("Basic");
         assertThat(stub.receivedCreate.notes()).isEqualTo("handles vans");
     }
 
@@ -168,7 +167,7 @@ public class OwnerServiceBayControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.errors.name").exists())
-                .andExpect(jsonPath("$.errors.serviceBayTypeId").exists());
+                .andExpect(jsonPath("$.errors.serviceBayType").exists());
         assertThat(stub.receivedCreate).isNull();
     }
 
@@ -178,35 +177,24 @@ public class OwnerServiceBayControllerTest {
 
         mockMvc.perform(post("/api/owner/branches/" + BRANCH_ID + "/service-bays")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Bay 1\",\"serviceBayTypeId\":5,\"notes\":null}"))
+                        .content("{\"name\":\"Bay 1\",\"serviceBayType\":\"Basic\",\"notes\":null}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("BRANCH_NOT_FOUND"))
                 .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
-    public void postWithUnknownTypeIs404() throws Exception {
-        stub.toThrow = new ServiceBayTypeNotFoundException(99);
-
-        mockMvc.perform(post("/api/owner/branches/" + BRANCH_ID + "/service-bays")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Bay 1\",\"serviceBayTypeId\":99,\"notes\":null}"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("SERVICE_BAY_TYPE_NOT_FOUND"));
-    }
-
-    @Test
     public void putUpdatesAndReturns200() throws Exception {
         mockMvc.perform(put("/api/owner/branches/" + BRANCH_ID + "/service-bays/" + BAY_ID)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Bay renamed\",\"serviceBayTypeId\":6,\"notes\":null}"))
+                        .content("{\"name\":\"Bay renamed\",\"serviceBayType\":\"With lift\",\"notes\":null}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(BAY_ID))
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         assertThat(stub.receivedBayId).isEqualTo(BAY_ID);
         assertThat(stub.receivedUpdate.name()).isEqualTo("Bay renamed");
-        assertThat(stub.receivedUpdate.serviceBayTypeId()).isEqualTo(6);
+        assertThat(stub.receivedUpdate.serviceBayType()).isEqualTo("With lift");
         assertThat(stub.receivedUpdate.notes()).isNull();
     }
 
@@ -216,7 +204,7 @@ public class OwnerServiceBayControllerTest {
 
         mockMvc.perform(put("/api/owner/branches/" + BRANCH_ID + "/service-bays/" + BAY_ID)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Bay renamed\",\"serviceBayTypeId\":6,\"notes\":null}"))
+                        .content("{\"name\":\"Bay renamed\",\"serviceBayType\":\"With lift\",\"notes\":null}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SERVICE_BAY_NOT_FOUND"));
     }
@@ -229,7 +217,7 @@ public class OwnerServiceBayControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.errors.name").exists())
-                .andExpect(jsonPath("$.errors.serviceBayTypeId").exists());
+                .andExpect(jsonPath("$.errors.serviceBayType").exists());
         assertThat(stub.receivedUpdate).isNull();
     }
 }

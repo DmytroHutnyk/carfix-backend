@@ -12,7 +12,11 @@ public interface ServiceBayTypeRepository extends JpaRepository<ServiceBayTypeEn
     @Query("select t from ServiceBayTypeEntity t where t.branchEntity is null or t.branchEntity.id = :branchId")
     List<ServiceBayTypeEntity> findAllForBranch(@Param("branchId") UUID branchId);
 
-    @Query("select case when count(t) > 0 then true else false end from ServiceBayTypeEntity t "
-            + "where t.id = :typeId and (t.branchEntity is null or t.branchEntity.id = :branchId)")
-    boolean existsForBranch(@Param("typeId") Integer typeId, @Param("branchId") UUID branchId);
+    @Query("""
+            SELECT t FROM ServiceBayTypeEntity t
+            WHERE LOWER(t.name) = LOWER(:name)
+              AND (t.branchEntity IS NULL OR t.branchEntity.id = :branchId)
+            ORDER BY t.branchEntity.id ASC
+            """)
+    List<ServiceBayTypeEntity> findByNameForBranch(@Param("name") String name, @Param("branchId") UUID branchId);
 }

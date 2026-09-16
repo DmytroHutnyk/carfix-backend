@@ -320,7 +320,7 @@ public class UserServiceTest {
         }
 
         @Override
-        public List<OwnerBranchBookingView> findBranchDayBookings(UUID branchId, LocalDate date) {
+        public List<OwnerBranchBookingView> findBranchBookings(UUID branchId, LocalDate from, LocalDate to) {
             throw new UnsupportedOperationException();
         }
 

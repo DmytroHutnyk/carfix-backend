@@ -12,7 +12,6 @@ import com.hutnyk.carfix.out.branch.OwnerBranchPortOut;
 import com.hutnyk.carfix.out.serviceBay.ServiceBayPortOut;
 import com.hutnyk.carfix.out.user.UserPortOut;
 import com.hutnyk.carfix.serviceBay.exception.ServiceBayNotFoundException;
-import com.hutnyk.carfix.serviceBay.exception.ServiceBayTypeNotFoundException;
 import com.hutnyk.carfix.user.User;
 import com.hutnyk.carfix.user.exception.AuthenticatedUserMissingException;
 import lombok.RequiredArgsConstructor;
@@ -46,9 +45,9 @@ public class ServiceBayService implements OwnerServiceBayPortIn {
     @Override
     public OwnerServiceBayView createServiceBay(String ownerEmail, UUID branchId, CreateServiceBayCommand command) {
         requireOwnedBranch(ownerEmail, branchId);
-        requireTypeForBranch(command.serviceBayTypeId(), branchId);
+        Integer typeId = resolveTypeId(command.serviceBayType(), branchId);
         ServiceBay created = serviceBayPortOut.insert(ServiceBay.create(
-                command.name().trim(), command.serviceBayTypeId(), normalizeNotes(command.notes()), BranchId.of(branchId)));
+                command.name().trim(), typeId, normalizeNotes(command.notes()), BranchId.of(branchId)));
         return serviceBayPortOut.findViewByIdAndBranchId(created.getId(), branchId)
                 .orElseThrow(() -> new ServiceBayNotFoundException(created.getId()));
     }
@@ -59,9 +58,9 @@ public class ServiceBayService implements OwnerServiceBayPortIn {
         requireOwnedBranch(ownerEmail, branchId);
         ServiceBay existing = serviceBayPortOut.findByIdAndBranchId(bayId, branchId)
                 .orElseThrow(() -> new ServiceBayNotFoundException(bayId));
-        requireTypeForBranch(command.serviceBayTypeId(), branchId);
+        Integer typeId = resolveTypeId(command.serviceBayType(), branchId);
         serviceBayPortOut.update(existing.update(
-                command.name().trim(), command.serviceBayTypeId(), normalizeNotes(command.notes())));
+                command.name().trim(), typeId, normalizeNotes(command.notes())));
         return serviceBayPortOut.findViewByIdAndBranchId(bayId, branchId)
                 .orElseThrow(() -> new ServiceBayNotFoundException(bayId));
     }
@@ -73,10 +72,11 @@ public class ServiceBayService implements OwnerServiceBayPortIn {
                 .orElseThrow(() -> new BranchNotFoundException(branchId));
     }
 
-    private void requireTypeForBranch(Integer serviceBayTypeId, UUID branchId) {
-        if (!serviceBayPortOut.existsTypeForBranch(serviceBayTypeId, branchId)) {
-            throw new ServiceBayTypeNotFoundException(serviceBayTypeId);
-        }
+    private Integer resolveTypeId(String rawType, UUID branchId) {
+        String name = rawType == null ? null : rawType.trim();
+        return serviceBayPortOut.findTypeByNameForBranch(name, branchId)
+                .map(ServiceBayType::getId)
+                .orElseGet(() -> serviceBayPortOut.insertType(ServiceBayType.create(name, BranchId.of(branchId))).getId());
     }
 
     private static String normalizeNotes(String notes) {

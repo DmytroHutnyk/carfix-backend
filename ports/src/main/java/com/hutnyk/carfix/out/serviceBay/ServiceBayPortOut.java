@@ -19,5 +19,5 @@ public interface ServiceBayPortOut {
     Optional<ServiceBay> findByIdAndBranchId(Integer bayId, UUID branchId);
 
     List<ServiceBayTypeView> findTypesForBranch(UUID branchId);
-    boolean existsTypeForBranch(Integer typeId, UUID branchId);
+    Optional<ServiceBayType> findTypeByNameForBranch(String name, UUID branchId);
 }
