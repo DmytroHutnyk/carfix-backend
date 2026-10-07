@@ -1,5 +1,7 @@
 # CarFix
 
+**Live app: [carfix.one](https://carfix.one)**
+
 CarFix is a web platform for finding car repair workshops and booking visits online. Customers choose their car, the services they need, and a suitable time. Workshop owners manage their branches, services, employees, equipment, and service bays.
 
 CarFix offers times based on opening hours, existing bookings, and available resources. Customers can book up to three services in one visit without waiting for confirmation by phone.
