@@ -22,9 +22,7 @@ Built with Next.js 16, React 19, TypeScript, and Tailwind CSS, the frontend prov
 
 PostgreSQL stores accounts, car profiles, branches, services, resources, availability, bookings, and reviews. Flyway applies schema migrations at backend startup.
 
-> **Database diagram:** image coming soon.
-
-<!-- Replace the placeholder above with: ![CarFix database diagram](docs/database-diagram.png) -->
+![CarFix database diagram](docs/database-diagram.png)
 
 ## CI/CD
 
