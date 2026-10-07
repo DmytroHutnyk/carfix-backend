@@ -3,8 +3,10 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-.env.prod
-.env.dev
+# Local environment files; commit only the safe template.
+.env
+.env.*
+!.env.example
 CarFix_v3-2025-10-23_22-06.png
 
 ### STS ###
@@ -37,4 +39,3 @@ build/
 
 ### macOS ###
 .DS_Store
-
